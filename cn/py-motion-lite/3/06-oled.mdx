@@ -1,0 +1,284 @@
+---
+title: "3.6 OLED"
+---
+
+配套的 OLED 屏幕可以显示 PyMotion Lite 的状态及传感器信息，其硬件连接如图 3-10 所示。
+
+<img
+  src="/PyMotionLite_UserManual_Image/Image-3-10.png"
+  alt="图片"
+  className="mx-auto"
+  style={{ width:"86%" }}
+/>
+
+<div style={{ color: '#475569', fontSize: '0.92rem', margin: '0.35rem 0 1rem', textAlign: 'center' }}>图 3-10 OLED 屏幕接线示意图</div>
+
+### 3.6.1 文字
+
+可调用以下 API 在 OLED 上临时显示最多四行文字；调用成功时返回 None：
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+lite.oled.show(lines, *, duration_seconds=5.0)
+```
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 3-37 OLED 文字显示 API 参数说明
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>参数</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>类型</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>默认值或范围</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>说明</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>lines</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>str | sequence\[str]</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>1～4 行</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>1～4 行可打印 ASCII 文字，每行不超过 21 个字符</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>duration_seconds</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>float</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>5.0；0.1～60 秒</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>临时文字显示时长</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import pymotion as pm
+
+with pm.lite.connect(transport="usb") as lite:
+    lite.oled.show([
+        "PyMotion Lite",
+        "Motor ready",
+    ], duration_seconds=5.0)  # 显示 5 秒
+```
+
+### 3.6.2 多页仪表盘
+
+配置 1～8 个仪表盘页面时使用以下 API；配置成功后立即开始轮播，并返回 None：
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+lite.oled.show_pages(pages, *, refresh_interval_seconds=0.5,
+                     page_interval_seconds=3.0)
+```
+
+需要固定页面、恢复轮播或返回默认页时，统一调用 show()；以下三种形式分别对应这三种显示方式，调用成功时均返回 None：
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+lite.oled.show(*, page=..., slide=False)
+lite.oled.show(*, slide=True)
+lite.oled.show()
+```
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 3-38 OLED 多页显示 API 参数说明
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>参数</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>类型</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>默认值或范围</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>说明</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>pages</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>sequence | mapping</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>1～8 页</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>页面内容；映射键可作为页面名称，动态字段需单独占一行</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>refresh_interval_seconds</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>float</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>0.5；0.2～5 秒</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>动态字段刷新间隔</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>page_interval_seconds</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>float</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>3.0；1～60 秒</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>轮播切页间隔</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>page</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>int | str</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>0～7 或页面名称</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>页码或页面名称</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>slide</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>bool</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>False</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>是否自动轮播</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import time
+import pymotion as pm
+
+# 配置两个页面并自动轮播
+with pm.lite.connect(transport="usb") as lite:
+    lite.oled.show_pages({
+        "network": ["Wi-Fi IP", "{wifi.ip}"],
+        "sensors": ["Distance (mm)", "{ultrasonic.distance}"],
+    })
+    time.sleep(6.0)
+    lite.oled.show(page="sensors")
+    time.sleep(3.0)
+    lite.oled.show(slide=True)
+    time.sleep(6.0)
+    lite.oled.show()
+```
+
+### 3.6.3 动态字段
+
+动态字段必须单独占用一行，不能与其他文字拼接；OLED 会按刷新间隔更新对应值。
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 3-39 OLED 支持的动态字段
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>占位符</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>显示内容</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{ultrasonic.distance}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>超声波距离</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{ambient_light.illuminance}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>环境光照度</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{color.rgb_raw}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>颜色传感器红、绿、蓝三路原始值</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{color.clear_raw}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>颜色传感器无滤色通道原始值</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{imu.orientation}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>IMU 横滚角与俯仰角</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{wifi.ip}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>当前 Wi-Fi IP 地址</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{wifi.rssi}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>当前 Wi-Fi 信号强度</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{system.uptime}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>设备本次启动后的运行时间</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{status.state}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>设备当前状态</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{motors.1.measured_rpm}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>M1 实测转速</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{motors.2.measured_rpm}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>M2 实测转速</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{motors.3.measured_rpm}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>M3 实测转速</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{motors.4.measured_rpm}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>M4 实测转速</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{power.voltage}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>电池输入电压</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{power.current.1}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>M1、M2 电机组电流</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{power.current.2}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>M3、M4 电机组电流</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>\{power.current.3}</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>PWM 舵机组电流</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import time
+import pymotion as pm
+
+# 动态字段单独占一行
+with pm.lite.connect(transport="usb") as lite:
+    pages = [["Distance (mm)", "{ultrasonic.distance}"]]
+    lite.oled.show_pages(pages)
+    time.sleep(6.0)
+    lite.oled.show()
+```

@@ -1,0 +1,119 @@
+---
+title: "2.3 简单例程运行"
+---
+
+本节将引导运行 Quick Start 中的例程，快速体验 PyMotion Lite 的连接、电机控制。完成本节后，请到第 3 章进一步学习各类执行器和传感器的基础。
+
+### 2.3.1 确认连接
+
+在 VS Code 中运行 `examples\quick-start\02-connection.py`，或在终端运行以下命令。
+
+```powershell
+python examples\quick-start\02-connection.py
+```
+
+在 Ubuntu 或树莓派上，请将路径分隔符改为 `/`，运行以下命令。
+
+```bash
+python examples/quick-start/02-connection.py
+```
+
+注意：运行本例程前，请确认已按 2.1 节完成 SDK 安装、已设置 `PYMOTION_AUTH_TOKEN` 环境变量、USB 线已连接设备与电脑，并且设备已上电。
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 2-5 连接结果字段
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>字段</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>说明</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>SDK 版本</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>确认 Python 导入的是正确的 SDK</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>Device ID</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>12 位设备唯一标识</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>Transport</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>本次连接方式（usb / wifi）</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>State</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>设备状态，IDLE 表示已连接、未被控制</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>Status age</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>状态数据年龄，越小越新</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 2-6 连接常见错误
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>报错</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>可能原因</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>解决方法</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>AuthenticationError</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>Token 不匹配</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>检查 Token 是否与设备配置一致</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>DeviceNotFoundError</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>设备未找到</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>检查 USB 线是否支持数据传输</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>MultipleDevicesFoundError</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>发现多台设备</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>指定 device_id 参数，见 2.2 节</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+### 2.3.2 第一次控制电机
+
+按第 3.1 节接线图连接配套电机。断电接线，首次运行前架空车轮。
+
+在 VS Code 中运行 `examples\quick-start\03-motor.py`，或在终端运行以下命令。
+
+```powershell
+python examples\quick-start\03-motor.py
+```
+
+运行前必须检查：1. 车轮已架空或卸下负载；2. 运动范围内无障碍物；3. 已接入外部电源（USB 供电不足以驱动电机）；4. 已准备好立即断电的手段。
+
+预期行为
+
+1. M1 以 30% 速度转动 2 秒，然后停止；
+2. 将当前位置设为 0° 零点；
+3. 转动到 90° 位置；
+4. 再向回转 90°（回到零点附近）；
+5. 程序结束，电机自动停止。

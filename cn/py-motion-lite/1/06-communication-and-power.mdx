@@ -1,0 +1,66 @@
+---
+title: "1.6 通信连接与供电路径"
+---
+
+通信线负责传送指令和数据，电源线负责提供电能。USB 已连接或 Wi-Fi 已连通，都不能作为执行器供电正常的依据。
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 1-7 通信与供电路径说明
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>路径</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>用途</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>检查要点</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>USB</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>电脑与控制器之间的数据通信。</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>使用支持数据传输的 USB 线。首次调试建议先验证 USB，再配置 Wi-Fi。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>2.4 GHz Wi-Fi</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>局域网内的无线通信。</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>完成 AP 配网，并核对电脑 IP、SDK 服务地址、设备 ID 和 Token。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>12V 电源输入（9V～15V）</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>额定供电为 12V，输入范围为 9V～15V。</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>断电检查电压、极性和插接位置。动作前确认供电能力满足实际负载。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>12V 1.5A、5V 1.5A、3.3V 1A 输出</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>连接符合要求的配套设备。</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>不得反向向控制器供电；不得把多个电源的正极直接并联。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>上位计算设备电源</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>为电脑或其他计算设备供电。</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>按上位设备要求供电，不默认由 Lite 为上位设备供电。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+### 选择 USB 还是 Wi-Fi
+
+USB 适合桌面调试和首次连接。Wi-Fi 适合需要减少通信线牵制的场景。两种连接使用同一套控制与读取 API，也都需要设备 Token；Wi-Fi 的配置步骤见[第 2.1.5 节](/产品手册/PyMotion Lite 使用手册/2 快速上手/01-development-environment#215-ap配网和token配置)。
+
+### 带载运行前的供电检查
+
+- 先确认控制器与每种配件各自的额定电压，不将控制器输入电压直接等同于舵机或传感器电压。
+- 按执行器启动、换向和同时动作时的负载规划供电。不能用某个电源芯片的峰值参数替代整机允许的持续输出。
+- 使用独立执行器电源时，必须采用配件规定的接线方式，并核对信号参考地和防倒灌要求；不自行改接电源脚。
+- 发现动作时重启或通信中断，先按第 5.2.11 节排查带载压降，再排查网络。
+
+通信建立成功只说明连接和认证已完成。动作前还应核对供电、控制权、急停状态和机械环境。

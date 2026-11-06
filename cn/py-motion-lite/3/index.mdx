@@ -1,0 +1,52 @@
+---
+title: "3 基础功能"
+description: "使用执行器、传感器、显示与设备状态功能。"
+---
+
+选择对应硬件阅读本章。接线图中的配件用于说明连接方式；上电前必须核对电源和信号方向。先使用配套例程验证单个配件，再组合多路控制。
+
+### 按控制需求选择执行器
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 3-1 执行器选型说明
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>执行器</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>适合的控制任务</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>反馈与边界</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>直流电机</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>轮式底盘、连续转动机构。开环用 set_pwm()，闭环转速用 set_speed()。</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>闭环速度、位置控制和里程计需要有效编码器反馈；RPM 不是输出百分比。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>位置型 PWM 舵机</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>有限行程的舵臂、云台或关节定位。</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>PWM 接口不返回实际角度；目标值不等于测量值，不据此判定机械到位。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>连续旋转 PWM 舵机</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>方向和速度指令控制的连续转动。</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>不能按角度定位；mode="speed" 不会改变舵机的硬件类型。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>配套 TTL 总线舵机</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>通过不同 ID 控制多个关节，并读取在线状态及位置等反馈。</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>先核对协议、电压、ID、模式和 max_angle；状态在线后再使用反馈。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+执行器的扭矩、额定电压、转角和承载能力由具体配件决定。本章 API 范围不等同于所有配件的机械或电气额定范围。

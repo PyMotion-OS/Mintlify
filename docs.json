@@ -1,0 +1,119 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "派动控制",
+  "colors": {
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
+  },
+  "navigation": {
+    "languages": [
+      {
+        "language": "cn",
+        "pages": [
+          "index-2",
+          {
+            "group": "产品手册",
+            "pages": [
+              {
+                "group": "PyMotion Lite 使用手册",
+                "pages": [
+                  "cn/py-motion-lite/01-index",
+                  "cn/py-motion-lite/02-read-this-manual",
+                  {
+                    "group": "1 认识设备与安全使用",
+                    "pages": [
+                      "cn/py-motion-lite/1/01-product-overview",
+                      "cn/py-motion-lite/1/02-basic-parameters",
+                      "cn/py-motion-lite/1/03-safety-notes",
+                      "cn/py-motion-lite/1/04-control-and-stop",
+                      "cn/py-motion-lite/1/05-system-roles",
+                      "cn/py-motion-lite/1/06-communication-and-power",
+                      "cn/py-motion-lite/1/07-installation-and-first-power-on"
+                    ]
+                  },
+                  {
+                    "group": "2 快速上手",
+                    "pages": [
+                      "cn/py-motion-lite/2/01-development-environment",
+                      "cn/py-motion-lite/2/02-discovery-and-connection",
+                      "cn/py-motion-lite/2/03-run-simple-examples"
+                    ]
+                  },
+                  {
+                    "group": "3 基础功能",
+                    "pages": [
+                      "cn/py-motion-lite/3/index",
+                      "cn/py-motion-lite/3/01-dc-geared-motor",
+                      "cn/py-motion-lite/3/02-pwm-servo",
+                      "cn/py-motion-lite/3/03-ttl-bus-servo",
+                      "cn/py-motion-lite/3/04-sensors",
+                      "cn/py-motion-lite/3/05-ld14p-lidar",
+                      "cn/py-motion-lite/3/06-oled",
+                      "cn/py-motion-lite/3/07-digital-output",
+                      "cn/py-motion-lite/3/08-device-status"
+                    ]
+                  },
+                  {
+                    "group": "4 高阶应用",
+                    "pages": [
+                      "cn/py-motion-lite/4/index",
+                      "cn/py-motion-lite/4/01-realtime-data",
+                      "cn/py-motion-lite/4/02-realtime-commands",
+                      "cn/py-motion-lite/4/03-odometry",
+                      "cn/py-motion-lite/4/04-multiple-devices",
+                      "cn/py-motion-lite/4/05-data-recording"
+                    ]
+                  },
+                  {
+                    "group": "5 异常处理与问题排查",
+                    "pages": [
+                      "cn/py-motion-lite/5/01-exception-handling",
+                      "cn/py-motion-lite/5/02-common-issues"
+                    ]
+                  },
+                  "cn/py-motion-lite/08-example-learning-path",
+                  "cn/py-motion-lite/09-api-reference",
+                  "cn/py-motion-lite/10-glossary-and-support"
+                ]
+              },
+              {
+                "group": "AI Vision Robot",
+                "pages": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/site-logo.jpeg",
+    "dark": "/logo/site-logo.jpeg"
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "markdown": {
+    "schema": true
+  },
+  "errors": {
+    "404": {
+      "redirect": true
+    }
+  },
+  "appearance": {
+    "default": "light",
+    "strict": true
+  }
+}

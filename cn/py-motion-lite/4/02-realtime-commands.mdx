@@ -1,0 +1,352 @@
+---
+title: "4.2 实时命令"
+---
+
+实时命令用于在已经声明的端口范围内连续更新电机和 PWM 舵机目标，适合遥控、循迹和平滑速度变化。打开会话只建立命令通道，不会自动让执行器动作。
+
+实时命令建议在 `lite.control()` 上下文中使用，以确保执行器控制权的正确获取。`frequency` 只控制实时数据，命令更新速度由程序调用 write() 的节奏决定，最高约 20 Hz；短时间连续写入多个目标时，SDK 优先发送最新目标。
+
+### 4.2.1 支持类型
+
+实时命令同样通过 `lite.realtime.open()` 创建会话，所有参数的完整说明见表 4-2。下文将 `lite.realtime.open()` 返回的 `RealtimeSession` 实例简写作 `session`。
+
+只使用实时命令时，可保持 `data_sources=()`，并通过 `command_targets` 声明命令通道和允许控制的端口。
+
+`command_targets` 是“命令通道名称到端口序列”的映射。配置命令通道只建立发送范围，不会自动让执行器动作。
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 4-9 实时命令通道
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>命令通道</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>端口范围</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>输入范围</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>motor_pwms</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>端口 1～4（对应 M1～M4）</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>-100～100%</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>motor_speeds</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>端口 1～4（对应 M1～M4）</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>-360～360 RPM，必须为整数</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>pwm_continuous_servos</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>端口 1～6（对应 S1～S6）</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>-100～100 %</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>pwm_position_servos</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>端口 1～6（对应 S1～S6）</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>0～180°</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+每个命令目标至少声明一个端口，端口不可重复。相同电机端口不能同时声明为 `motor_pwms` 和 `motor_speeds`；相同 PWM 端口不能同时声明为连续旋转和位置模式。每次 `write()` 必须包含该通道声明的全部端口各一次。TTL 总线舵机没有实时命令通道，应使用 TTL 舵机普通控制 API。
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 4-10 实时命令通道对象 API 说明
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>API 或属性</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>输入参数</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>适用通道</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>说明</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>session.commands.\<channel></td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>无</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>四类 command_targets</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>取得对应命令通道对象；\<channel> 为 motor_pwms、motor_speeds、pwm_continuous_servos 或 pwm_position_servos。只能访问已声明的通道。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>channel.ports</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>无</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>全部通道</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>返回 tuple\[int, ...]，内容为该命令通道已经声明、允许控制的端口。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>channel.write(mapping, \*, valid_for)</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>mapping、valid_for</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>全部通道</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>提交最新的一组完整目标，返回 None；前一组尚未发送的目标会被新目标替换。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>channel.stop()</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>无</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>全部通道</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>取消待发送目标并向板卡发送停止命令，返回 None。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>channel.stats()</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>无</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>全部通道</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem', verticalAlign: 'top' }}>返回 RealtimeCommandStats，包含累计 sent 和 replaced。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+除了通过 `channel.ports` 按通道查看端口外，还可以从 `session` 级别直接查询：
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+session.command_ports("motor_pwms")
+```
+
+通用方法，传入通道名进行查询，返回 `tuple[int, ...]`；通道未声明时返回空元组 `()`。
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+session.motor_pwm_command_ports
+```
+
+查询开环 PWM 电机通道端口，是 `session.command_ports("motor_pwms")` 的快捷方式。
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+session.motor_speed_command_ports
+```
+
+查询闭环 RPM 电机通道端口。两个快捷属性仅适用于电机通道。
+
+以下示例展示 `command_targets` 的典型声明方式：
+
+会话内片段 · Python
+
+```python
+command_targets = {
+    "motor_pwms": (1, 2),
+    "motor_speeds": (3, 4),
+}
+```
+
+该示例声明 M1、M2 使用开环实时命令，M3、M4 使用闭环实时命令。声明端口不会产生动作；之后每次 `write()` 都应提供该命令通道已声明的全部端口。
+
+### 4.2.2 直流电机实时命令
+
+开环 PWM控制、闭环速度控制使用以下API：
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+session.commands.motor_pwms.write(mapping, *, valid_for)
+session.commands.motor_speeds.write(mapping, *, valid_for)
+```
+
+停止当前实时命令通道中已声明的电机端口时使用以下 API：
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+channel.stop()
+```
+
+mapping 与 `valid_for` 的完整说明见 4.2.4 节“write 通用参数”。
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import time
+import pymotion as pm
+
+with pm.lite.connect(transport="usb") as lite:
+    with lite.control():
+        with lite.realtime.open(
+            command_targets={"motor_pwms": (1, 2)},
+        ) as session:
+            channel = session.commands.motor_pwms
+            channel.write({1: 30, 2: 30}, valid_for=1.2)
+            time.sleep(1.0)
+            channel.stop()  # 停止已声明端口
+```
+
+该示例通过 USB 连接设备，向 M1、M2 写入 30% 的开环目标并保持 1 秒，随后停止。`valid_for` 是单次目标的安全有效期；连续运动时应在目标到期前再次调用 write()。
+
+### 4.2.3 PWM 舵机实时命令
+
+可通过以下 API 持续更新连续旋转或位置 PWM 舵机的目标：
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+session.commands.pwm_continuous_servos.write(mapping, *, valid_for)
+session.commands.pwm_position_servos.write(mapping, *, valid_for)
+```
+
+mapping 与 `valid_for` 的完整说明见 4.2.4 节“write 通用参数”。
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import time
+import pymotion as pm
+
+# 打开实时命令会话
+with pm.lite.connect(transport="usb") as lite:
+    with lite.control():
+        with lite.realtime.open(
+            command_targets={"pwm_position_servos": (3, 4)},
+        ) as session:
+            channel = session.commands.pwm_position_servos
+            channel.write({3: 60, 4: 120}, valid_for=1.2)
+            time.sleep(1.0)
+            channel.stop()
+```
+
+### 4.2.4 write 通用参数
+
+四个命令通道的 `write(mapping, *, valid_for)` 共享相同的参数签名，仅 `mapping` 的值域不同。
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 4-11 write 通用参数说明
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>参数</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>类型</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>范围</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>说明</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>mapping</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>dict\[int, number]（motor_speeds 为 dict\[int, int]）</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>motor_pwms：-100～100 %<br />motor_speeds：-360～360 RPM（必须为整数）<br />pwm_continuous_servos：-100～100 %<br />pwm_position_servos：0～180 度</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>本次完整目标映射，必须包含该通道已声明的全部端口各一次。</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>valid_for</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>float</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>0.05～2.0 秒</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>命令在设备端保持有效的时间。超时后设备停止对应端口。连续运动时应在到期前再次调用 write()。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+`write()` 将目标加入内部发送队列后返回 `None`；实际发送由后台线程按约 20 Hz 的节拍执行。
+
+### 4.2.5 命令统计
+
+可调用以下 API 读取实时命令通道的发送统计：
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+channel.stats()
+```
+
+stats() 返回 RealtimeCommandStats，记录本次会话的累计统计。
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 4-12 命令统计对象字段说明
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>字段</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>说明</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>sent</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>已发送命令数</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>replaced</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>被更新目标替换的待发送命令数</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+在已经打开的实时命令会话中，可按以下方式读取发送统计：
+
+会话内片段 · Python
+
+```python
+stats = session.commands.motor_pwms.stats()
+print(stats.sent)      # 已发送数量
+print(stats.replaced)  # 被新目标替换的数量
+```
+
+该示例读取命令统计，并输出已发送命令数和被新目标替换的命令数。
+
+### 4.2.6 数据与命令会话
+
+同一个实时会话可以同时订阅数据并声明命令通道。参数含义分别见 4.1.2 和 4.2.1，下面是使用示例。
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import pymotion as pm
+
+# 同时打开实时数据与命令通道
+with pm.lite.connect(transport="usb") as lite:
+    with lite.control():
+        with lite.realtime.open(
+            data_sources=("line_tracker",),
+            command_targets={"motor_speeds": (1, 2)},
+            frequency="high", data_queue_size=32,
+        ) as session:
+            channel = session.commands.motor_speeds
+            try:
+                for _ in range(100):
+                    event = session.data.read(timeout=0.1)
+                    if event is None:
+                        channel.stop()
+                        continue
+                    if event.source != "line_tracker":
+                        channel.stop()
+                        continue
+                    reading = event.data
+                    if (not reading.valid or event.age is None
+                            or event.age > 0.2):
+                        channel.stop()
+                        continue
+                    channel.write({1: 45, 2: 45}, valid_for=0.3)
+            finally:
+                channel.stop()
+```
+
+例程在循迹数据有效且足够新时，为 M1、M2 写入固定转速；否则停止。它演示数据驱动控制和失效处理，不是完整的循迹算法。

@@ -1,0 +1,66 @@
+---
+title: "阅读本手册"
+description: "了解手册结构、阅读方式和安全提示。"
+---
+
+本手册介绍 PyMotion Lite 控制器及配套 SDK 的安装、接线、连接、执行器控制、传感器读取和故障排查。面向具有基本 Python 操作能力的用户。
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    手册阅读导航
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>使用目的</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>阅读位置</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>首次使用</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>第 1 章安全与接口 → 第 2 章安装和连接</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>控制配件或读取数据</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>第 3 章，按接入的配件选择对应小节</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>连续采集、实时控制与里程计</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>第 4 章</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>连接异常或动作不符合预期</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>第 5 章</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>查找学习例程或 API</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>第 6 章与附录 A</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+## 代码与标记约定
+
+“API 签名”用于说明方法和参数，不是可直接运行的程序。星号 \* 后的参数必须使用名称传入；None 表示不指定该选项。mapping 表示键值映射，例如 \{1: 30, 2: 30\}。
+
+“完整例程”可保存为 .py 文件，在 SDK 专用终端运行。运行前必须设置正确 Token，确认接线、端口、设备模式和运动范围。例程中的速度、角度和底盘尺寸是演示值，不是配件额定参数。
+
+“会话内片段”依赖已经打开的连接、对象或实时会话，应放在对应 with 代码块内执行。Python 代码的缩进不可省略。
+
+单位统一使用 V、A、mm、s、Hz、RPM 和 °。age、`max_age`、`timeout`、`valid_for` 的时间单位均为秒，除非参数名或表格另有说明。
+
+## 重要提示
+
+警告：错误供电、反接或运动机构失控可能造成人身伤害或设备损坏。先切断执行器电源，再处理接线和机械问题。
+
+注意：软件停止、控制上下文退出和通信超时保护不能替代可立即操作的物理断电措施。
+
+本手册面向 PyMotion Lite 配套硬件与配件。更换配件时，必须同时核对电压、接口定义、协议及机械行程。

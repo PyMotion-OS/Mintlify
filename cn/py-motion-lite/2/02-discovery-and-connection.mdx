@@ -1,0 +1,269 @@
+---
+title: "2.2 发现与连接"
+---
+
+本节内容包括查找设备、USB 连接、Wi-Fi 连接、`connect()` 参数和连接生命周期。
+
+### 2.2.1 查找设备
+
+可以在连接前扫描当前电脑能够发现哪些 PyMotion Lite 设备，以及每台设备可使用 USB、Wi-Fi 中的哪一种连接方式。
+
+扫描当前可见设备，`timeout` 表示等待发现结果的最长时间。
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+pm.lite.list_devices(timeout=6.25)
+```
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 2-2 list_devices() 参数
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>参数</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>类型</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>默认值</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>有效范围</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>说明</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>timeout</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>float</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>6.25</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>大于 0 且不超过 30 秒</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>最多花多少时间等待 USB 和 Wi-Fi 发现结果；网络环境较慢时可适当增大</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+发现结果中的每个元素均为 LiteDeviceInfo，主要属性如下。
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 2-3 LiteDeviceInfo 属性
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>属性</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>含义</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>device_id</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>12 位设备 ID</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>transports</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>可用的通信方式，可能为 ("usb",)、("wifi",) 或 ("usb", "wifi")</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+查找设备的 Python 代码示例：
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import pymotion as pm
+
+# 查找当前可见的 PyMotion Lite 设备
+devices = pm.lite.list_devices(timeout=6.25)
+
+for device in devices:
+    print(device.device_id)
+    print(device.transports)
+```
+
+发现多台设备时，应先打印 `device_id`，再把目标设备 ID 传给 `connect()`：
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import pymotion as pm
+
+# 查找当前可见的 PyMotion Lite 设备
+devices = pm.lite.list_devices()
+if not devices:
+    raise RuntimeError("没有发现 PyMotion Lite")
+
+for item in devices:
+    print(item.device_id, item.transports)
+```
+
+`transports` 只表示发现结果，不表示设备已经连接、Token 已通过认证或执行器控制一定可用。USB 结果来自设备身份探测；Wi-Fi 结果来自当前局域网中的设备发现。如果电脑 IP 地址变化，而设备仍保存着原来的 SDK 服务地址，设备可能仍能通过 `"wifi"` 被扫描到，但实际执行 `connect(..., transport="wifi")` 时会超时。此时应进入设备配网页面，把 SDK 服务地址更新为电脑当前 IP；原 Token 没有变化时可以继续使用。
+
+### 2.2.2 设备连接
+
+PyMotion Lite 板卡支持 USB 和 Wi-Fi 两种连接方式。SDK 可通过参数选择连接方式；Token 可以通过环境变量提供，也可以通过 `auth_token` 参数传入。
+
+使用 `connect()` 选择连接方式并完成 Token 认证。
+
+<div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
+
+```python
+pm.lite.connect(device_id=None, *, timeout=15.0, auth_token=None, transport="usb")
+```
+
+<div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
+  <div style={{ color: '#475569', fontSize: '0.92rem', fontWeight: 600, marginBottom: '0.15rem' }}>
+    表 2-4 connect() 参数
+  </div>
+
+  <table width="100%" style={{ borderCollapse: 'collapse', margin: '0 auto', width: '100%', minWidth: '100%', textAlign: 'left' }}>
+    <thead>
+      <tr>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>参数</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>类型</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>默认值</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>可用值或范围</th>
+        <th style={{ background: '#e2e8f0', border: '1px solid #cbd5e1', padding: '0.55rem 0.7rem' }}>用户应该怎样填写</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>device_id</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>str | None</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>None</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>12 位设备 ID 或 None</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>只有一台设备时通常可省略；发现多台设备或使用 Wi-Fi 时建议明确填写</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>timeout</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>float</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>15.0</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>大于 0 的秒数</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>整次连接允许等待的最长时间，不是后续每个 API 的超时时间</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>auth_token</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>str | None</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>None</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>设备配置的 1～16 字节口令或 None</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>USB 与 Wi-Fi 都需要；明确传入时优先使用该值，省略时读取环境变量 PYMOTION_AUTH_TOKEN</td>
+      </tr>
+
+      <tr>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>transport</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>str</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>"usb"</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>"usb" 或 "wifi"</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>选择本次实际使用的连接方式</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+返回值为 `Lite`。`lite.connection.device_id` 是设备 ID，`lite.connection.transport` 是本次实际使用的连接方式。`pm.lite.connect()` 是整个程序访问设备功能的入口。
+
+USB 连接适合没有 Wi-Fi 或需要直接连接设备的环境。
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import pymotion as pm
+
+# 连接设备并在 with 结束时自动关闭
+with pm.lite.connect(
+    transport="usb",
+    timeout=15.0,
+) as lite:
+    print(lite.connection.device_id)
+    print(lite.connection.transport)
+```
+
+只有一台设备时可以省略 `device_id`。连接多台设备时应明确指定 `device_id`。
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import pymotion as pm
+
+# 连接设备并在 with 结束时自动关闭
+with pm.lite.connect(
+    "90E5B1D51380",
+    transport="usb",
+) as lite:
+    pass
+```
+
+Wi-Fi 连接适合移动机器人、无线调试等电脑不方便靠近设备的场景。
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import pymotion as pm
+
+# 连接设备并在 with 结束时自动关闭
+with pm.lite.connect(
+    "90E5B1D51380",
+    transport="wifi",
+    timeout=15.0,
+) as lite:
+    print(lite.connection.transport)
+```
+
+Wi-Fi 所需的本机监听地址和端口由 SDK 自动管理，不属于用户参数。
+
+常见异常：找不到设备时抛出 `DeviceNotFoundError`；发现多台设备但没有指定 `device_id` 时抛出 `MultipleDevicesFoundError`；USB 或 Wi-Fi 的 Token 缺失、不正确时抛出 `AuthenticationError`；超过连接期限时抛出 `ConnectionTimeoutError`。
+
+Wi-Fi 连接失败时依次检查：
+
+1. 设备和电脑是否连接到可互通的同一网络。
+2. 当前终端是否设置了正确 Token。
+3. 配网页面中的服务器地址是否为电脑当前 IP。
+4. 是否有另一台电脑或另一个程序正在控制同一设备。
+
+### 2.2.3 连接生命周期
+
+推荐始终使用 `with`：
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import pymotion as pm
+
+with pm.lite.connect() as lite:
+    print(lite.is_closed)  # False
+
+print(lite.is_closed)      # True
+```
+
+也可以手动调用 `lite.close()`。`close()` 可以重复调用；关闭后，之前取得的电机、舵机和功能对象不能继续使用。建议在整个程序中只建立一次连接，并从这个 `lite` 对象取得需要的电机、舵机、传感器和实时功能对象。不要为每次读取或每条命令重复调用 `connect()`。
+
+以下两种结构等价，但优先使用第一种。
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import pymotion as pm
+
+# 推荐：离开 with 时自动关闭
+with pm.lite.connect() as lite:
+    print(lite.status().state)
+
+# 仅在需要自行管理生命周期时使用
+lite = pm.lite.connect()
+try:
+    print(lite.status().state)
+finally:
+    lite.close()
+```
+
+连接对象不能跨程序共享句柄。另一个程序需要访问设备时，应先让当前程序离开 `lite.control()`；如果当前程序已经结束，确保它正常关闭连接。

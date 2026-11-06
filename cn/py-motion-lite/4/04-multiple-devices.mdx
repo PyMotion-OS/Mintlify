@@ -1,0 +1,65 @@
+---
+title: "4.4 多设备使用"
+---
+
+PyMotion Lite SDK 支持在同一个程序中使用 USB 同时连接和控制多台设备，以下是多设备连接的示例。
+
+<div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', color: '#166534', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>完整例程 · Python</div>
+
+```python
+import time
+
+import pymotion as pm
+
+
+DEVICE_A_ID = "DEVICE_A_ID"
+DEVICE_A_TOKEN = "TOKEN_A"
+DEVICE_A_TRANSPORT = "usb"
+
+DEVICE_B_ID = "DEVICE_B_ID"
+DEVICE_B_TOKEN = "TOKEN_B"
+DEVICE_B_TRANSPORT = "usb"
+
+MOTOR_PORT = 1
+PWM_PERCENT = 10
+RUN_SECONDS = 2.0
+
+
+try:
+    with pm.lite.connect(
+        DEVICE_A_ID,
+        auth_token=DEVICE_A_TOKEN,
+        transport=DEVICE_A_TRANSPORT,
+    ) as device_a, pm.lite.connect(
+        DEVICE_B_ID,
+        auth_token=DEVICE_B_TOKEN,
+        transport=DEVICE_B_TRANSPORT,
+    ) as device_b:
+
+        motor_a = device_a.motor(MOTOR_PORT)
+        motor_b = device_b.motor(MOTOR_PORT)
+
+        with device_a.control(), device_b.control():
+            motor_a.set_pwm(PWM_PERCENT)
+            motor_b.set_pwm(PWM_PERCENT)
+
+            print("两台设备的 M1 已启动")
+            time.sleep(RUN_SECONDS)
+
+            motor_a.stop()
+            motor_b.stop()
+            print("两台设备的 M1 已停止")
+
+except pm.lite.LiteError as exc:
+    print(f"PyMotion Lite [{type(exc).__name__}]: {exc}")
+```
+
+每个 connect() 调用使用独立的 `device_id`，必须提供唯一标识。
+
+在同一进程中，使用逗号分隔的 with 语句同时创建多个 Lite 对象，每个对象管理一条独立的设备连接。
+
+控制权通过逗号分隔的 `with device.control()` 同时取得，多台设备的控制权可以同时持有。
+
+离开最外层 with 时，所有设备连接自动关闭。
+
+程序是单线程顺序执行的，`time.sleep()` 会同时阻塞所有设备（全部在等待）。正常或异常退出控制作用域时，SDK 都会执行安全停止并释放控制权。
