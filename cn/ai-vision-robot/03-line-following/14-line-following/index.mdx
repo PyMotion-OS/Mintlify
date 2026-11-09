@@ -1,0 +1,96 @@
+---
+title: "3.2 循迹控制"
+description: "接上实时数据队列，让车真正沿着线跑起来"
+---
+
+## 本页目标
+
+把 3.1 的算法接到实时数据上：`medium` 频率（约 10 Hz）收五路数据 → 算 V/W → 差速转 RPM → 发双轮速度。这是第一个真正"闭环"的运动例程。
+
+## 前置条件
+
+- 完成 3.1，理解分类与偏差
+- 同目录放 `differential_drive.py`（2.3 的）与 `line_control.py`（3.1 的函数）
+- 赛道：黑线宽 20 mm、转弯半径 ≥ 150 mm
+
+## 动手步骤
+
+**1. 新建 `14_line_following.py`**
+
+```python
+import pymotion as pm
+from differential_drive import vw_to_rpm
+from line_control import PATTERN_NAMES, line_tracker_to_vw
+
+V = 80                     # 基础前进速度 mm/s
+K = 25                     # 转弯增益
+PORT_LEFT, PORT_RIGHT = 3, 4
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+def run(data_queue, commands):
+    last_motion = None
+    while True:
+        sensor_data = data_queue.read(timeout=1.0)      # 等新数据，最多 1 秒
+        if sensor_data is None:                          # 断流：V/W 归零
+            v, w, pattern_type = 0, 0, "waiting"
+        else:
+            v, w, pattern_type = line_tracker_to_vw(
+                sensor_data.data.is_detected, V, K)
+
+        left_rpm, right_rpm = vw_to_rpm(v, w)
+        commands.motor_speeds.write(
+            {PORT_LEFT: left_rpm, PORT_RIGHT: right_rpm}, valid_for=0.35)
+
+        now = (pattern_type, left_rpm, right_rpm)
+        if now != last_motion:
+            print(f"分类: {PATTERN_NAMES[pattern_type]}  左轮: {left_rpm} RPM  右轮: {right_rpm} RPM")
+            last_motion = now
+
+
+def main():
+    try:
+        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+            with robot.control():
+                with robot.realtime.open(
+                    data_sources=("line_tracker",),
+                    command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)},
+                    frequency="medium",                 # 约 10 Hz，够循迹且不压网络
+                    data_queue_size=1,                  # 只要最新一条
+                ) as session:
+                    run(session.data, session.commands)
+    except KeyboardInterrupt:
+        print("Ctrl+C 主动停机")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**2. 把车放到线上，运行**
+
+```bash
+python 14_line_following.py
+```
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `V` | int | 本例 80 mm/s | 太快会冲出弯道，先慢后快 |
+| `K` | float | 本例 25 | 先 15，画龙再加，拐不过弯就减 V |
+| `frequency` | str | `medium` | 约 10 Hz；`high` 更跟手但网络压力大 |
+| `data_queue_size` | int | 1 | 只要最新帧，避免用旧数据修正 |
+| `valid_for` | float | 0.35 秒 | 大于 `read` 的等待时间，断流先自动停 |
+
+## 预期效果与排查
+
+车沿黑线前进，过弯时自动修正；提起车（看不到线）时打印"没有探测到线"并发送 0 RPM。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 左右画龙 | K 太大 | 降到 15 试 |
+| 弯道冲出 | V 太快或 K 太小 | 降 V，或增 K |
+| 直线上停顿 | `read` 超时导致归零 | 提高 `frequency` 到 `high` |
+| 完全不转 | 端口或接线错 | 回看 2.1 的端口测试 |

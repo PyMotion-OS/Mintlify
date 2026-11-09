@@ -1,0 +1,117 @@
+---
+title: "3.3 安全循迹"
+description: "循迹的同时叠加超声波避障，丢线就停车退出"
+---
+
+## 本页目标
+
+把两个策略函数串起来：先 `line_tracker_to_vw()` 算循迹，再 `ultrasonic_to_vw()` 按距离保持/减半/归零 V/W，最后统一转成双轮转速。学会**策略分层**——各管一件事，主循环只做组合。
+
+## 前置条件
+
+- 完成 3.2 与 2.5
+- 同目录放 `differential_drive.py`、`line_control.py`、`obstacle_policy.py`
+- 赛道上能摆障碍物
+
+## 动手步骤
+
+**1. 新建 `15_safe_line_following.py`**
+
+```python
+import pymotion as pm
+from differential_drive import vw_to_rpm
+from line_control import PATTERN_NAMES, line_tracker_to_vw
+from obstacle_policy import OBSTACLE_NAMES, ultrasonic_to_vw   # 距离 100/300 mm 分档
+
+V = 80
+K = 25
+PORT_LEFT, PORT_RIGHT = 3, 4
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+def receive_sensors(data_queue):
+    """等五路和超声波各更新一次"""
+    tracker_line_data = ultrasonic_data = None
+    while tracker_line_data is None or ultrasonic_data is None:
+        sensor_data = data_queue.read(timeout=1.0)
+        if sensor_data is None:
+            return None, None
+        if sensor_data.source == "line_tracker":
+            tracker_line_data = sensor_data.data
+        elif sensor_data.source == "ultrasonic":
+            ultrasonic_data = sensor_data.data
+    return tracker_line_data, ultrasonic_data
+
+
+def run(data_queue, commands):
+    last_motion = None
+    while True:
+        tracker_line_data, ultrasonic_data = receive_sensors(data_queue)
+        if tracker_line_data is None or ultrasonic_data is None:
+            v, w, pattern_type, obstacle_state = 0, 0, "waiting", "waiting"
+            distance_text = "未收到"
+        else:
+            v, w, pattern_type = line_tracker_to_vw(tracker_line_data.is_detected, V, K)
+            v, w, obstacle_state = ultrasonic_to_vw(ultrasonic_data, v, w)   # 避障盖在循迹上
+            distance_text = ("无回波" if ultrasonic_data.distance is None
+                             else f"{ultrasonic_data.distance} mm")
+
+        left_rpm, right_rpm = vw_to_rpm(v, w)
+        commands.motor_speeds.write(
+            {PORT_LEFT: left_rpm, PORT_RIGHT: right_rpm}, valid_for=0.35)
+
+        now = (pattern_type, obstacle_state, left_rpm, right_rpm)
+        if now != last_motion:
+            print(f"分类: {PATTERN_NAMES[pattern_type]}  避障: {OBSTACLE_NAMES[obstacle_state]}  "
+                  f"距离: {distance_text}\n左轮: {left_rpm} RPM  右轮: {right_rpm} RPM")
+            last_motion = now
+
+        if pattern_type == "lost":       # 已发 0 RPM，退出让 with 依次收尾
+            print("丢失循迹线，程序结束")
+            return
+
+
+def main():
+    try:
+        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+            with robot.control():
+                with robot.realtime.open(
+                    data_sources=("line_tracker", "ultrasonic"),
+                    command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)},
+                    frequency="medium", data_queue_size=8) as session:
+                    run(session.data, session.commands)
+    except KeyboardInterrupt:
+        print("Ctrl+C 主动停机")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## 参数说明
+
+避障策略（`obstacle_policy.py`）：
+
+| 距离 | 动作 | 状态名 |
+| --- | --- | --- |
+| ≤ 100 mm | V/W 归零 | `stop` |
+| 100～300 mm | V/W 减半 | `slow` |
+| > 300 mm | 保持循迹 V/W | `normal` |
+| 无回波 | 保持 V/W | `clear` |
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `data_queue_size` | int | 8 | 两路数据交替到达，队列要够放 |
+| `frequency` | str | `medium` | 约 10 Hz |
+| `valid_for` | float | 0.35 秒 | 断流自动停 |
+
+## 预期效果与排查
+
+正常循迹时打印"分类: 循迹 避障: 距离正常"；手挡车前 30 cm 打印"靠近减速"、轮速减半；10 cm 内"遇障停机"；拿掉线后打印"丢失循迹线，程序结束"。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 打印 `waiting` 频繁 | 两路数据到达节奏不同 | 加大 `data_queue_size` |
+| 遇障后不恢复 | 手一直挡着 | 移开手即恢复（策略无锁存） |
+| 车贴着障碍才停 | 阈值偏小 | 改 `obstacle_policy.py` 的 `STOP_DISTANCE` |
