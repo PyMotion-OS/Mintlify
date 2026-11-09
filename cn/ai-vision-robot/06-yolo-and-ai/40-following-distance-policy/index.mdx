@@ -1,0 +1,144 @@
+---
+title: "6.11 跟随距离策略"
+description: "用框面积占比当远近，分档决定前进、减速、停止"
+---
+
+## 本页目标
+
+跟随不只是转向，还要**保持距离**。没有深度相机、没有测距雷达，就用最便宜的代餐：**检测框占画面的比例**。框大 = 近，框小 = 远。本页写成分档策略，先只显示意图、不驱动轮子 —— 把决策和执念分开，安全。
+
+## 前置条件
+
+- 完成 6.10
+- 同目录有 `target_selection.py`（6.9）、`yolo_detection.py`
+
+## 动手步骤
+
+**1. 新建 `40_following_distance_policy.py`**
+
+**2. 写入两个策略函数**
+
+```python
+def target_area_to_v(area_ratio):
+    """按框占比分三档：前进 / 减速 / 停止。"""
+    if area_ratio is None:
+        return 0, "lost"            # 没目标就停，绝不沿用上一次远近
+    if area_ratio >= 0.10:
+        return 0, "stop"            # 占画面 10% 以上：太近
+    if area_ratio >= 0.04:
+        return 40, "slow"           # 4%～10%：减速靠近
+    return 70, "forward"            # 小于 4%：目标较远，正常前进
+
+
+def choose_follow_motion(error_x, area_ratio, W=90):
+    """先判远近，再原地对准，最后才给前进速度。"""
+    if error_x is None or area_ratio is None:
+        return 0, 0, "lost"
+
+    v, state = target_area_to_v(area_ratio)
+    if state == "stop":
+        return 0, 0, state          # 太近时连转向也停
+    if error_x < -0.10:
+        return 0, W, "left"         # 目标在左：正 W = 原地左转
+    if error_x > 0.10:
+        return 0, -W, "right"       # 目标在右：负 W = 原地右转
+    return v, 0, state              # 已对准才允许前进
+```
+
+**3. `main()` 只观察不执行**
+
+```python
+import cv2
+from camera import Camera, log_message
+from target_selection import find_unique_target
+from yolo_detection import detect_objects, draw_follow_motion, load_yolo_resources
+
+CONFIDENCE = 0.25
+W = 90          # 原地转向速度 °/s
+
+
+def main():
+    try:
+        _, model = load_yolo_resources()
+        last_state, last_image = None, None
+        with Camera() as camera:
+            while True:
+                if cv2.waitKey(100) == 27:
+                    break
+                image = camera.latest()
+                if image is None or image is last_image:
+                    continue
+                last_image = image
+
+                detections, _ = detect_objects(model, image, CONFIDENCE)
+                target_data = find_unique_target(detections, image.shape, "person")
+
+                v, w, state = choose_follow_motion(
+                    target_data["error_x"], target_data["area_ratio"], W)
+
+                if state != last_state:
+                    log_message("INFO", "distance",
+                                f"跟随意图: {state}  V: {v} mm/s  W: {w} °/s")
+                    last_state = state
+
+                cv2.imshow("Following distance - Esc to close",
+                           draw_follow_motion(image, target_data, v, w, state))
+    except KeyboardInterrupt:
+        log_message("INFO", "distance", "Ctrl+C 主动结束")
+    except (OSError, ValueError, cv2.error) as exc:
+        log_message("ERROR", "distance", str(exc))
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**4. 运行：走近、走远、左右移动**，看终端打印的意图变化
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| 停止阈值 | float | **0.10** | 框占比 ≥10% 视为太近，V=0 |
+| 减速阈值 | float | **0.04** | 4%～10% 用 `SLOW_V=40` |
+| `V`（远/近） | int | 70 / 40 mm/s | 远快近慢，符合靠近时的安全直觉 |
+| `W` | float | 60～120 °/s | 原地转向速度 |
+| 死区 | float | ±0.10 | `error_x` 在此范围内才允许直行，防"边走边歪" |
+
+## 决策优先级
+
+```
+无目标 ──▶ (0, 0, lost)
+   │有目标
+太近(≥10%) ──▶ (0, 0, stop)          ← 连转向也不做
+   │不太近
+偏左/偏右(±10%) ──▶ (0, ±W, left/right)   ← 只原地转，不前进
+   │已对准
+按远近给 V ──▶ (70/40, 0, forward/slow)
+```
+
+这个顺序很重要：**先保证安全，再保证方向，最后才谈前进**。如果先给 V 再判断方向，就会出现"没对准还往前冲"。
+
+## area_ratio 的局限
+
+| 问题 | 说明 |
+| --- | --- |
+| 不是真实距离 | 同一个人在 1 米处站着和蹲着，框面积能差一倍 |
+| 受身高影响 | 成人和儿童同样距离，占比不同 |
+| 受类别影响 | `person` 的框比 `car` 稳定，换类别要重标阈值 |
+| 受分辨率影响 | 换摄像头必须重新标 4% / 10% 两个阈值 |
+
+要真距离得上深度相机或超声波。本页的做法胜在**零额外硬件**，适合"跟着人走"这类粗略场景。
+
+## 预期效果与排查
+
+屏幕显示 `V / W / state`。人走远 → `forward 70`；走近 → `slow 40`；很近 → `stop`；站到侧面 → `left/right` 且 V=0。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 一直 `forward` 不减速 | 阈值 0.10 太大 | 按实际画面把框占比打印出来再标定 |
+| 一直 `stop` | 人贴太近 / 阈值太小 | 退后，或提高停止阈值 |
+| 反复 `left`/`right` 抖 | 死区太小 | 把 ±0.10 放宽到 ±0.15 |
+| 没目标还在前进 | `area_ratio is None` 分支漏了 | 第一个判断必须是 None → 停 |

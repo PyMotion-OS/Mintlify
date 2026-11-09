@@ -1,0 +1,149 @@
+---
+title: "6.1 YOLO 图片检测"
+description: "用本地 yolo11n 模型检测一张静态图，理解 cls / conf / xyxy 三个关键字段"
+---
+
+## 本页目标
+
+第一次跑目标检测：一张静态图 → 一堆检测框。重点不是"模型多厉害"，而是**把模型输出整理成稳定字段**：`class_id`、`label`、`confidence`、`box`。后面 11 个例程全都依赖这套字段。
+
+## 前置条件
+
+- 上一级目录有 `common/`，内含 `yolo11n.pt`、`coco_labels.json`、`street.jpg`
+- 已 `pip install ultralytics`（不要装 `opencv-python-headless` 之外的额外包）
+
+## 动手步骤
+
+**1. 新建 `30_yolo_image_detection.py`**
+
+**2. 写入核心代码**
+
+```python
+from pathlib import Path
+import json
+import os
+import time
+import cv2
+import numpy as np
+
+CONFIDENCE = 0.25
+COMMON_DIR = Path(__file__).parents[1] / "common"
+IMAGE_PATH = COMMON_DIR / "street.jpg"
+
+
+def load_image():
+    return cv2.imdecode(np.fromfile(IMAGE_PATH, dtype=np.uint8), cv2.IMREAD_COLOR)
+
+
+def load_yolo_resources():
+    # 两行 env 必须在 import ultralytics 之前设置，否则第一次导入时就联网了
+    os.environ["YOLO_AUTOINSTALL"] = "false"
+    os.environ["YOLO_OFFLINE"] = "true"
+    from ultralytics import YOLO
+
+    label_items = json.loads((COMMON_DIR / "coco_labels.json").read_text(encoding="utf-8"))
+    labels = {item["id"]: item for item in label_items}      # id → {id, en, zh}
+    model = YOLO(str(COMMON_DIR / "yolo11n.pt"))            # 加载本地权重，不走网络
+    return labels, model
+
+
+def detect_objects(model, image, confidence, image_size=320):
+    start_time = time.monotonic()
+    yolo_results = model.predict(
+        image,
+        conf=confidence,          # 低于这个分数直接丢弃
+        imgsz=image_size,         # 输入尺寸，越小越快、远处细节越少
+        device="cpu",             # 电脑和树莓派都跑 CPU
+        verbose=False,            # 关掉 ultralytics 自带日志
+    )
+    yolo_result = yolo_results[0]
+
+    # 三个张量列表按位置一一对应：索引 i 描述同一个目标
+    print(f"类别编号 cls: {yolo_result.boxes.cls.cpu().tolist()}")
+    print(f"置信度 conf: {yolo_result.boxes.conf.cpu().tolist()}")
+    print(f"检测框 xyxy: {yolo_result.boxes.xyxy.cpu().tolist()}")
+
+    detections = []
+    for box in yolo_result.boxes:
+        class_id = int(box.cls.item())
+        detections.append({
+            "class_id": class_id,
+            "label": yolo_result.names[class_id],       # 英文规范名，筛选逻辑用它
+            "confidence": float(box.conf.item()),
+            "box": box.xyxy[0].cpu().tolist(),          # [x1, y1, x2, y2]
+        })
+    detection_time = (time.monotonic() - start_time) * 1000
+    return detections, detection_time
+
+
+def draw_detections(image, detections, detection_time):
+    marked_image = image.copy()
+    for detection in detections:
+        x1, y1, x2, y2 = [round(v) for v in detection["box"]]
+        cv2.rectangle(marked_image, (x1, y1), (x2, y2), (0, 140, 255), 3)
+        cv2.putText(marked_image, f"{detection['label']} {detection['confidence']:.2f}",
+                    (x1, max(25, y1 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 140, 255), 2)
+    cv2.putText(marked_image, f"objects={len(detections)}  time={detection_time:.0f} ms",
+                (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)
+    return marked_image
+
+
+def main():
+    image = load_image()
+    labels, model = load_yolo_resources()
+    detections, detection_time = detect_objects(model, image, CONFIDENCE, image_size=640)
+
+    print(f"\n检测数量: {len(detections)}")
+    print(f"检测耗时: {detection_time:.0f} ms")
+    for i, d in enumerate(detections, 1):
+        x1, y1, x2, y2 = d["box"]
+        print(f"目标 {i}: ID {d['class_id']:<2} 类别 {d['label']} / "
+              f"{labels[d['class_id']]['zh']}  置信度 {d['confidence']:.2f}  "
+              f"框 ({x1:.0f},{y1:.0f})-({x2:.0f},{y2:.0f})")
+
+    cv2.imshow("YOLO image detection - press any key",
+               draw_detections(image, detections, detection_time))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，看终端打印的三个列表和图上的框**
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `CONFIDENCE` | float | 0.1～0.5 | 阈值，调高只剩高把握结果；它不是"正确率" |
+| `imgsz` | int | 320 / 640 | 输入尺寸。320 快但小目标易漏，640 慢但准 |
+| `device` | str | `"cpu"` | 有 CUDA 可改 `"cuda"`，树莓派只能 cpu |
+| `YOLO_OFFLINE` | str | `"true"` | 禁止联网下载；必须在 import 前设置 |
+
+## 数据结构
+
+`detect_objects()` 返回 `(detections, ms)`，每个 detection：
+
+```python
+{
+    "class_id": 0,                       # COCO 类别编号，0=person
+    "label": "person",                   # 模型内英文规范名
+    "confidence": 0.87,                  # 0～1
+    "box": [102.4, 55.1, 240.9, 430.6],  # [x1, y1, x2, y2]，左上 / 右下
+}
+```
+
+NMS 之后结果**已按置信度降序排好**，所以 `detections[0]` 就是最可信的目标。
+
+## 预期效果与排查
+
+街道图上框出人、车等目标，左上角显示 `objects=N  time=XX ms`。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 首次运行卡住联网 | env 设置在 import 之后 | 两行 `os.environ` 必须在 `from ultralytics import YOLO` 之前 |
+| 一个目标都没框 | 阈值太高 / 图太暗 | 降到 0.15 试，或换图 |
+| 耗时 1 秒以上 | `imgsz=640` + CPU | 改 320，或换 GPU |
+| 中文类别显示成方块 | `cv2.putText` 不支持中文 | 界面用英文 `label`，中文只在终端打印 |

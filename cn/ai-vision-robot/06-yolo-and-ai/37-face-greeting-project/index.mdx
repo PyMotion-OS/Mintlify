@@ -1,0 +1,187 @@
+---
+title: "6.8 人脸问候项目"
+description: "识别到指定人后云台持续对准，累计够次数就点头打招呼"
+---
+
+## 本页目标
+
+第一个完整项目：**识别 + 跟踪 + 动作**。认出登记的人 → 云台转向他 → 拍够 N 张新图 → 点头两次。难点不在算法，在**别对同一张图重复计数**，以及动作期间要持续续发命令。
+
+## 前置条件
+
+- `common/faces.npz` 里有 `user01` 的特征（6.6 产生）
+- 同目录有 `camera.py`、`face_tools.py`、`servo_control.py`（5.2）
+- 完成 6.7、5.2
+
+## 动手步骤
+
+**1. 先让 `face_tools.py` 支持三个演进点**
+
+```python
+def get_quality_face(detector, image):
+    """返回唯一合格人脸的原始行；不合格时返回 None（不抛异常）。"""
+    detector.setInputSize((image.shape[1], image.shape[0]))
+    raw_faces = detector.detect(image)[1]
+    if raw_faces is None or len(raw_faces) != 1:
+        return None
+    raw_face = raw_faces[0]
+    face = {"box": [round(raw_face[0]), round(raw_face[1]),
+                    round(raw_face[2]), round(raw_face[3])]}
+    is_good, _ = check_face_quality(image, face)
+    return raw_face if is_good else None
+
+
+def get_face_feature(detector, recognizer, image, raw_face=None):
+    """可复用已检测到的 raw_face，避免每帧重复检测一次。"""
+    if raw_face is None:
+        raw_face = get_quality_face(detector, image)
+    if raw_face is None:
+        return None
+    aligned_face = recognizer.alignCrop(image, raw_face)
+    return recognizer.feature(aligned_face).reshape(-1)
+
+
+def identify_face(recognizer, query_feature, names, features, threshold=0.50):
+    ...
+```
+
+**2. 新建 `37_face_greeting_project.py`**
+
+```python
+import time
+import cv2
+import pymotion as pm
+from camera import Camera, log_message
+from face_tools import (create_face_detector, create_face_recognizer,
+                        draw_face_tracking, get_face_feature, get_quality_face,
+                        identify_face, load_feature_file)
+from servo_control import error_to_angle, move_servos, reset_servos
+
+K = 5                    # 每单位偏差调 5°
+REQUIRED_MATCHES = 20    # 累计命中 20 张新图即打招呼
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+def track_face(commands, raw_face, image_shape, person_name, up_down_angle, left_right_angle):
+    if person_name == "unknown":
+        return up_down_angle, left_right_angle      # 陌生人不动镜头
+
+    face_x, face_y, face_width, face_height = raw_face[:4]
+    image_height, image_width = image_shape[:2]
+    center_x = round(face_x + face_width / 2)
+    center_y = round(face_y + face_height / 2)
+
+    error_x = (center_x - image_width / 2) / (image_width / 2)     # 左负右正
+    error_y = (center_y - image_height / 2) / (image_height / 2)   # 上负下正
+
+    up_down_angle = error_to_angle(error_y, up_down_angle, K)
+    left_right_angle = error_to_angle(error_x, left_right_angle, -K)   # 左右反号
+    return move_servos(commands, up_down_angle, left_right_angle)
+
+
+def nod_camera(commands, up_down_angle, left_right_angle):
+    """围绕当前角度点头两次：抬头 → 低头 → 抬头 → 低头 → 回位。"""
+    for offset in (-10, 10, -10, 10):
+        move_servos(commands, up_down_angle + offset, left_right_angle)
+        time.sleep(0.2)                                # 0.2 秒 < 0.3 秒有效期，动作不会中断
+    move_servos(commands, up_down_angle, left_right_angle)
+    time.sleep(0.2)
+
+
+def run(camera, commands, up_down_angle, left_right_angle):
+    detector = create_face_detector()
+    recognizer = create_face_recognizer()
+    names, features = load_feature_file()
+    if not names:
+        print("登记内容: 为空，请先准备 common/faces.npz")
+        return
+
+    last_image = None       # 记住上一帧，避免同一张图重复计数
+    count = 0
+
+    while True:
+        if cv2.waitKey(100) == 27:
+            return
+
+        image = camera.latest()
+        if image is None or image is last_image:
+            continue                       # 关键：同一对象不重复处理
+        last_image = image
+
+        raw_face = get_quality_face(detector, image)
+        if raw_face is None:
+            draw_face_tracking(image, None, "no valid face", None)
+            continue
+
+        query_feature = get_face_feature(detector, recognizer, image, raw_face=raw_face)
+        person_name, score = identify_face(recognizer, query_feature, names, features)
+
+        up_down_angle, left_right_angle = track_face(
+            commands, raw_face, image.shape, person_name, up_down_angle, left_right_angle)
+        draw_face_tracking(image, raw_face, person_name, score)
+
+        if person_name == "user01":
+            count += 1
+        if count >= REQUIRED_MATCHES:
+            nod_camera(commands, up_down_angle, left_right_angle)
+            break
+
+
+def main():
+    try:
+        with Camera() as camera:
+            with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+                with robot.control():
+                    up_down_angle, left_right_angle = reset_servos(robot)
+                    with robot.realtime.open(
+                        command_targets={"pwm_position_servos": (4, 5)}
+                    ) as session:
+                        run(camera, session.commands, up_down_angle, left_right_angle)
+    except KeyboardInterrupt:
+        log_message("INFO", "face", "Ctrl+C 主动结束")
+    except (OSError, ValueError, KeyError, cv2.error, pm.lite.LiteError) as exc:
+        log_message("ERROR", "face", str(exc))
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行：让 `user01` 站到镜头前，保持十几秒**
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `K` | float | 3～8 | 云台跟随强度，太大抖动 |
+| `REQUIRED_MATCHES` | int | 10～30 | 计数门槛。太小会被同一张脸快速刷满，失去"确认"意义 |
+| `nod_camera` 偏移 | int | ±10° | 点头幅度，角度太大会顶到限位 |
+| `time.sleep(0.2)` | float | 0.2 秒 | 必须小于 `valid_for=0.3`，否则动作中途失效 |
+| 循环间隔 | int | 100 ms | 舵机调整最多约 10 次/秒 |
+
+## 三阶段流程
+
+```
+每帧: 取新图 ──▶ 质量+唯一人脸 ──▶ 1:N 识别
+                                      │
+                    user01 ──▶ 云台对准 + count++
+                    其它   ──▶ 云台不动
+                    无脸   ──▶ 保持角度
+                                      │
+                        count ≥ 20 ──▶ 点头两次 ──▶ 结束
+```
+
+## 预期效果与排查
+
+`user01` 出现后云台自动转向他并保持居中，累计够 20 帧后点头两次，程序退出、舵机松力。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 一秒就到 20 次 | 没做"同一张图不重复计数" | 用 `last_image` 比对对象身份 |
+| 点头到一半停住 | `sleep` 超过命令有效期 | 每步 ≤ 0.25 秒并持续续发 |
+| 陌生人也被跟 | `person_name == "unknown"` 分支被绕过 | `track_face` 开头就要 return |
+| 云台抖不停 | `K` 太大 + 死区太小 | `K` 降到 3，保留 `DEAD_ZONE=0.10` |
+| 人脸一变角度就 `unknown` | 库只有一张正脸特征 | 侧脸/不同光照各录一条，扩库 |

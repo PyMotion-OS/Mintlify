@@ -1,0 +1,144 @@
+---
+title: "6.4 人脸检测"
+description: "用 OpenCV 自带的 YuNet 检测人脸，取出框、五个关键点和置信度"
+---
+
+## 本页目标
+
+人脸不走 YOLO，用 OpenCV **自带**的 YuNet（`cv2.FaceDetectorYN`）：不用装额外框架，模型只有一个 onnx 文件。本页把模型输出的 15 个数字整理成 `box` / `landmarks` / `confidence` 三个字段。
+
+## 前置条件
+
+- `common/` 下有 `face_detection_yunet_2023mar.onnx`
+- 同目录有 `face_sample.png`（或用摄像头拍一张有授权的人像）
+- OpenCV ≥ 4.5.4（`FaceDetectorYN` 从这版才有）
+
+## 动手步骤
+
+**1. 新建 `33_face_detection.py`**
+
+**2. 写入核心代码**
+
+```python
+from pathlib import Path
+import cv2
+import numpy as np
+
+MIN_CONFIDENCE = 0.85
+COMMON_DIR = Path(__file__).parents[1] / "common"
+MODEL_PATH = COMMON_DIR / "face_detection_yunet_2023mar.onnx"
+IMAGE_PATH = Path(__file__).with_name("face_sample.png")
+
+
+def load_image():
+    return cv2.imdecode(np.fromfile(IMAGE_PATH, dtype=np.uint8), cv2.IMREAD_COLOR)
+
+
+def create_face_detector():
+    model_bytes = np.fromfile(MODEL_PATH, dtype=np.uint8)   # 用字节读取，兼容中文路径
+    return cv2.FaceDetectorYN.create(
+        "onnx",
+        model_bytes,
+        np.empty(0, np.uint8),      # YuNet 不需要额外配置文件
+        (320, 320),                 # 初始输入尺寸，仅占位
+        MIN_CONFIDENCE,
+    )
+
+
+def observe_faces(detector, image):
+    image_height, image_width = image.shape[0], image.shape[1]
+    detector.setInputSize((image_width, image_height))   # 必须设成真实尺寸，否则坐标对不上
+
+    detection_result = detector.detect(image)
+    raw_faces = detection_result[1]
+    if raw_faces is None:
+        return []
+
+    faces = []
+    for raw_face in raw_faces:
+        face_x, face_y = round(raw_face[0]), round(raw_face[1])
+        face_width, face_height = round(raw_face[2]), round(raw_face[3])
+
+        # 第 4～13 个数：五组关键点 (x, y)，第 14 个数是置信度
+        landmarks = [
+            [float(raw_face[4]),  float(raw_face[5])],    # 右眼
+            [float(raw_face[6]),  float(raw_face[7])],    # 左眼
+            [float(raw_face[8]),  float(raw_face[9])],    # 鼻尖
+            [float(raw_face[10]), float(raw_face[11])],   # 右嘴角
+            [float(raw_face[12]), float(raw_face[13])],   # 左嘴角
+        ]
+        faces.append({
+            "box": [face_x, face_y, face_width, face_height],   # 左上角 + 宽高，注意不是 x2/y2
+            "landmarks": landmarks,
+            "confidence": float(raw_face[14]),
+        })
+    return faces
+
+
+def draw_faces(image, faces):
+    marked_image = image.copy()
+    for face in faces:
+        face_x, face_y, face_width, face_height = face["box"]
+        cv2.rectangle(marked_image, (face_x, face_y),
+                      (face_x + face_width, face_y + face_height), (0, 200, 0), 3)
+        for point in face["landmarks"]:
+            cv2.circle(marked_image, (round(point[0]), round(point[1])), 4, (0, 176, 255), -1)
+        cv2.putText(marked_image, f"face {face['confidence']:.2f}",
+                    (face_x, max(25, face_y - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 200, 0), 2)
+    return marked_image
+
+
+def main():
+    image = load_image()
+    detector = create_face_detector()
+    faces = observe_faces(detector, image)
+    print(f"人脸数量: {len(faces)}")
+    cv2.imshow("Face detection - press any key", draw_faces(image, faces))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，看绿框 + 5 个橘点**
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `MIN_CONFIDENCE` | float | 0.7～0.9 | YuNet 建议 0.85，调低会出更多误检 |
+| 初始尺寸 `(320, 320)` | tuple | — | 只是创建检测器的占位，**每次检测必须 `setInputSize`** |
+| `box` 含义 | list | `[x, y, w, h]` | 与 YOLO 的 `[x1,y1,x2,y2]` **不同**，别混用 |
+
+## 数据结构
+
+`observe_faces()` 返回的每个 face：
+
+```python
+{
+    "box": [180, 120, 160, 190],        # 左上角 x/y + 宽高
+    "landmarks": [
+        [212.4, 178.1],   # 右眼
+        [286.7, 176.5],   # 左眼
+        [249.2, 224.8],   # 鼻尖
+        [216.0, 268.3],   # 右嘴角
+        [283.5, 266.9],   # 左嘴角
+    ],
+    "confidence": 0.962,
+}
+```
+
+landmarks 的用途：判断正脸/侧脸、估算人脸角度、做对齐（后续 6.6 特征比对会用到）。
+
+## 预期效果与排查
+
+人脸上有绿框和 5 个橘色关键点，左上角标出置信度。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 一张脸都不出 | 忘了 `setInputSize` | 检测前必须设成图片真实尺寸 |
+| 框位置整体偏移 | `setInputSize` 传了 320×320 | 传 `(width, height)`，注意顺序是宽在前 |
+| 报 onnx 加载失败 | 模型路径含中文 | 用 `np.fromfile` 读字节再传，不要传路径字符串 |
+| 只能检测到最大的一张脸 | 阈值太高 / 人脸太小 | 降到 0.7，或让人靠近摄像头 |

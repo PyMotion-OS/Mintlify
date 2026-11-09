@@ -1,0 +1,169 @@
+---
+title: "6.3 目标跟踪"
+description: "用 ByteTrack 给同一目标持续编号，锁定后不自动换人"
+---
+
+## 本页目标
+
+检测只是"这一帧有哪些目标"，跟踪解决的是"**还是不是刚才那个**"。`model.track()` 会给每个目标一个持续 `track_id`，本页再实现一套选择策略：第一次选面积最大的，之后只认这个 ID，丢了也不自动换人。
+
+## 前置条件
+
+- 完成 6.2
+- 同目录有 `camera.py`、`yolo_detection.py`（6.1）
+
+## 动手步骤
+
+**1. 新建 `32_object_tracking.py`**
+
+**2. 写入核心代码**
+
+```python
+import time
+import cv2
+from camera import Camera, log_message
+from yolo_detection import IMAGE_SIZE, load_yolo_resources
+
+TARGET_LABEL = "person"
+CONFIDENCE = 0.25
+
+
+def track_objects(model, image, confidence):
+    start_time = time.monotonic()
+    tracking_results = model.track(
+        image,
+        persist=True,                 # 保留上一帧的目标关系和编号，必须开
+        tracker="bytetrack.yaml",     # ultralytics 自带配置，不用自己写跟踪算法
+        conf=confidence,
+        imgsz=IMAGE_SIZE,
+        device="cpu",
+        verbose=False,
+    )
+    yolo_result = tracking_results[0]
+
+    tracks = []
+    if yolo_result.boxes.id is not None:      # 第一帧可能还没分配 id，必须判空
+        for box in yolo_result.boxes:
+            class_id = int(box.cls.item())
+            tracks.append({
+                "track_id": int(box.id.item()),        # 同一目标在连续帧中保持不变
+                "class_id": class_id,
+                "label": yolo_result.names[class_id],
+                "confidence": float(box.conf.item()),
+                "box": box.xyxy[0].cpu().tolist(),
+            })
+
+    tracking_time = (time.monotonic() - start_time) * 1000
+    return tracks, tracking_time
+
+
+def choose_target(tracks, selected_id, target_label):
+    """首次选面积最大的同类目标；之后只认同一个 track_id，丢了也不换人。"""
+    candidates = [t for t in tracks if t["label"] == target_label]
+
+    if selected_id is None and candidates:
+        largest, largest_area = candidates[0], 0
+        for candidate in candidates:
+            x1, y1, x2, y2 = candidate["box"]
+            area = (x2 - x1) * (y2 - y1)
+            if area > largest_area:
+                largest, largest_area = candidate, area
+        selected_id = largest["track_id"]
+
+    for candidate in candidates:
+        if candidate["track_id"] == selected_id:
+            return candidate, selected_id       # 编号还在，继续跟
+
+    return None, selected_id                    # 目标丢失：保留编号，本帧不产生目标
+
+
+def draw_tracks(image, tracks, selected_id, target_label, tracking_time):
+    marked_image = image.copy()
+    for track in tracks:
+        if track["label"] != target_label:
+            continue
+        x1, y1, x2, y2 = [round(v) for v in track["box"]]
+        color = (0, 0, 255) if track["track_id"] == selected_id else (0, 140, 255)  # 红=锁定，橘=候选
+        cv2.rectangle(marked_image, (x1, y1), (x2, y2), color, 3)
+        cv2.putText(marked_image, f"{track['label']}  ID {track['track_id']}  {track['confidence']:.2f}",
+                    (x1, max(25, y1 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+    cv2.putText(marked_image, f"time={tracking_time:.0f} ms",
+                (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)
+    return marked_image
+
+
+def main():
+    _, model = load_yolo_resources()
+    selected_id = None
+    last_state = None
+    try:
+        with Camera() as camera:
+            while True:
+                if cv2.waitKey(1) == 27:
+                    break
+                image = camera.latest()
+                if image is None:
+                    continue
+
+                tracks, tracking_time = track_objects(model, image, CONFIDENCE)
+                target, selected_id = choose_target(tracks, selected_id, TARGET_LABEL)
+                state = "tracking" if target is not None else "lost"
+
+                if (state, selected_id) != last_state:
+                    log_message("INFO", "tracking", f"状态: {state}  编号: {selected_id}")
+                    last_state = (state, selected_id)
+
+                cv2.imshow("Object tracking - Esc to close",
+                           draw_tracks(image, tracks, selected_id, TARGET_LABEL, tracking_time))
+    except ValueError as exc:
+        log_message("ERROR", "tracking", str(exc))
+    except KeyboardInterrupt:
+        log_message("INFO", "tracking", "Ctrl+C 主动结束")
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行：先让一个人站到画面中间，再让第二个人进来**
+
+第二个人只会是橘框，红框始终跟着第一个人 —— 这就是"不自动换人"。
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `TARGET_LABEL` | str | `"person"` | 只跟踪这个 COCO 类别名 |
+| `persist` | bool | **True** | 必须开，否则每帧重新分配编号 |
+| `tracker` | str | `"bytetrack.yaml"` | ultralytics 内置，无需自己提供文件 |
+| `track_id` | int | 递增整数 | 目标连续出现时保持不变，消失久了会换号 |
+| `CONFIDENCE` | float | 0.25 | 跟踪场景别太低，误检会导致频繁换号 |
+
+## 数据结构
+
+`track_objects()` 返回的 `tracks[i]`（比 6.1 多一个 `track_id`）：
+
+```python
+{
+    "track_id": 3,                        # 持续编号；丢失后重新出现可能变号
+    "class_id": 0,
+    "label": "person",
+    "confidence": 0.91,
+    "box": [102.4, 55.1, 240.9, 430.6],
+}
+```
+
+`choose_target()` 返回 `(target 或 None, selected_id)`：`selected_id` **不会被重置**，所以目标重新出现后如果号还一样，会自动续上。
+
+## 预期效果与排查
+
+红框死死跟着第一个人，第二个人进来只有橘框；终端在状态或编号变化时打印一行。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 每帧编号都在变 | 没开 `persist=True` | 必须开 |
+| 报 `boxes.id is None` | 第一帧还没分配 ID | 判空后再遍历，本页已处理 |
+| 目标走开再回来换了号 | ByteTrack 的轨迹过期 | 调 `tracker` 配置里的 `track_buffer`，或接受换号 |
+| 跟踪框跟不上 | 帧率太低 | 回到 6.2 检查 `imgsz` |

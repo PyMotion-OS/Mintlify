@@ -1,0 +1,91 @@
+---
+title: "6.2 YOLO 实时检测"
+description: "把检测接到摄像头循环里，用 320 输入尺寸换实时帧率"
+---
+
+## 本页目标
+
+从静态图切到实时流。关键取舍：**`imgsz` 从 640 降到 320**，单帧耗时从几百毫秒降到几十毫秒，画面才跟得上。检测函数一行不改，只换成摄像头喂图。
+
+## 前置条件
+
+- 完成 6.1
+- 同目录有 `camera.py`（4.9 最终版）、`yolo_detection.py`（6.1 抽出的三个函数）
+
+## 动手步骤
+
+**1. 把 6.1 的三个函数抽进 `yolo_detection.py`**，并把输入尺寸提为模块常量
+
+```python
+COMMON_DIR = Path(__file__).parents[1] / "common"
+LABELS_PATH = COMMON_DIR / "coco_labels.json"
+MODEL_PATH = COMMON_DIR / "yolo11n.pt"
+IMAGE_SIZE = 320        # 实时场景固定 320，兼顾速度和精度
+```
+
+**2. 新建 `31_yolo_live_detection.py`，主程序只有十几行**
+
+```python
+import cv2
+from camera import Camera, log_message
+from yolo_detection import detect_objects, draw_detections, load_yolo_resources
+
+CONFIDENCE = 0.25
+
+
+def main():
+    _, model = load_yolo_resources()          # 模型只加载一次，别放进循环
+    try:
+        with Camera() as camera:
+            while True:
+                if cv2.waitKey(1) == 27:
+                    break
+                image = camera.latest()       # 0.5 秒内的新图，否则 None
+                if image is None:
+                    continue
+
+                detections, detection_time = detect_objects(model, image, CONFIDENCE)
+                cv2.imshow("YOLO live detection - Esc to close",
+                           draw_detections(image, detections, detection_time))
+    except ValueError as exc:
+        log_message("ERROR", "yolo", str(exc))
+    except KeyboardInterrupt:
+        log_message("INFO", "yolo", "Ctrl+C 主动结束")
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，`Esc` 退出**，看左上角 `time=` 的数值
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `IMAGE_SIZE` | int | **320** | 实时必须降到 320，640 在 CPU 上只能跑 1～3 FPS |
+| `CONFIDENCE` | float | 0.25 | 实时场景别调太低，误检多会拖慢绘图 |
+| 模型加载位置 | — | 循环外 | 每次循环 `YOLO(...)` 会重复读盘，极慢 |
+| 取图方式 | — | `camera.latest()` | 自带过期判断，旧帧不会送进模型 |
+
+## 性能参考（CPU）
+
+| 输入尺寸 | 单帧耗时 | 实际可用帧率 |
+| --- | --- | --- |
+| 640 | 300～700 ms | 1～3 FPS，明显卡顿 |
+| 320 | 60～150 ms | 6～12 FPS，可用 |
+
+树莓派上大约是上面的 2～4 倍，所以模块 8 有专门的性能实测例程。
+
+## 预期效果与排查
+
+画面流畅，人走过时框跟着移动，左上角 `time` 稳定在几十到一百多毫秒。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 画面一帧一顿 | 还在用 640 | 改 `IMAGE_SIZE = 320` |
+| 启动等十几秒才出画面 | 模型加载 + 首次推理预热 | 正常，模型加载不要放进循环 |
+| 内存持续上涨 | 每轮 `results` 没释放 | 只保留整理后的 `detections`，别存 `yolo_result` |
+| 越跑越慢 | 在循环里新建 `YOLO()` | 挪到循环外，只建一次 |

@@ -1,0 +1,115 @@
+---
+title: "6.10 YOLO 目标居中"
+description: "把 6.9 的目标偏差接到双舵机，云台自动对准人"
+---
+
+## 本页目标
+
+6.2 的偏差、6.9 的唯一目标、5.2 的舵机控制，三者拼起来：**云台自动把人放到画面正中**。代码几乎没有新东西，重点是理解"没有目标时如何保持不变"。
+
+## 前置条件
+
+- 完成 6.9（`find_unique_target`）、5.2（`error_to_angle` / `move_servos` / `reset_servos`）
+- 同目录有 `camera.py`、`yolo_detection.py`、`servo_control.py`、`target_selection.py`
+
+## 动手步骤
+
+**1. 新建 `39_yolo_target_centering.py`**
+
+**2. 写入核心代码**
+
+```python
+import cv2
+import pymotion as pm
+from camera import Camera, log_message
+from servo_control import error_to_angle, move_servos, reset_servos
+from target_selection import find_unique_target
+from yolo_detection import detect_objects, draw_servo_tracking, load_yolo_resources
+
+CONFIDENCE = 0.25
+K = 5                     # 偏差为 1 时调 5°
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+def follow_target(commands, target_data, up_down_angle, left_right_angle):
+    # 无目标时 error_* 是 None，error_to_angle 会原样返回当前角度 —— 云台保持不动
+    up_down_angle = error_to_angle(target_data["error_y"], up_down_angle, K)
+    left_right_angle = error_to_angle(target_data["error_x"], left_right_angle, -K)
+    return move_servos(commands, up_down_angle, left_right_angle)
+
+
+def run(camera, commands, up_down_angle, left_right_angle):
+    _, model = load_yolo_resources()
+    last_image = None
+    while True:
+        if cv2.waitKey(100) == 27:
+            return
+
+        image = camera.latest()
+        if image is None or image is last_image:
+            continue                    # 同一张图不重复调角，否则角度会累积漂移
+        last_image = image
+
+        detections, _ = detect_objects(model, image, CONFIDENCE)
+        target_data = find_unique_target(detections, image.shape, "person")
+
+        up_down_angle, left_right_angle = follow_target(
+            commands, target_data, up_down_angle, left_right_angle)
+
+        cv2.imshow("YOLO servo centering - Esc to close",
+                   draw_servo_tracking(image, target_data, up_down_angle, left_right_angle))
+
+
+def main():
+    try:
+        with Camera() as camera:
+            with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+                with robot.control():
+                    up_down_angle, left_right_angle = reset_servos(robot)
+                    with robot.realtime.open(
+                        command_targets={"pwm_position_servos": (4, 5)}
+                    ) as session:
+                        run(camera, session.commands, up_down_angle, left_right_angle)
+    except KeyboardInterrupt:
+        log_message("INFO", "servo", "Ctrl+C 主动结束")
+    except (OSError, ValueError, cv2.error, pm.lite.LiteError) as exc:
+        log_message("ERROR", "servo", str(exc))
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，人左右走动**，云台应反向跟随；走开时云台定住不动
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `K` | float | 3～8 | 跟随强度。YOLO 帧率比颜色低，`K` 太大会一顿一顿 |
+| `last_image` | — | — | **必须做去重**，否则同一帧被多次处理，角度累加到边界 |
+| 循环等待 | int | 100 ms | 加上推理耗时，实际约 5～10 Hz |
+| `error_to_angle` 的 None 处理 | — | — | 目标丢失时返回原角度，这是"保持"的实现方式 |
+
+## 与 5.2 的关键差别
+
+| 项目 | 5.2 颜色跟随 | 6.10 YOLO 跟随 |
+| --- | --- | --- |
+| 帧率 | 10 Hz（快） | 5～10 Hz（受推理限制） |
+| 目标丢失语义 | `lost`，云台保持 | `lost` / `ambiguous` 都保持 |
+| 去重 | 靠帧编号 | 靠 `last_image` 对象比对 |
+| `K` 建议 | 5～10 | 3～6，帧率低时 `K` 大容易过冲 |
+
+## 预期效果与排查
+
+人站着不动时云台稳定不动；左右走动时云台平滑跟随；人走开后云台停在原角度。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 云台一路顶到限位不动 | 没做 `last_image` 去重，角度累加 | 加去重判断 |
+| 跟随一顿一顿 | 推理慢 + `K` 大 | 降 `K` 到 3，`imgsz` 保持 320 |
+| 人不在了云台还在动 | `error_*` 有值但 state 是 `ambiguous` | 先判 `state == "target"` 再调角 |
+| 反向跟随 | 左右符号错 | S5 用 `-K` |

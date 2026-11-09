@@ -1,0 +1,133 @@
+---
+title: "6.5 人脸质量评估"
+description: "查数量、完整度、尺寸、亮度、清晰度，不合格就别进特征提取"
+---
+
+## 本页目标
+
+人脸检测出框，不代表这张脸**能用**。太暗、太糊、太小、出界，拿去算特征只会得到垃圾结果。本页加一道闸门：五项检查都过才允许后续识别。
+
+## 前置条件
+
+- 完成 6.4
+- 同目录有 `face_tools.py`（6.4 抽出的检测与绘制）
+
+## 动手步骤
+
+**1. 新建 `34_face_quality.py`**
+
+**2. 写入核心检查函数**
+
+```python
+import cv2
+from face_tools import create_face_detector, draw_faces, load_image, observe_faces
+
+MIN_FACE_SIZE = 80        # 宽高都要 ≥ 80 像素
+MIN_BRIGHTNESS = 45       # 平均亮度下限
+MAX_BRIGHTNESS = 210      # 平均亮度上限
+MIN_SHARPNESS = 100.0     # 拉普拉斯方差下限
+
+
+def check_face_quality(image, face):
+    face_x, face_y, face_width, face_height = face["box"]
+    image_height, image_width = image.shape[0], image.shape[1]
+
+    # 检查一：完整度——框出界就说明脸没拍全
+    if (face_x < 0 or face_y < 0
+            or face_x + face_width > image_width
+            or face_y + face_height > image_height):
+        return False, None, None, "人脸不完整，请让整张脸进入图片"
+
+    # 检查二：尺寸
+    if face_width < MIN_FACE_SIZE or face_height < MIN_FACE_SIZE:
+        return False, None, None, "人脸太小，请靠近摄像头"
+
+    face_image = image[face_y:face_y + face_height, face_x:face_x + face_width]
+    standard_face = cv2.resize(face_image, (112, 112))      # 统一尺寸，阈值才有可比性
+    gray_face = cv2.cvtColor(standard_face, cv2.COLOR_BGR2GRAY)
+
+    # 检查三、四：亮度
+    brightness = float(gray_face.mean())
+    # 检查五：清晰度——拉普拉斯响应的方差，越糊越小
+    edges = cv2.Laplacian(gray_face, cv2.CV_64F)
+    sharpness = float(edges.var())
+
+    reasons = []
+    if brightness < MIN_BRIGHTNESS:
+        reasons.append("人脸过暗")
+    if brightness > MAX_BRIGHTNESS:
+        reasons.append("人脸过亮")
+    if sharpness < MIN_SHARPNESS:
+        reasons.append("人脸模糊")
+    if reasons:
+        return False, brightness, sharpness, "、".join(reasons) + "，请重新拍摄"
+    return True, brightness, sharpness, "人脸质量合格，可以进入后续特征提取"
+```
+
+**3. `main()` 里先卡数量，再卡质量**
+
+```python
+def main():
+    image = load_image()
+    detector = create_face_detector()
+    faces = observe_faces(detector, image)
+    marked_image = draw_faces(image, faces)
+
+    if len(faces) != 1:          # 特征比对只能对应一个人
+        print(f"质量判断: 不合格，人脸数量应为 1，当前为 {len(faces)}")
+        cv2.imshow("Face quality - press any key", marked_image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        return
+
+    face = faces[0]
+    is_good, brightness, sharpness, reason = check_face_quality(image, face)
+    print(f"检测置信度: {face['confidence']:.3f}")
+    print(f"人脸尺寸: {face['box'][2]} x {face['box'][3]}")
+    if brightness is None:
+        print("平均亮度: 未检查\n清晰度: 未检查")
+    else:
+        print(f"平均亮度: {brightness:.1f}\n清晰度: {sharpness:.1f}")
+    print(f"质量判断: {reason}")
+
+    color, text = ((0, 200, 0), "quality: pass") if is_good else ((0, 0, 255), "quality: retry")
+    cv2.putText(marked_image, text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+    cv2.imshow("Face quality - press any key", marked_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+```
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `MIN_FACE_SIZE` | int | 60～120 | 太小识别不准，太大人得贴脸 |
+| `MIN_BRIGHTNESS` | float | 30～60 | 灰度均值，低于它算过暗 |
+| `MAX_BRIGHTNESS` | float | 190～230 | 高于它算过曝，高光会把特征冲掉 |
+| `MIN_SHARPNESS` | float | 50～200 | `Laplacian().var()`，光照和镜头都会影响，**换场地要重标** |
+| 统一尺寸 `112×112` | tuple | 固定 | 不统一尺寸，亮度和清晰度阈值就失去可比性 |
+
+## 检查顺序
+
+```
+数量 = 1 ? ──否──▶ 直接不合格（不再查其他项）
+   │是
+完整度（不越界）──否──▶ 不合格
+   │是
+尺寸 ≥ 80 ──否──▶ 不合格（不查亮度/清晰度，返回 None）
+   │是
+亮度 45～210、清晰度 ≥ 100 ──否──▶ 全部列出原因（可能同时过暗+模糊）
+```
+
+注意：完整度和尺寸不通过时，`brightness` / `sharpness` 返回 `None`，打印时要判空，别直接 `.1f`。
+
+## 预期效果与排查
+
+正对光、离得近的一张脸 → `quality: pass`，绿字；拉远或逆光 → `quality: retry`，红字 + 具体原因。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 明明很清楚却报模糊 | 场地光照变了 | 重新标 `MIN_SHARPNESS`，它和光照强相关 |
+| 总是"人脸太小" | 摄像头分辨率或距离 | 靠近摄像头，或降低 `MIN_FACE_SIZE` |
+| 打印报 `TypeError` | `brightness` 是 `None` 还格式化 | 先判空再打印 |
+| 总是"不完整" | 人脸贴着画面边缘 | 正常保护，让用户退后一点 |

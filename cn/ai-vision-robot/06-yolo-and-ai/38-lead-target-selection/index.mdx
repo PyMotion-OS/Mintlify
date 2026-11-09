@@ -1,0 +1,145 @@
+---
+title: "6.9 主目标选择"
+description: "三态判定 target / lost / ambiguous，宁可不动也不猜错人"
+---
+
+## 本页目标
+
+画面里有 3 个人，跟谁？本页定一条安全策略：**只有一个候选才跟，多个人一律 `ambiguous` 不动**。这是后面 6.10、6.11 跟随功能的前提 —— 猜错目标比跟丢更糟。
+
+## 前置条件
+
+- 完成 6.2（实时检测）、6.3（知道 `track_id`）
+- 同目录有 `camera.py`、`yolo_detection.py`（6.2）
+
+## 动手步骤
+
+**1. 新建 `target_selection.py`，只放选择逻辑**
+
+```python
+def find_unique_target(detections, image_shape, target_label):
+    """筛选指定类别，返回三态观测：target / lost / ambiguous。"""
+    candidates = [d for d in detections if d["label"] == target_label]
+
+    # 没找到：用 None，不要写 0 —— 0 会被下游误认为"已经居中"
+    if len(candidates) == 0:
+        return {"state": "lost", "error_x": None, "error_y": None,
+                "area_ratio": None, "box": None}
+
+    # 找到多个：不猜，交给上层决定等一等
+    if len(candidates) > 1:
+        return {"state": "ambiguous", "error_x": None, "error_y": None,
+                "area_ratio": None, "box": None}
+
+    x1, y1, x2, y2 = candidates[0]["box"]
+    image_height, image_width = image_shape[:2]
+
+    error_x = ((x1 + x2) / 2 - image_width / 2) / (image_width / 2)    # 左负右正
+    error_y = ((y1 + y2) / 2 - image_height / 2) / (image_height / 2)  # 上负下正
+    area_ratio = (x2 - x1) * (y2 - y1) / (image_width * image_height)  # 框占全图比例
+
+    return {"state": "target", "error_x": error_x, "error_y": error_y,
+            "area_ratio": area_ratio, "box": candidates[0]["box"]}
+```
+
+**2. 新建 `38_lead_target_selection.py`**
+
+```python
+import cv2
+from camera import Camera, log_message
+from yolo_detection import detect_objects, draw_target, load_yolo_resources
+
+CONFIDENCE = 0.25
+
+
+def main():
+    try:
+        _, model = load_yolo_resources()
+        last_state, last_image = None, None
+        with Camera() as camera:
+            while True:
+                if cv2.waitKey(100) == 27:
+                    break
+                image = camera.latest()
+                if image is None or image is last_image:
+                    continue                     # 只处理新图，避免重复推理
+                last_image = image
+
+                detections, _ = detect_objects(model, image, CONFIDENCE)
+                target_data = find_unique_target(detections, image.shape, "person")
+
+                if target_data["state"] != last_state:
+                    log_message("INFO", "target", f"目标状态: {target_data['state']}")
+                    last_state = target_data["state"]
+
+                cv2.imshow("Unique target - Esc to close",
+                           draw_target(image, target_data))
+    except KeyboardInterrupt:
+        log_message("INFO", "target", "Ctrl+C 主动结束")
+    except (OSError, ValueError, cv2.error) as exc:
+        log_message("ERROR", "target", str(exc))
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行：先一个人站着，再让第二个人走进画面**
+
+只有一个时正常显示偏差；第二个人一进来立即变 `ambiguous`，偏差变 `None`。
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `target_label` | str | `"person"` | 只统计这个 COCO 类别 |
+| `CONFIDENCE` | float | 0.25 | 阈值低会导致多人误判成 `ambiguous` |
+| `area_ratio` | float | 0～1 | 框面积占比，可当"远近"用（6.11 用它判距离） |
+| `error_x` / `error_y` | float 或 None | -1～+1 | **只有 `target` 态才不是 None** |
+
+## 数据结构
+
+`find_unique_target()` 的三种返回：
+
+```python
+# 唯一目标
+{"state": "target", "error_x": 0.12, "error_y": -0.08,
+ "area_ratio": 0.18, "box": [102.4, 55.1, 240.9, 430.6]}
+
+# 画面里没有人
+{"state": "lost", "error_x": None, "error_y": None, "area_ratio": None, "box": None}
+
+# 有两个人以上
+{"state": "ambiguous", "error_x": None, "error_y": None, "area_ratio": None, "box": None}
+```
+
+下游控制的写法一定是 **先判 state，再取值**：
+
+```python
+if target_data["state"] == "target":
+    ...用 error_x / area_ratio...
+else:
+    ...停车或保持角度...
+```
+
+## 三态的取舍
+
+| 方案 | 好处 | 代价 |
+| --- | --- | --- |
+| 多人时选面积最大的（6.3 的做法） | 总有一个目标，动作连续 | 可能跟错人，人一交叉就换 |
+| 多人时返回 `ambiguous`（本页） | 绝不跟错，安全 | 有人路过就暂停 |
+
+本页选后者：**跟随类任务的失败模式是"跟错人"，比"暂停"严重得多**。如果场景只会有一个人，用 6.3 的方案更流畅。
+
+## 预期效果与排查
+
+单人时框和偏差正常；两人同框立刻 `ambiguous`。终端只在状态变化时打印。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 单人却报 `ambiguous` | 误检出第二个人 | 提高 `CONFIDENCE` 到 0.35 |
+| `error_x` 是 `None` 还做运算 | 没先判 `state` | 所有下游取值前必须判 state |
+| 状态一直 `lost` | 人太远/太小 | 靠近，或降到 `imgsz=640` 提精度 |
+| 状态频繁跳变 | 置信度阈值卡在临界 | 加"连续 N 帧才切换"的确认逻辑 |

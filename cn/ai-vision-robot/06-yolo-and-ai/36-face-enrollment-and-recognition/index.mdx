@@ -1,0 +1,162 @@
+---
+title: "6.7 人脸录入与识别"
+description: "读 NPZ 特征库，实时视频里 1:N 比对，输出代号或 unknown"
+---
+
+## 本页目标
+
+把 6.6 的"两两比对"扩成 **1:N 识别**：特征库里存多个人，实时画面里每帧提特征，和每个人算一遍相似度，取最高分。分够就返回代号，不够就 `unknown`。
+
+## 前置条件
+
+- 先把 6.6 的 `faces.npz` 复制到 `common/` 下（路径是 `common/faces.npz`）
+- 同目录有 `camera.py`、`face_tools.py`
+- 完成 6.6
+
+## 动手步骤
+
+**1. 在 `face_tools.py` 里调整两处**
+
+```python
+FEATURE_FILE = COMMON_DIR / "faces.npz"     # 识别阶段统一读 common 里的库
+
+
+def get_face_feature(detector, recognizer, image):
+    raw_face = get_quality_face(detector, image)
+    if raw_face is None:                     # 实时场景：没有合格人脸返回 None，不抛异常
+        return None
+    aligned_face = recognizer.alignCrop(image, raw_face)
+    return recognizer.feature(aligned_face).reshape(-1)
+
+
+def draw_faces(image, person_name, score):
+    marked_image = image.copy()
+    text = person_name
+    if score is not None:
+        text += f"  score={score:.3f}"
+    cv2.rectangle(marked_image, (10, 65), (650, 120), (32, 32, 32), -1)
+    cv2.putText(marked_image, text, (20, 105), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)
+    return marked_image
+```
+
+**2. 新建 `36_face_enrollment_and_recognition.py`**
+
+```python
+from pathlib import Path
+import cv2
+import numpy as np
+from camera import Camera, log_message
+from face_tools import (compare_face_features, create_face_detector,
+                        create_face_recognizer, draw_faces, get_face_feature)
+
+MATCH_THRESHOLD = 0.50
+FEATURE_FILE = Path(__file__).parents[1] / "common" / "faces.npz"
+
+
+def load_feature_file():
+    if not FEATURE_FILE.exists():
+        return [], []                       # 空库，交给主程序提示
+    with np.load(FEATURE_FILE, allow_pickle=False) as f:
+        names = f["names"].tolist()         # 第 i 个名字 ↔ 第 i 行特征
+        features = list(f["features"])
+    return names, features
+
+
+def identify_face(recognizer, query_feature, names, features, threshold):
+    if not names:
+        return "unknown", 0.0
+
+    best_name, best_score = "unknown", -1.0
+    for index in range(len(names)):         # 1:N，逐个比
+        score = compare_face_features(recognizer, features[index], query_feature)
+        if score > best_score:
+            best_name, best_score = names[index], score
+
+    if best_score < threshold:
+        return "unknown", best_score        # 拒绝匹配，但把真实分数返回便于观察
+    return best_name, best_score
+
+
+def main():
+    try:
+        detector = create_face_detector()
+        recognizer = create_face_recognizer()
+        names, features = load_feature_file()
+        if not names:
+            print("登记内容: 为空，请先用例程 6.6 准备 common/faces.npz")
+            return
+
+        last_name = None
+        with Camera() as camera:
+            while True:
+                if cv2.waitKey(20) == 27:
+                    break
+                image = camera.latest()
+                if image is None:
+                    continue
+
+                query_feature = get_face_feature(detector, recognizer, image)
+                if query_feature is None:
+                    person_name, score = "no valid face", None
+                    message = "人脸状态: 请让一张清晰完整的人脸进入画面"
+                else:
+                    person_name, score = identify_face(recognizer, query_feature,
+                                                       names, features, MATCH_THRESHOLD)
+                    message = f"识别代号: {person_name}  相似度: {score:.3f}"
+
+                if person_name != last_name:      # 只在变化时打印，别每帧刷屏
+                    print(message)
+                    last_name = person_name
+
+                cv2.imshow("Face recognition - Esc to close",
+                           draw_faces(image, person_name, score))
+    except KeyboardInterrupt:
+        log_message("INFO", "face", "Ctrl+C 主动结束")
+    except (OSError, ValueError, KeyError, cv2.error) as exc:
+        log_message("ERROR", "face", str(exc))
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，站到镜头前**，先看到自己登记的代号；换个人应显示 `unknown`
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `MATCH_THRESHOLD` | float | 0.36～0.50 | 库小可以放到 0.50；库大要降，否则容易误拒 |
+| `allow_pickle` | bool | **False** | 只用纯数值/文字数组，更安全 |
+| 库规模 N | int | — | 每帧比 N 次，N 大了会拖慢，超过几十人要考虑索引方案 |
+| `no valid face` | str | — | 没有合格人脸时的占位，和 `unknown` 区分开 |
+
+## 数据结构
+
+`load_feature_file()` 返回 `(names, features)`：
+
+```python
+names    = ["user01", "user02"]                    # 长度 N
+features = [array(128,), array(128,)]              # 长度 N，每项 128 维
+```
+
+`identify_face()` 返回 `(person_name, best_score)`：
+
+| 情况 | person_name | best_score |
+| --- | --- | --- |
+| 空库 | `"unknown"` | `0.0` |
+| 最高分 ≥ 阈值 | 对应代号 | 实际分数 |
+| 最高分 < 阈值 | `"unknown"` | 实际分数（**不是 None**，便于看差多少） |
+
+## 预期效果与排查
+
+画面下方黑条显示 `user01  score=0.72`；陌生人显示 `unknown  score=0.21`；没人脸显示 `no valid face`。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 一直 `unknown score=0.3x` | 阈值偏高 | 降到 0.40 或 0.363 |
+| 报"登记内容为空" | npz 不在 `common/` | 从 6.6 的 `data/` 复制过去 |
+| 每帧都打印 | 少了 `last_name` 比较 | 只在代号变化时打印 |
+| 识别慢、画面卡 | 库太大 + 每帧全比 | 减少库人数，或先按 6.5 质量过滤再比对 |
