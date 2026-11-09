@@ -1,0 +1,107 @@
+---
+title: "8.1 树莓派环境检查"
+description: "跑代码前先确认系统、Python、SDK、串口、温度、存储、图形会话"
+---
+
+## 本页目标
+
+树莓派上"跑不起来"九成是环境问题，而不是代码问题。本页一次性把 7 项全部打印出来：系统架构、Python 解释器、SDK 版本、虚拟环境、USB 串口、处理器温度、剩余存储、图形会话。**先看诊断结果，再改代码。**
+
+## 前置条件
+
+- 已在树莓派上装好 Python 3 和 PyMotion Lite SDK
+- 机器人的 USB 线已插上（不要求程序连上，只查系统有没有识别到串口）
+
+## 动手步骤
+
+**1. 新建 `44_check_pi.py`**
+
+```python
+import glob
+import os
+import platform
+import shutil
+import sys
+from pathlib import Path
+import pymotion as pm
+
+TEMP_WARN = 75.0        # ℃
+MIN_FREE_GB = 2.0       # GB
+
+
+def read_temperature():
+    temperature_file = Path("/sys/class/thermal/thermal_zone0/temp")
+    try:
+        # 该文件以千分之一摄氏度保存，除以 1000 得到 ℃
+        return int(temperature_file.read_text().strip()) / 1000
+    except (OSError, ValueError):
+        return None
+
+
+def main():
+    print(f"系统: {platform.system()} {platform.machine()}")
+    print(f"Python: {sys.version.split()[0]} ({sys.executable})")
+    print(f"SDK: {pm.lite.__version__}")
+
+    if sys.prefix == sys.base_prefix:
+        print("虚拟环境: 未加载")
+    else:
+        print(f"虚拟环境: {sys.prefix}")
+
+    usb_devices = []
+    for pattern in ("/dev/ttyACM*", "/dev/ttyUSB*"):
+        usb_devices.extend(glob.glob(pattern))
+    print(f"Robot USB: {', '.join(sorted(usb_devices))}" if usb_devices else "Robot USB: 未发现")
+
+    temperature = read_temperature()
+    if temperature is None:
+        print("处理器温度: None")
+    elif temperature >= TEMP_WARN:
+        print(f"处理器温度: {temperature:.1f} ℃，过热")
+    else:
+        print(f"处理器温度: {temperature:.1f} ℃，正常")
+
+    free_gb = shutil.disk_usage(Path(__file__).parent).free / 1024 ** 3
+    print(f"存储剩余: {free_gb:.1f} GB" + ("，空间不足" if free_gb < MIN_FREE_GB else ""))
+
+    display = os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY")
+    print(f"图形会话: {display}" if display else "图形会话: 未加载")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**2. 运行 `python 44_check_pi.py`，对照下表逐项看**
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `TEMP_WARN` | float | 70～80 ℃ | 超过会降频，YOLO 会明显变慢 |
+| `MIN_FREE_GB` | float | 2.0 | 低于这个值，装依赖和存视频都会失败 |
+| 温度文件 | 路径 | `/sys/class/thermal/thermal_zone0/temp` | 非树莓派不存在，返回 `None` |
+
+## 七项怎么看
+
+| 项目 | 正常值 | 异常时怎么办 |
+| --- | --- | --- |
+| 系统 / 架构 | `Linux aarch64` 或 `armv7l` | 出现 `x86_64` 说明你不在树莓派上 |
+| Python 路径 | `/home/pi/.../bin/python` 或 venv 路径 | 显示 `/usr/bin/python3` 但你装依赖在 venv 里 → 检查是否忘了 activate |
+| SDK 版本 | 有版本号 | 报 `ImportError` → 依赖没装或装到别的解释器 |
+| 虚拟环境 | 显示 venv 路径 | 显示"未加载"但你依赖装在 venv 里 → 先 `source .../activate` |
+| Robot USB | `/dev/ttyACM0` 或 `/dev/ttyUSB0` | 未发现 → 换线、换口、检查是否被别的程序占用 |
+| 处理器温度 | 40～70 ℃ | ≥75 ℃ → 加散热片/风扇，别跑 YOLO |
+| 存储剩余 | >2 GB | 不足 → 清 pip 缓存 `pip cache purge` |
+| 图形会话 | `:0` 或 `wayland-0` | 未加载 → `cv2.imshow` 会报错，要么接显示器，要么改用 SSH -X |
+
+## 预期效果与排查
+
+八行输出全部打印且没有"过热""空间不足""未加载"这类提示，就可以进入 8.2。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| `ModuleNotFoundError: pymotion` | 装到了另一个 Python | 用 `python -m pip install ...` 保证同解释器 |
+| 有 USB 但连接报错 | 串口权限 | `sudo usermod -aG dialout $USER` 后重新登录 |
+| `cv2.imshow` 报 `cannot open display` | 无图形会话 | 本地显示器，或 `ssh -X`，或把显示结果改成存图 |
+| 温度一直 80℃+ | 无散热 | 必须处理，否则 YOLO 帧率腰斩 |

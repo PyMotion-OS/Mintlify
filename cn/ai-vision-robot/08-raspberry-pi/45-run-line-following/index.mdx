@@ -1,0 +1,146 @@
+---
+title: "8.2 树莓派跑循迹"
+description: "USB 连接，0.3 秒内收齐两种传感器再决策，丢线即停"
+---
+
+## 本页目标
+
+把 3.3 的安全循迹搬到树莓派上跑，连接方式从 Wi-Fi 换成 **USB**。新增一个关键机制：**0.3 秒内必须收齐五路和超声波两种数据，缺一个就不动**。这是树莓派上防"半盲行驶"的硬要求。
+
+## 前置条件
+
+- 完成 8.1，`Robot USB` 有值
+- 同目录有 `differential_drive.py`、`line_control.py`、`obstacle_policy.py`
+- 场地：黑线 + 前方可放障碍物
+
+## 动手步骤
+
+**1. 新建 `45_run_line_following.py`**
+
+**2. 写入核心代码**
+
+```python
+import time
+import pymotion as pm
+from differential_drive import vw_to_rpm
+from line_control import PATTERN_NAMES, line_tracker_to_vw
+from obstacle_policy import OBSTACLE_NAMES, ultrasonic_to_vw
+
+V = 60
+K = 25
+TRANSPORT = "usb"          # 树莓派上用 USB，不用 wifi
+TIMEOUT = 15.0
+
+COLLECT_SECONDS = 0.3      # 收齐两种数据的时限
+MAX_AGE = 0.3              # 事件最大存放时间
+
+
+def receive_sensors(data_queue):
+    """0.3 秒内收齐两种未过期事件；缺任何一种返回 (None, None)。"""
+    tracker_event, ultrasonic_event = None, None
+    end_time = time.monotonic() + COLLECT_SECONDS
+
+    while tracker_event is None or ultrasonic_event is None:
+        remaining_time = end_time - time.monotonic()
+        if remaining_time <= 0:
+            return None, None                      # 超时：本轮不产生运动
+        sensor_data = data_queue.read(timeout=remaining_time)
+        if sensor_data is None:
+            return None, None
+        if sensor_data.source == "line_tracker":
+            tracker_event = sensor_data
+        elif sensor_data.source == "ultrasonic":
+            ultrasonic_event = sensor_data
+
+    # 较早收到的那条超过 0.3 秒，两种读数都不用于本轮
+    oldest = min(tracker_event.received_monotonic, ultrasonic_event.received_monotonic)
+    if time.monotonic() - oldest > MAX_AGE:
+        return None, None
+    return tracker_event.data, ultrasonic_event.data
+
+
+def run(data_queue, commands):
+    last_motion = None
+
+    while True:
+        tracker_line_data, ultrasonic_data = receive_sensors(data_queue)
+        if tracker_line_data is None or ultrasonic_data is None:
+            v, w, pattern_type, obstacle_state = 0, 0, "waiting", "waiting"
+            distance_text = "未收到"
+        else:
+            v, w, pattern_type = line_tracker_to_vw(tracker_line_data.is_detected, V, K)
+            v, w, obstacle_state = ultrasonic_to_vw(ultrasonic_data, v, w)
+            distance_text = "无回波"
+            if ultrasonic_data.distance is not None:
+                distance_text = f"{ultrasonic_data.distance} mm"
+
+        left_rpm, right_rpm = vw_to_rpm(v, w)
+        commands.motor_speeds.write({3: left_rpm, 4: right_rpm}, valid_for=0.35)
+
+        current_motion = (pattern_type, obstacle_state, left_rpm, right_rpm)
+        if current_motion != last_motion:
+            print(f"分类: {PATTERN_NAMES[pattern_type]}  "
+                  f"避障: {OBSTACLE_NAMES[obstacle_state]}  距离: {distance_text}\n"
+                  f"左主动轮: {left_rpm} RPM  右主动轮: {right_rpm} RPM")
+            last_motion = current_motion
+
+        if pattern_type == "lost":        # 已发零速，安全退出
+            print("结果: 丢失循迹线，程序结束")
+            return
+
+
+def main():
+    try:
+        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+            with robot.control():
+                with robot.realtime.open(
+                    data_sources=("line_tracker", "ultrasonic"),
+                    command_targets={"motor_speeds": (3, 4)},
+                    frequency="medium",
+                    data_queue_size=8,
+                ) as session:
+                    run(session.data, session.commands)
+    except KeyboardInterrupt:
+        print("结果: Ctrl+C 主动停机")
+    except pm.lite.LiteError as exc:
+        print(f"出错: {type(exc).__name__}: {exc}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，先空场地跑一遍，再在车前放障碍物**
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `TRANSPORT` | str | **`"usb"`** | 树莓派直连，比 wifi 稳、延迟低 |
+| `V` | int | 40～70 mm/s | 树莓派上别开太快，处理能力有限 |
+| `K` | float | 20～30 | 五路偏差 → 转向 |
+| `COLLECT_SECONDS` | float | 0.2～0.4 秒 | 收齐两种数据的时限 |
+| `data_queue_size` | int | 8 | 两种数据共用队列，不能设 1 |
+| `valid_for` | float | 0.35 秒 | 命令有效期，断流自动失效 |
+
+## 为什么必须"收齐再走"
+
+| 写法 | 后果 |
+| --- | --- |
+| 收到五路就走，超声波没到也无所谓 | 超声波可能已断流，车会撞上障碍物 |
+| 收到超声波就走，五路没到也无所谓 | 不知道线在哪，直接偏出赛道 |
+| **0.3 秒内两种都到才走** | 缺一个就停，宁可站着不动 |
+
+还有个细节：`receive_sensors` 检查的是**较早那条**的年龄（`min`），不是较晚的。因为只要有一条是旧的，这一轮的判断就是残缺的。
+
+## 预期效果与排查
+
+沿黑线平稳行驶；手挡在车前 10 cm 内停，30 cm 内减速；线断了整车停住并打印"丢失循迹线"。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 一直 `waiting` | 缺一种传感器数据 | 打印 `sensor_data.source` 看实际到了哪个 |
+| 走走停停 | 数据到不齐，经常超时 | 增大 `COLLECT_SECONDS` 到 0.5，或查传感器线 |
+| USB 连接失败 | 串口权限/被占用 | 见 8.1 的 `dialout` 处理 |
+| 不停车撞上去 | 距离阈值太大 | 改 `obstacle_policy.py` 的 `STOP_DISTANCE` |
+| 抖动明显 | `V` 太大 | 降到 40 |

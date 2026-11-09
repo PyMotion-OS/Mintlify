@@ -1,0 +1,217 @@
+---
+title: "7.2 PC 视觉综合项目"
+description: "循迹 + 二维码站台 + YOLO 识别 + 舵机点头，全链路总装"
+---
+
+## 本页目标
+
+把前面 6 个模块的东西拼成一条完整任务：
+
+**循迹前进 → 看到站台二维码减速 → 站台消失停机 → 静止时用 YOLO 认一次周围物体 → 舵机点头两次 → 按空格继续循迹**
+
+这是整个课程最有分量的一页，也是"能跑起来"和"跑得稳"的分界线。
+
+## 前置条件
+
+- 场地：黑线闭合路线 + `STATION_A` / `STATION_B` 两张卡片
+- 同目录有 `camera.py`、`differential_drive.py`、`line_control.py`、`obstacle_policy.py`、`qr_observation.py`、`servo_control.py`、`yolo_detection.py`
+- 完成 5.5、6.1、6.8、7.1
+
+## 动手步骤
+
+**1. 三个阶段先想清楚**
+
+| 阶段 | 干什么 | 速度 | 退出条件 |
+| --- | --- | --- | --- |
+| `normal` | 正常循迹 | `V=80` | 看到 `STATION_A/B` |
+| `slow` | 减速循迹，等二维码离开 | `SLOW_V=40` | 二维码连续消失 1 秒 |
+| `wait` | 停机：YOLO 认一次 + 点头两次 | 0 | 按空格 |
+
+**2. 新建 `43_pc_vision_project.py`**
+
+```python
+import time
+import cv2
+import pymotion as pm
+from camera import Camera, log_message
+from obstacle_policy import decide_motion
+from differential_drive import vw_to_rpm
+from line_control import line_tracker_to_vw
+from qr_observation import check_qr_state, draw_qr_marks, find_qr
+from servo_control import nod_camera, reset_servos
+from yolo_detection import detect_objects, draw_detections, load_yolo_resources
+
+V = 80
+SLOW_V = 40
+K = 25
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+def observe_station(camera, task_state):
+    """取图 + 二维码观测；wait 阶段保留到站快照不被覆盖。"""
+    image = camera.latest()
+    qr_data = None
+    if image is not None:
+        qr_data = find_qr(image)
+        if task_state != "wait":
+            cv2.imshow("AI route - Esc close, Space continue",
+                       draw_qr_marks(image, qr_data))
+    return image, qr_data
+
+
+def run_station_task(model, image, commands, up_down_angle, left_right_angle, station_name):
+    """调用前必须已停机。做一次 YOLO 识别 + 点头两次。"""
+    detections, detection_time = detect_objects(model, image, 0.25)
+    cv2.imshow("AI route - Esc close, Space continue",
+               draw_detections(image, detections, detection_time))
+    labels = [d["label"] for d in detections]
+    log_message("INFO", "vision", f"站台: {station_name}  物体: {labels}")
+    nod_camera(commands, up_down_angle, left_right_angle)
+
+
+def get_project_motion(tracker_event, ultrasonic_event, task_state, image):
+    """阶段 + 图片 + 事件时效 → 最终 V/W。"""
+    now = time.monotonic()
+    speed = SLOW_V if task_state == "slow" else V
+
+    line_motion = (0, 0, "line_waiting")
+    if tracker_event is not None and now - tracker_event.received_monotonic <= 0.3:
+        line_motion = line_tracker_to_vw(tracker_event.data.is_detected, speed, K)
+
+    ultrasonic_data = None
+    if ultrasonic_event is not None and now - ultrasonic_event.received_monotonic <= 0.3:
+        ultrasonic_data = ultrasonic_event.data
+
+    if task_state == "wait":
+        line_motion = (0, 0, "wait_confirm")     # 等待确认，优先于一切
+    elif image is None:
+        line_motion = (0, 0, "image_waiting")    # 断流不能当"路是通的"
+
+    return decide_motion(line_motion, ultrasonic_data)
+
+
+def run(camera, data_queue, commands, up_down_angle, left_right_angle):
+    _, model = load_yolo_resources()             # 模型只加载一次，别放到站台分支里
+    task_state = "normal"
+    tracker_event, ultrasonic_event = None, None
+    next_send_at = time.monotonic()
+    last_motion = None
+
+    while True:
+        key = cv2.waitKey(1)
+        if key == 27:
+            return
+        if key == 32 and task_state == "wait":
+            task_state = "normal"                # 空格继续
+
+        sensor_data = data_queue.read(timeout=0.5)
+        if sensor_data is not None and sensor_data.source == "line_tracker":
+            tracker_event = sensor_data
+        elif sensor_data is not None and sensor_data.source == "ultrasonic":
+            ultrasonic_event = sensor_data
+
+        image, qr_data = observe_station(camera, task_state)
+
+        # 到站 / 离站判定
+        if task_state == "normal" and qr_data is not None and \
+                qr_data["text"] in ("STATION_A", "STATION_B"):
+            station_name = qr_data["text"]
+            _, last_detected_time = check_qr_state(qr_data, station_name, None, 1)
+            task_state = "slow"
+        elif task_state == "slow":
+            qr_state, last_detected_time = check_qr_state(
+                qr_data, station_name, last_detected_time, 1)
+            if qr_state == "lost":
+                task_state = "wait"
+                # 立刻停机，不等节拍 —— 后面要做耗时推理
+                commands.motor_speeds.write({3: 0, 4: 0}, valid_for=0.35)
+                next_send_at = time.monotonic() + 0.1
+                run_station_task(model, image, commands,
+                                 up_down_angle, left_right_angle, station_name)
+
+        v, w, reason = get_project_motion(tracker_event, ultrasonic_event, task_state, image)
+        left_rpm, right_rpm = vw_to_rpm(v, w)
+
+        now = time.monotonic()
+        if now >= next_send_at:
+            commands.motor_speeds.write({3: left_rpm, 4: right_rpm}, valid_for=0.35)
+            next_send_at = now + 0.1
+
+        motion = (task_state, reason, left_rpm, right_rpm)
+        if motion != last_motion:
+            log_message("INFO", "decision",
+                        f"阶段: {task_state}  原因: {reason}  "
+                        f"左轮: {left_rpm} RPM  右轮: {right_rpm} RPM")
+            last_motion = motion
+
+
+def main():
+    try:
+        with Camera() as camera:
+            with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+                with robot.control():
+                    up_down_angle, left_right_angle = reset_servos(robot)
+                    with robot.realtime.open(
+                        data_sources=("line_tracker", "ultrasonic"),
+                        command_targets={"motor_speeds": (3, 4), "pwm_position_servos": (4, 5)},
+                        frequency="medium",
+                        data_queue_size=8,
+                    ) as session:
+                        run(camera, session.data, session.commands,
+                            up_down_angle, left_right_angle)
+    except KeyboardInterrupt:
+        log_message("INFO", "project", "Ctrl+C 主动停机")
+    except (OSError, ValueError, cv2.error, pm.lite.LiteError) as exc:
+        log_message("ERROR", "project", str(exc))
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，走完整流程**：循迹 → 遇站台 → 减速 → 离开 → 停机识别 → 点头 → 按空格继续
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `V` / `SLOW_V` | int | 80 / 40 mm/s | 正常与站台区速度 |
+| `K` | float | 20～30 | 五路偏差 → 转向 |
+| `data_queue_size` | int | 8 | 五路和超声波共用队列，必须够大 |
+| 离站确认 | float | 1 秒 | 二维码连续消失 1 秒才算离站 |
+| `task_state` | str | normal/slow/wait | 三阶段唯一状态源 |
+
+## 三处关键设计
+
+**① 停机要在识别之前**
+
+`run_station_task` 里要跑 YOLO，一次几百毫秒。如果不先发零速，车会带着上一轮速度往前冲。所以进入 `wait` 的第一件事是 `write({3:0, 4:0})`，然后才推理。
+
+**② 断流不能当成"离站"**
+
+`camera.latest()` 返回 `None` 时 `qr_data` 也是 `None`，如果直接走 `check_qr_state`，1 秒后就被判 `lost` → 误触发停机任务。所以 `get_project_motion` 里单独判 `image is None` → `image_waiting`，`observe_station` 在 `wait` 阶段保留快照。
+
+**③ 模型只加载一次**
+
+`load_yolo_resources()` 放在 `run()` 开头。放进站台分支会让每个站台都重新读盘加载权重，第一次就会卡 5～10 秒。
+
+## 预期效果与排查
+
+| 阶段 | 屏幕/终端表现 |
+| --- | --- |
+| normal | 小车上黑线行驶，终端 `阶段: normal` |
+| slow | 减速，终端 `阶段: slow` |
+| wait | 停车，屏幕上打框并列出物体名，舵机点头两次 |
+| 空格后 | 恢复 `normal`，继续循迹 |
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 站台前不停，直接冲过去 | 卡片文字不匹配 | 打印 `qr_data["text"]` 核对 |
+| 停车后车还在动 | 零速没在推理前发 | 进 `wait` 立刻 `write({3:0,4:0})` |
+| 断流也被判离站 | 没判 `image is None` | 单独返回 `image_waiting` |
+| 第二站要等很久 | 每站重复加载模型 | `load_yolo_resources()` 提到循环外 |
+| 按空格没反应 | `waitKey` 被阻塞 | 空格检测必须在 `data_queue.read` 之前 |
+| 点头不完整 | `nod_camera` 的 sleep 太长 | 每步 ≤0.25 秒并持续续发 |

@@ -1,0 +1,131 @@
+---
+title: "8.3 机器人与摄像头演示"
+description: "摄像头画面 + 距离 + 五路读数同屏显示，断流用黑底兜住"
+---
+
+## 本页目标
+
+树莓派上做一次**联合展示**：摄像头画面作为背景，左上角叠加实时距离和五路读数。这个例程不控车，用来确认"摄像头和传感器在树莓派上能同时工作"，也是给客户/同事演示的最小可用界面。
+
+## 前置条件
+
+- 完成 8.1、8.2
+- 同目录有 `camera.py`（4.9 最终版）
+- 有图形会话（8.1 的"图形会话"不是"未加载"）
+
+## 动手步骤
+
+**1. 新建 `46_show_robot_and_camera.py`**
+
+**2. 写入核心代码**
+
+```python
+import cv2
+import numpy as np
+import pymotion as pm
+from camera import Camera, log_message
+
+TRANSPORT = "usb"
+TIMEOUT = 15.0
+
+
+def draw_status(image, ultrasonic_data, tracker_line_data):
+    marked_image = image.copy()
+
+    distance_text = "waiting"
+    if ultrasonic_data is not None:
+        if ultrasonic_data.distance is not None and ultrasonic_data.valid:
+            distance_text = f"{ultrasonic_data.distance:.0f} mm"
+        else:
+            distance_text = ultrasonic_data.state      # no_echo 照实显示，不用 0 冒充距离
+
+    line_text = "waiting"
+    if tracker_line_data is not None:
+        if tracker_line_data.valid:
+            line_text = str(tracker_line_data.is_detected)
+        else:
+            line_text = tracker_line_data.state
+
+    cv2.rectangle(marked_image, (15, 15), (620, 110), (32, 32, 32), -1)
+    cv2.putText(marked_image, f"DISTANCE: {distance_text}", (30, 55),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 176, 255), 2)
+    cv2.putText(marked_image, f"LINE: {line_text}", (30, 95),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 176, 255), 2)
+    return marked_image
+
+
+def run(camera, data_queue):
+    ultrasonic_data, tracker_line_data = None, None
+    while True:
+        if cv2.waitKey(1) == 27:
+            return
+
+        sensor_data = data_queue.read(timeout=0.5)     # 有数据即返回，没有最多等 0.5 秒
+        if sensor_data is not None:
+            if sensor_data.source == "ultrasonic":
+                ultrasonic_data = sensor_data.data
+            elif sensor_data.source == "line_tracker":
+                tracker_line_data = sensor_data.data
+
+        image = camera.latest()
+        if image is None:
+            # 断流时用黑底继续显示传感器读数，而不是整个窗口卡住
+            image = np.zeros((360, 800, 3), dtype=np.uint8)
+
+        cv2.imshow("Robot and camera - Esc to close",
+                   draw_status(image, ultrasonic_data, tracker_line_data))
+
+
+def main():
+    try:
+        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+            with robot.realtime.open(
+                data_sources=("ultrasonic", "line_tracker"),
+                frequency="medium",
+                data_queue_size=8,
+            ) as session:
+                with Camera() as camera:
+                    run(camera, session.data)
+    except KeyboardInterrupt:
+        log_message("INFO", "display", "Ctrl+C 主动结束")
+    except (OSError, pm.lite.LiteError, ValueError, cv2.error) as exc:
+        log_message("ERROR", "display", str(exc))
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，用手挡超声波、用黑线挡五路**
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `TRANSPORT` | str | `"usb"` | USB 直连 |
+| `data_queue_size` | int | 8 | 两种数据共用，要够大 |
+| 无图兜底尺寸 | tuple | `(360, 800, 3)` | 黑底画布，保证读数始终可见 |
+| `no_echo` | 状态值 | — | **不能当成 0 mm**，代表"前方空旷" |
+
+## 三种状态显示
+
+| 传感器 | 有数据且有效 | 有数据但无效 | 无数据 |
+| --- | --- | --- | --- |
+| 超声波 | `123 mm` | 显示 `state`（如 `no_echo`） | `waiting` |
+| 五路 | 元组如 `(0, 1, 1, 1, 0)` | 显示 `state` | `waiting` |
+
+`no_echo` 千万不要渲染成 `0 mm`：那会让操作者以为"贴脸了"，实际上是完全没东西。
+
+## 预期效果与排查
+
+窗口中是摄像头实时画面，左上角黑条显示 `DISTANCE` 和 `LINE`；遮住摄像头后画面变黑但读数继续刷新。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 窗口打不开 | 无图形会话 | 见 8.1，接显示器或 `ssh -X` |
+| 读数一直 `waiting` | 没订阅对应数据源 | `data_sources` 里两个都要写 |
+| 画面卡住不动 | `latest()` 一直返回同一帧 | 检查摄像头是否断流；本例不判重是故意的 |
+| 画面很卡 | 树莓派上 `imshow` 全尺寸 | 显示前缩小，或降低摄像头分辨率 |
+| USB 连接报错 | 串口被占用 | 关掉其他连机器人的程序 |
