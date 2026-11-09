@@ -1,0 +1,98 @@
+---
+title: "2.5 避障停车"
+description: "按前方距离分档减速与停机，数据断流也自动停"
+---
+
+## 本页目标
+
+把超声波距离映射成"正常 / 减速 / 停机 / 数据无效"四档，持续发双轮速度。核心是 **`read(timeout)` 与 `valid_for` 的配合**：读取最长等 0.3 秒，指令有效期给 0.35 秒，才能保证等数据时车不会失控。
+
+## 前置条件
+
+- 完成例程 2.2
+- 车放地面，前方留 1 米以上直线空间
+- 超声波传感器工作正常
+
+## 动手步骤
+
+**1. 新建 `11_obstacle_stop.py`**
+
+**2. 写入代码**
+
+```python
+import pymotion as pm
+
+STOP_DISTANCE = 350        # 停机距离 mm
+SLOW_DISTANCE = 500        # 减速距离 mm
+NORMAL_RPM = 30
+SLOW_RPM = 15
+PORT_LEFT, PORT_RIGHT = 3, 4
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+def choose_rpm(ultrasonic_data):
+    if ultrasonic_data.state == "no_echo":     # 无回波视为未测到障碍
+        return NORMAL_RPM, "未测到障碍"
+    if not ultrasonic_data.valid:
+        return 0, "数据无效"
+    if ultrasonic_data.distance <= STOP_DISTANCE:
+        return 0, "停机"
+    if ultrasonic_data.distance < SLOW_DISTANCE:
+        return SLOW_RPM, "减速"
+    return NORMAL_RPM, "正常"
+
+
+def run(data_queue, commands):
+    last_state = None
+    while True:
+        sensor_data = data_queue.read(timeout=0.3)
+        if sensor_data is None:
+            rpm, state, distance = 0, "等待数据", None
+        else:
+            ultrasonic_data = sensor_data.data
+            rpm, state = choose_rpm(ultrasonic_data)
+            distance = ultrasonic_data.distance
+        commands.motor_speeds.write(
+            {PORT_LEFT: rpm, PORT_RIGHT: rpm}, valid_for=0.35)
+        if state != last_state:
+            print(f"状态: {state}  距离(mm): {distance}  目标: {rpm} RPM")
+            last_state = state
+
+
+def main():
+    try:
+        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+            with robot.control():
+                with robot.realtime.open(
+                    data_sources=("ultrasonic",),
+                    command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)},
+                    frequency="high", data_queue_size=1) as session:
+                    run(session.data, session.commands)
+    except KeyboardInterrupt:
+        print("Ctrl+C 主动停机")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `STOP_DISTANCE` | int | 本例 350 mm | 小于等于它就停机 |
+| `SLOW_DISTANCE` | int | 本例 500 mm | 进入该距离开始减速 |
+| `NORMAL_RPM` / `SLOW_RPM` | int | 30 / 15 | 两档速度 |
+| `read(timeout=0.3)` | float | 秒 | 等新数据的上限 |
+| `valid_for=0.35` | float | 秒 | 必须大于 `timeout`，否则等数据时车会停 |
+
+## 预期效果与排查
+
+手在车前由远到近移动，终端依次打印 `正常 → 减速 → 停机`，速度随之变化。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 每 0.3 秒一顿一顿 | `valid_for` 小于 `timeout` | 保证 `valid_for` 略大于 `timeout` |
+| 一直"未测到障碍" | 前方吸音材质或角度偏 | 换硬纸板测试，检查安装角度 |
+| 到墙前才减速 | 阈值偏小 | 调大 `SLOW_DISTANCE` |

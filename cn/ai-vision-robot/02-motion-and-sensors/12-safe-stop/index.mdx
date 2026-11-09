@@ -1,0 +1,86 @@
+---
+title: "2.6 安全停车"
+description: "输入 stop、超时、Ctrl+C、断网，四条路径都能让车停下来"
+---
+
+## 本页目标
+
+用后台线程监听键盘输入，主线程持续发速度指令；`stop` 或超时都能退出，断网则由指令有效期兜底。理解**多线程共享一个可变对象**（列表）的写法。
+
+## 前置条件
+
+- 完成例程 2.5
+- 车放地面，前方留空
+- 能操作终端输入（本例程靠回车确认 stop）
+
+## 动手步骤
+
+**1. 新建 `12_safe_stop.py`**
+
+**2. 写入代码**
+
+```python
+import threading
+import time
+import pymotion as pm
+
+RUN_SECONDS = 20.0
+PORT_LEFT, PORT_RIGHT = 3, 4
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+def listen_keyboard(is_running):
+    try:
+        while is_running[0]:
+            if input().strip().lower() == "stop":
+                is_running[0] = False        # 共享列表，主线程能看到
+    except EOFError:
+        return
+
+
+def main():
+    try:
+        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+            with robot.control():
+                with robot.realtime.open(command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)}) as session:
+                    is_running = [True]      # 用列表而不是 bool，才能被线程改
+                    t = threading.Thread(target=listen_keyboard, args=(is_running,), daemon=True)
+                    t.start()
+                    print("输入 stop 后按 Enter 主动停机；到达运行时间也会自动停机。")
+
+                    end_time = time.monotonic() + RUN_SECONDS
+                    while is_running[0] and time.monotonic() < end_time:
+                        session.commands.motor_speeds.write(
+                            {PORT_LEFT: 30, PORT_RIGHT: 30}, valid_for=0.35)
+                        time.sleep(0.1)
+    except KeyboardInterrupt:
+        print("结果: Ctrl+C 主动停机")
+    except Exception as exc:
+        print(f"出错: {type(exc).__name__}: {exc}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，试三种停法：输入 `stop`、等 20 秒、按 Ctrl+C**
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `RUN_SECONDS` | float | 本例 20.0 秒 | 最长运行时间 |
+| `is_running` | list | `[True]` | 必须是可变对象，线程才能改动共享状态 |
+| `valid_for` | float | 0.35 秒 | 断网后设备端最多再跑 0.35 秒 |
+| `daemon=True` | bool | — | 主程序退出时监听线程一起结束 |
+
+## 预期效果与排查
+
+车持续前进；输入 `stop` 回车立即停，或 20 秒后自动停；Ctrl+C 也会停；拔掉 Wi-Fi 后约 0.35 秒停。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 输 stop 没反应 | 用了普通变量而非列表 | 用 `[True]`，线程改 `is_running[0]` |
+| 拔网后车还跑 | `valid_for` 设太长 | 缩到 0.3～0.5 秒区间 |
+| 终端报 EOFError | 输入端被关闭（如后台运行） | 已捕获，属正常退出路径 |

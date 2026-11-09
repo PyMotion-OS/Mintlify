@@ -83,44 +83,100 @@
                 "pages": [
                   "cn/ai-vision-robot/index",
                   {
-                    "group": "模块 1 Python 基础与连接",
+                    "group": "1 Python 基础与连接",
                     "pages": [
-                      "cn/ai-vision-robot/module-01/index",
-                      "cn/ai-vision-robot/module-01/01-connect-wifi/index",
-                      "cn/ai-vision-robot/module-01/02-variables-and-conditions/index",
-                      "cn/ai-vision-robot/module-01/03-loops-and-lists/index",
-                      "cn/ai-vision-robot/module-01/04-functions-and-parameters/index",
-                      "cn/ai-vision-robot/module-01/05-exceptions-and-cleanup/index",
-                      "cn/ai-vision-robot/module-01/06-class-and-with/index"
+                      "cn/ai-vision-robot/01-python-basics/index",
+                      "cn/ai-vision-robot/01-python-basics/01-connect-wifi/index",
+                      "cn/ai-vision-robot/01-python-basics/02-variables-and-conditions/index",
+                      "cn/ai-vision-robot/01-python-basics/03-loops-and-lists/index",
+                      "cn/ai-vision-robot/01-python-basics/04-functions-and-parameters/index",
+                      "cn/ai-vision-robot/01-python-basics/05-exceptions-and-cleanup/index",
+                      "cn/ai-vision-robot/01-python-basics/06-class-and-with/index"
                     ]
                   },
                   {
-                    "group": "模块 2 运动与传感器",
-                    "pages": ["cn/ai-vision-robot/module-02/index"]
+                    "group": "2 运动与传感器",
+                    "pages": [
+                      "cn/ai-vision-robot/02-motion-and-sensors/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/07-motor-control/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/08-realtime-data-queue/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/09-differential-drive/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/10-keyboard-control/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/11-obstacle-stop/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/12-safe-stop/index"
+                    ]
                   },
                   {
-                    "group": "模块 3 循迹",
-                    "pages": ["cn/ai-vision-robot/module-03/index"]
+                    "group": "3 循迹",
+                    "pages": [
+                      "cn/ai-vision-robot/03-line-following/index",
+                      "cn/ai-vision-robot/03-line-following/13-line-classification-and-motion/index",
+                      "cn/ai-vision-robot/03-line-following/14-line-following/index",
+                      "cn/ai-vision-robot/03-line-following/15-safe-line-following/index"
+                    ]
                   },
                   {
-                    "group": "模块 4 OpenCV 与摄像头",
-                    "pages": ["cn/ai-vision-robot/module-04/index"]
+                    "group": "4 OpenCV 与摄像头",
+                    "pages": [
+                      "cn/ai-vision-robot/04-opencv-and-camera/index",
+                      "cn/ai-vision-robot/04-opencv-and-camera/16-camera-basics/index",
+                      "cn/ai-vision-robot/04-opencv-and-camera/17-image-pixels-and-drawing/index",
+                      "cn/ai-vision-robot/04-opencv-and-camera/18-roi-and-gray-mask/index",
+                      "cn/ai-vision-robot/04-opencv-and-camera/19-gray-and-color-masks/index",
+                      "cn/ai-vision-robot/04-opencv-and-camera/20-morphology-and-contours/index",
+                      "cn/ai-vision-robot/04-opencv-and-camera/21-color-target-observation/index",
+                      "cn/ai-vision-robot/04-opencv-and-camera/22-live-color-target/index",
+                      "cn/ai-vision-robot/04-opencv-and-camera/23-camera-age-and-reconnect/index",
+                      "cn/ai-vision-robot/04-opencv-and-camera/24-visual-observation/index"
+                    ]
                   },
                   {
-                    "group": "模块 5 视觉控制",
-                    "pages": ["cn/ai-vision-robot/module-05/index"]
+                    "group": "5 视觉控制",
+                    "pages": [
+                      "cn/ai-vision-robot/05-visual-control/index",
+                      "cn/ai-vision-robot/05-visual-control/25-dual-servo-move/index",
+                      "cn/ai-vision-robot/05-visual-control/26-color-servo-tracking/index",
+                      "cn/ai-vision-robot/05-visual-control/27-qr-basics/index",
+                      "cn/ai-vision-robot/05-visual-control/28-qr-centering/index",
+                      "cn/ai-vision-robot/05-visual-control/29-qr-station/index"
+                    ]
                   },
                   {
-                    "group": "模块 6 YOLO 与 AI",
-                    "pages": ["cn/ai-vision-robot/module-06/index"]
+                    "group": "6 YOLO 与 AI",
+                    "pages": [
+                      "cn/ai-vision-robot/06-yolo-and-ai/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/30-yolo-image-detection/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/31-yolo-live-detection/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/32-object-tracking/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/33-face-detection/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/34-face-quality/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/35-face-feature-comparison/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/36-face-enrollment-and-recognition/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/37-face-greeting-project/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/38-lead-target-selection/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/39-yolo-target-centering/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/40-following-distance-policy/index",
+                      "cn/ai-vision-robot/06-yolo-and-ai/41-following-observation/index"
+                    ]
                   },
                   {
-                    "group": "模块 7 综合项目",
-                    "pages": ["cn/ai-vision-robot/module-07/index"]
+                    "group": "7 综合项目",
+                    "pages": [
+                      "cn/ai-vision-robot/07-integrated-projects/index",
+                      "cn/ai-vision-robot/07-integrated-projects/42-sensor-decision/index",
+                      "cn/ai-vision-robot/07-integrated-projects/43-pc-vision-project/index"
+                    ]
                   },
                   {
-                    "group": "模块 8 树莓派部署",
-                    "pages": ["cn/ai-vision-robot/module-08/index"]
+                    "group": "8 树莓派部署",
+                    "pages": [
+                      "cn/ai-vision-robot/08-raspberry-pi/index",
+                      "cn/ai-vision-robot/08-raspberry-pi/44-check-pi/index",
+                      "cn/ai-vision-robot/08-raspberry-pi/45-run-line-following/index",
+                      "cn/ai-vision-robot/08-raspberry-pi/46-show-robot-and-camera/index",
+                      "cn/ai-vision-robot/08-raspberry-pi/47-measure-opencv/index",
+                      "cn/ai-vision-robot/08-raspberry-pi/48-measure-yolo/index"
+                    ]
                   }
                 ]
               }
