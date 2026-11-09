@@ -1,6 +1,6 @@
 ---
 title: "UI Lab（内部）"
-description: "页面表达方式验证场：四个 demo，每个给可交互示例 + 一句话结论。结论比示例重要。"
+description: "页面表达方式验证场：每个 demo 回答一个问题——这种写法能不能用。结论比示例重要。"
 ---
 
 import { CodeRef } from "/cn/ai-vision-robot/components/code-ref.jsx";
@@ -9,61 +9,15 @@ import { FnDoc } from "/cn/ai-vision-robot/components/fn-doc.jsx";
 
 # UI Lab（内部）
 
-本页只做验证，不属于正式手册内容。四个 demo 各自回答一个问题：**这种写法能不能用**。
-验证通过后，写法才会进正文（见 `docs/spec.md` 的两条硬约束）。
+本页只做验证，不属于正式手册内容。验证通过后，写法才会进正文（见 `docs/spec.md` 的两条硬约束）。
+自定义组件统一"抄官方作业"：抓线上原生代码块的 SSR DOM + 官方 CSS，token 用 Shiki 双主题双值写法，暗色切换走官方规则。
 
 ---
 
-## Demo 1 · 折叠
+## Demo 1 · 行标记
 
-**问题**：`<Accordion>` 里直接放 fenced 代码块，收起/展开正常、高亮不丢？
-**预期结论**：可用 —— 主函数默认展开，辅助函数默认收起。
-
-<Accordion title="main.py（主函数）" defaultOpen={true}>
-```python title="main.py"
-from pm.lite import connect
-
-def run(data_queue, commands):
-    frame = data_queue.read()
-    print(frame["device_id"])
-
-def main():
-    robot = connect()
-    robot.realtime.open()
-    run(robot.realtime, robot.commands)
-
-if __name__ == "__main__":
-    main()
-```
-</Accordion>
-
-<Accordion title="helper.py（辅助函数，默认收起）" defaultOpen={false}>
-```python title="helper.py"
-def clamp(value, low, high):
-    """把 value 限制在 [low, high] 区间内"""
-    return max(low, min(high, value))
-```
-</Accordion>
-
-**一句话结论**：功能上可用，但形态被否 —— Accordion 把代码切成多块，不是"编辑器里代码一片、行内折叠"的效果。正文改用 Demo 5 的自定义折叠组件。
-
----
-
-## Demo 2 · 行标记
-
-**问题**：`title` / `lines` / `highlight` 三个参数叠加，各自生效？（`focus` 淡化按反馈砍掉，不进规范）
-**预期结论**：可用。
-
-```python title="tracking.py" showLineNumbers
-def target_offset(box, width):
-    center = (box[0] + box[2]) / 2
-    return (center - width / 2) / width
-
-def decide(offset, dead_zone):
-    if abs(offset) < dead_zone:      # 在死区内，不动
-        return 0
-    return 1 if offset > 0 else -1
-```
+**问题**：`title` / `highlight` 参数生效？（`focus` 淡化按反馈砍掉，不进规范）
+**结论**：✅ 可用 —— highlight 落点正确。
 
 ```python title="tracking.py" highlight={2,7} showLineNumbers
 def target_offset(box, width):
@@ -76,14 +30,12 @@ def decide(offset, dead_zone):
     return 1 if offset > 0 else -1
 ```
 
-**一句话结论**：待线上验证 —— highlight 落在正确行即可。
-
 ---
 
-## Demo 3 · 三态切换
+## Demo 2 · 三态切换
 
 **问题**：`<Tabs>` 在 代码 / 伪代码 / 结果图 之间切换，不闪、图能显示？
-**预期结论**：可用 —— 这是「伪代码先行」规范的呈现载体。
+**结论**：✅ 可接受 —— 「伪代码先行」规范的呈现载体。
 
 <Tabs>
 <Tab title="代码">
@@ -110,16 +62,12 @@ def run(data_queue, commands):
 </Tab>
 </Tabs>
 
-**一句话结论**：待线上验证 —— 切换流畅、SVG 正常显示，则判「可用」。
-
 ---
 
-## Demo 4 · 联动高亮
+## Demo 3 · 联动高亮
 
 **问题**：点说明区的函数名，下方代码块对应行亮起？（原生不支持，靠自定义组件）
-**预期结论**：有坑 —— 依赖 Shiki 渲染出的 DOM 行选择器，未实测前不进正文。
-
-下面代码块套了 `<div id="demo-block">`，点按钮试试：
+**结论**：✅ 可用 —— 行选择器 `.line` 实测存在，点击切换正常。
 
 <div id="demo-block">
 
@@ -151,16 +99,12 @@ def run(data_queue, commands):
   ]}
 />
 
-**一句话结论**：待线上验证 —— 点按钮目标行变色、再点别的能切换，则判「可用」；点不动则按备注排查 DOM 选择器。
-
-组件实现要点（已按 spec 落地）：named export、hooks 预注入不 import、内联 style 不写全局 CSS、行选择器做 `.line` / `[data-line]` / `pre` 子元素三级兜底。
-
 ---
 
-## Demo 5 · 编辑器式折叠（自定义组件 `code-fold.jsx`）
+## Demo 4 · 编辑器式折叠（`code-fold.jsx` v2，原生同款）
 
-**问题**：代码保持一片连续，指定区间收成一行折叠条（原生 Accordion 做不到，被否掉）？
-**预期结论**：可用 —— 但代码块不再走 Mintlify 高亮管线，组件内置轻量高亮 + 固定深色编辑器风格。
+**问题**：代码保持一片连续，指定区间收成一行折叠条，观感与原生代码块一致？
+**结论**：待线上验证 —— v2 已对齐官方：Shiki 双主题双值 token、`--font-paper-mono` 字体、顶栏文件名 + 复制按钮、暗色切换走官方 CSS 规则。
 
 <CodeFold
   title="line_following.py"
@@ -186,31 +130,28 @@ def run(data_queue, commands):
     commands.motors(left, right)`}
 />
 
-**一句话结论**：待线上验证 —— 两个折叠条点击展开/收起正常、行号连续、高亮可读，则判「可用」。
-**已知取舍**：无复制按钮、无语法主题切换、`code` 以模板字符串传入（维护时注意反引号转义）。
+**验收点**：① 折叠条带行号、收起时行号连续 ② 配色与上方原生块一致（亮/暗都看一眼）③ 复制按钮可用 ④ 折叠条不突兀。
 
 ---
 
-## Demo 6 · 函数伪代码浮层（自定义组件 `fn-doc.jsx`）
+## Demo 5 · 函数伪代码浮层（`fn-doc.jsx`）
 
 **问题**：读代码时鼠标摸上去（或点击）函数名，浮出伪代码且不影响布局？
-**预期结论**：可用 —— hover 与点击双支持（触屏没 hover），absolute 定位不挤动正文。
+**结论**：待线上验证 —— hover 与点击双支持（触屏没 hover），absolute 定位不挤动正文。
 
 这段说明里的函数名可以摸：循迹先读传感器状态 <FnDoc items={[{ label: "read_line_state()", doc: "读一帧数据\n├─ valid 为假 → 返回 None\n└─ 返回 is_detected 五路布尔元组" }]} />，
 再按状态算左右轮速 <FnDoc items={[{ label: "motion(state)", doc: "两边都压线 → 直行 0.4\n只压左边 → 右转\n只压右边 → 左转\n都没压 → 慢速直行找线" }]} />，
 最后发给电机 <FnDoc items={[{ label: "commands.motors(l, r)", doc: "l / r：0～1 占空比\n负值 = 反转\n立即生效，下一帧覆盖" }]} />。
 
-**一句话结论**：待线上验证 —— 浮层跟随、不挤压正文、点别处/移开能收起，则判「可用」。
-
 ---
 
-## 验收清单（T1，v2）
+## 验收清单（T1，v3）
 
-- [x] Demo 1 折叠：Accordion 可用，但**不是用户想要的形态**（切成多块），正文采用 Demo 5 方案
-- [x] Demo 2 行标记：highlight 可用；**focus 淡化砍掉，不进规范**
-- [x] Demo 3 三态 Tabs：可接受
-- [x] Demo 4 联动高亮：可用
-- [ ] Demo 5 编辑器式折叠：待线上验证
-- [ ] Demo 6 伪代码浮层：待线上验证
+- [x] 行标记：highlight 可用；focus 淡化砍掉，不进规范
+- [x] 三态 Tabs：可接受
+- [x] 联动高亮：可用
+- [x] Accordion 折叠：弃用（切成多块，非编辑器形态），由 CodeFold 替代
+- [ ] Demo 4 编辑器式折叠 v2：观感对齐原生（配色/暗色/折叠条/复制）
+- [ ] Demo 5 伪代码浮层：待线上验证
 - [ ] 构建无报错
 - [x] 正文 48 页零改动
