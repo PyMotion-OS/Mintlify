@@ -4,6 +4,8 @@ description: "页面表达方式验证场：四个 demo，每个给可交互示�
 ---
 
 import { CodeRef } from "/cn/ai-vision-robot/components/code-ref.jsx";
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx";
+import { FnDoc } from "/cn/ai-vision-robot/components/fn-doc.jsx";
 
 # UI Lab（内部）
 
@@ -43,14 +45,14 @@ def clamp(value, low, high):
 ```
 </Accordion>
 
-**一句话结论**：待线上验证 —— 点开/收起正常且代码高亮不丢，则判「可用」。
+**一句话结论**：功能上可用，但形态被否 —— Accordion 把代码切成多块，不是"编辑器里代码一片、行内折叠"的效果。正文改用 Demo 5 的自定义折叠组件。
 
 ---
 
 ## Demo 2 · 行标记
 
-**问题**：`title` / `lines` / `highlight` / `focus` 四个参数叠加，各自生效？
-**预期结论**：可用，但 focus 与 highlight 同用时行为要确认。
+**问题**：`title` / `lines` / `highlight` 三个参数叠加，各自生效？（`focus` 淡化按反馈砍掉，不进规范）
+**预期结论**：可用。
 
 ```python title="tracking.py" showLineNumbers
 def target_offset(box, width):
@@ -74,13 +76,7 @@ def decide(offset, dead_zone):
     return 1 if offset > 0 else -1
 ```
 
-```python title="tracking.py" focus={3} showLineNumbers
-def target_offset(box, width):
-    center = (box[0] + box[2]) / 2
-    return (center - width / 2) / width   # ← focus 第 3 行，其余淡化
-```
-
-**一句话结论**：待线上验证 —— 三个块分别看 highlight 落点与 focus 淡化效果。
+**一句话结论**：待线上验证 —— highlight 落在正确行即可。
 
 ---
 
@@ -161,11 +157,60 @@ def run(data_queue, commands):
 
 ---
 
-## 验收清单（T1）
+## Demo 5 · 编辑器式折叠（自定义组件 `code-fold.jsx`）
 
-- [ ] Demo 1 收起展开正常，代码高亮不丢
-- [ ] Demo 2 highlight 落在正确行、focus 其余淡化
-- [ ] Demo 3 切换不闪、SVG 图能显示
-- [ ] Demo 4 点函数名目标行变色，可切换
+**问题**：代码保持一片连续，指定区间收成一行折叠条（原生 Accordion 做不到，被否掉）？
+**预期结论**：可用 —— 但代码块不再走 Mintlify 高亮管线，组件内置轻量高亮 + 固定深色编辑器风格。
+
+<CodeFold
+  title="line_following.py"
+  folds={[
+    { label: "read_line_state()  辅助函数", from: 2, to: 6 },
+    { label: "motion()  循迹运动计算", from: 10, to: 14 },
+  ]}
+  code={`def run(data_queue, commands):
+    lt = data_queue.read()["line_tracker"]
+    if not lt["valid"]:
+        commands.motors(0, 0)
+        return
+    state = lt["is_detected"]
+    SPEED = 0.4
+    if state[0] and state[4]:
+        left, right = SPEED, SPEED
+    elif state[0]:
+        left, right = 0, SPEED
+    elif state[4]:
+        left, right = SPEED, 0
+    else:
+        left, right = 0.3, 0.3
+    commands.motors(left, right)`}
+/>
+
+**一句话结论**：待线上验证 —— 两个折叠条点击展开/收起正常、行号连续、高亮可读，则判「可用」。
+**已知取舍**：无复制按钮、无语法主题切换、`code` 以模板字符串传入（维护时注意反引号转义）。
+
+---
+
+## Demo 6 · 函数伪代码浮层（自定义组件 `fn-doc.jsx`）
+
+**问题**：读代码时鼠标摸上去（或点击）函数名，浮出伪代码且不影响布局？
+**预期结论**：可用 —— hover 与点击双支持（触屏没 hover），absolute 定位不挤动正文。
+
+这段说明里的函数名可以摸：循迹先读传感器状态 <FnDoc items={[{ label: "read_line_state()", doc: "读一帧数据\n├─ valid 为假 → 返回 None\n└─ 返回 is_detected 五路布尔元组" }]} />，
+再按状态算左右轮速 <FnDoc items={[{ label: "motion(state)", doc: "两边都压线 → 直行 0.4\n只压左边 → 右转\n只压右边 → 左转\n都没压 → 慢速直行找线" }]} />，
+最后发给电机 <FnDoc items={[{ label: "commands.motors(l, r)", doc: "l / r：0～1 占空比\n负值 = 反转\n立即生效，下一帧覆盖" }]} />。
+
+**一句话结论**：待线上验证 —— 浮层跟随、不挤压正文、点别处/移开能收起，则判「可用」。
+
+---
+
+## 验收清单（T1，v2）
+
+- [x] Demo 1 折叠：Accordion 可用，但**不是用户想要的形态**（切成多块），正文采用 Demo 5 方案
+- [x] Demo 2 行标记：highlight 可用；**focus 淡化砍掉，不进规范**
+- [x] Demo 3 三态 Tabs：可接受
+- [x] Demo 4 联动高亮：可用
+- [ ] Demo 5 编辑器式折叠：待线上验证
+- [ ] Demo 6 伪代码浮层：待线上验证
 - [ ] 构建无报错
-- [ ] 正文 48 页零改动
+- [x] 正文 48 页零改动
