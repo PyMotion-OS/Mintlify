@@ -101,10 +101,10 @@ def run(data_queue, commands):
 
 ---
 
-## Demo 4 · 编辑器式折叠（`code-fold.jsx` v2，原生同款）
+## Demo 4 · 编辑器式折叠（`code-fold.jsx` v3，结构对齐原生）
 
 **问题**：代码保持一片连续，指定区间收成一行折叠条，观感与原生代码块一致？
-**结论**：待线上验证 —— v2 已对齐官方：Shiki 双主题双值 token、`--font-paper-mono` 字体、顶栏文件名 + 复制按钮、暗色切换走官方 CSS 规则。
+**结论**：待线上验证 —— v3 结构与 class 串照搬原生：外层 `bg-gray-50` 灰框 + `p-0.5` + `border-gray-950/10`、顶栏 `text-gray-400`、内层代码面板 `bg-white dark:bg-codeblock(#0b0c0e)` + 14px 圆角；token 双值配色来自 Shiki 实测（github-light-default / dark-plus），颜色全走官方变量，无自造近似灰。
 
 <CodeFold
   title="line_following.py"
