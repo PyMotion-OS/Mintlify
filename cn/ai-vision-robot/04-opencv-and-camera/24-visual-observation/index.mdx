@@ -1,0 +1,115 @@
+---
+title: "4.9 视觉观测"
+description: "最终版 Camera：把连接、取图、超时、重连全收进类里，主程序只管观测"
+---
+
+## 本页目标
+
+前面 4.7 的连接逻辑和 4.8 的重连逻辑都堆在主程序里，越写越长。本页做**收口**：把连接、超时、断流重连、图片年龄判断全部塞进 `Camera` 类，主程序只剩"拿图 → 识别 → 显示"三行。
+
+这是模块 4 的终点，也是后面模块 5（舵机跟踪）、模块 6（YOLO）直接复用的基础。
+
+## 前置条件
+
+- 同目录有 `camera.py`、`target_observation.py`
+- 完成 4.8
+
+## 动手步骤
+
+**1. 先把 `camera.py` 升级成"最终版"**：`__enter__` 不再自己连，只启动后台线程；`connect()` / `set_disconnected()` 变成类方法由线程调用；新增 `latest(max_age)` 一步返回可用图片
+
+关键方法职责：
+
+| 方法 | 职责 |
+| --- | --- |
+| `__enter__` | 只启动后台线程，立刻返回（主程序不阻塞） |
+| `update_image` | 外层循环重连、内层循环取图，连续 5 次失败才判定断流 |
+| `connect` | 带 3 秒 / 1 秒超时打开，`session_id += 1` |
+| `latest_data` | 返回完整帧信息，并补上 `age` |
+| `latest(max_age)` | 直接返回可用图片，过期或无图返回 `None` |
+| `__exit__` | 停线程、`join(4.0)`、兜底释放 |
+
+**2. 新建 `24_visual_observation.py`，主程序就这点**
+
+```python
+import cv2
+from camera import Camera, log_message
+from target_observation import draw_target_marks, find_target
+
+
+def main():
+    last_state = None          # 状态不变时不重复打日志
+
+    try:
+        with Camera() as camera:               # 类内部自动连接 + 重连
+            while True:
+                if cv2.waitKey(20) == 27:
+                    break
+
+                image = camera.latest()         # 0.5 秒内的新图，否则 None
+                if image is None:
+                    if last_state != "waiting":
+                        log_message("WARNING", "vision", "state=waiting  image=None")
+                        last_state = "waiting"
+                    continue
+
+                target_data = find_target(image)
+                if target_data["state"] != last_state:
+                    log_message("INFO", "vision",
+                                f"state={target_data['state']}  "
+                                f"error_x={target_data['error_x']}  "
+                                f"error_y={target_data['error_y']}")
+                    last_state = target_data["state"]
+                cv2.imshow("Reliable visual observation - Esc to close",
+                           draw_target_marks(image, target_data))
+    except ValueError as exc:
+        log_message("ERROR", "camera", str(exc))
+    except KeyboardInterrupt:
+        log_message("INFO", "camera", "Ctrl+C 主动结束")
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，然后故意断网 3 秒再恢复**，确认画面自动恢复、程序不退出
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `Camera.CAMERA_URL` | str | 类属性 | 改成自己的 RTSP 地址 |
+| `reconnect_seconds` | float | 1.0 | 构造函数参数，重连间隔 |
+| `latest(max_age=0.5)` | float | 0.3～1.0 | 超过这个年龄的图不返回 |
+| 连续失败阈值 | int | 5（写死在 `update_image`） | 抗抖动，单次丢帧不触发重连 |
+| `join(timeout=4.0)` | float | 4.0 | 覆盖一次 3 秒连接超时 |
+
+## 数据结构
+
+`latest_data()` 返回的完整帧信息（比 4.7 多了 `state`、`session_id`、`age`）：
+
+```python
+{
+    "state": "connected",        # waiting / connected / disconnected
+    "image": <ndarray>,          # 最新 BGR 图；未取到或断流时为 None
+    "frame_number": 412,         # 累计帧编号，用于跳过重复帧
+    "received_at": 12853.421,    # 收到时刻的单调时间
+    "session_id": 3,             # 第几次连接成功，重连后 +1，可区分断流前后
+    "age": 0.037,                # 图片从收到到现在的秒数；无图为 None
+}
+```
+
+`latest()` 内部就是在 `latest_data()` 基础上做判断：`image is None` → 返回 `None`；`age > max_age` → 返回 `None`；否则返回图片本身。
+
+## 预期效果与排查
+
+画面稳定跟随蓝色目标，终端只在**状态变化**时打日志（`waiting` → `target` → `waiting`），不会每帧刷屏。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 启动就报"请先填写 CAMERA_URL" | 类属性为空 | 在 `camera.py` 里填地址 |
+| 断网后长时间不恢复 | 重连被卡在 `connect()` | 确认超时参数仍在，别删掉 |
+| 退出后进程残留 | `join` 超时太短 | 调到 4.0 秒以上 |
+| 日志每帧都打 | 少了 `last_state` 比较 | 只在状态变化时打印 |

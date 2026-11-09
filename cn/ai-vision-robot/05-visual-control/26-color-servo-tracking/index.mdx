@@ -1,0 +1,134 @@
+---
+title: "5.2 颜色舵机跟踪"
+description: "把 4.6 的二维偏差乘系数换成舵机角度，让云台自动追目标"
+---
+
+## 本页目标
+
+闭环第一次跑起来：**偏差 → 角度 → 新画面 → 新偏差**。规则就一条 `角度 += error * K`，中间加死区防止在中心来回抖。跑通后云台会自己把蓝色物体怼到画面中央。
+
+## 前置条件
+
+- 完成 5.1（知道 S4/S5 的角度范围）
+- 同目录有 `camera.py`（4.9 最终版）、`target_observation.py`（4.6）
+- 一个蓝色物体
+
+## 动手步骤
+
+**1. 抽一个 `servo_control.py`**：把安全边界和发送逻辑独立出来
+
+```python
+import time
+
+UP_DOWN_HOME, LEFT_RIGHT_HOME = 75, 120
+UP_DOWN_MIN, UP_DOWN_MAX = 0, 85
+LEFT_RIGHT_MIN, LEFT_RIGHT_MAX = 60, 180
+DEAD_ZONE = 0.10        # 偏差进入中心 10% 内保持当前角度，防抖
+
+
+def reset_servos(robot):
+    robot.pwm_servos.move_to({4: UP_DOWN_HOME, 5: LEFT_RIGHT_HOME})
+    time.sleep(1.0)
+    return UP_DOWN_HOME, LEFT_RIGHT_HOME
+
+
+def move_servos(commands, up_down_angle=75, left_right_angle=120):
+    up_down_angle = max(UP_DOWN_MIN, min(UP_DOWN_MAX, up_down_angle))       # 卡在 0～85
+    left_right_angle = max(LEFT_RIGHT_MIN, min(LEFT_RIGHT_MAX, left_right_angle))  # 卡在 60～180
+    commands.pwm_position_servos.write(
+        {4: up_down_angle, 5: left_right_angle}, valid_for=0.3)            # 有效期 > 循环间隔
+    return up_down_angle, left_right_angle
+
+
+def error_to_angle(error, angle, K):
+    if error is None or abs(error) <= DEAD_ZONE:
+        return angle                     # 无目标或已在中心，保持不动
+    return angle + error * K             # 按偏差成比例调整
+```
+
+**2. 新建 `26_color_servo_tracking.py`**
+
+```python
+import time
+import cv2
+import pymotion as pm
+from camera import Camera, log_message
+from servo_control import error_to_angle, move_servos, reset_servos
+from target_observation import draw_target_marks, find_target
+
+TARGET_TYPE = "blue"
+K = 5                 # 偏差为 1 时调 5°，越大跟得越快也越容易过冲（DEAD_ZONE 在 servo_control.py 里）
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+def run(camera, commands, up_down_angle, left_right_angle):
+    last_angles = None
+    while True:
+        image = camera.latest()
+        if image is not None:
+            target_data = find_target(image, TARGET_TYPE)
+
+            # 上下：偏差 y 与角度同号（目标偏下，角度增大）
+            up_down_angle = error_to_angle(target_data["error_y"], up_down_angle, K)
+            # 左右：偏差 x 与角度反号（目标偏右，S5 角度要减小）
+            left_right_angle = error_to_angle(target_data["error_x"], left_right_angle, -K)
+
+            up_down_angle, left_right_angle = move_servos(commands, up_down_angle, left_right_angle)
+            cv2.imshow("Color servo tracking - Esc to close",
+                       draw_target_marks(image, target_data))
+
+            if (up_down_angle, left_right_angle) != last_angles:
+                log_message("INFO", "servo",
+                            f"上下: {up_down_angle:.1f}°  左右: {left_right_angle:.1f}°")
+                last_angles = (up_down_angle, left_right_angle)
+
+        if cv2.waitKey(1) == 27:
+            break
+        time.sleep(0.1)          # 10 Hz
+
+
+def main():
+    try:
+        with Camera() as camera:
+            with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+                with robot.control():
+                    up_down_angle, left_right_angle = reset_servos(robot)
+                    with robot.realtime.open(
+                        command_targets={"pwm_position_servos": (4, 5)}
+                    ) as session:
+                        run(camera, session.commands, up_down_angle, left_right_angle)
+    except (ValueError, pm.lite.LiteError) as exc:
+        log_message("ERROR", "servo", f"{type(exc).__name__}: {exc}")
+    except KeyboardInterrupt:
+        log_message("INFO", "servo", "Ctrl+C 主动结束")
+    finally:
+        cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，把蓝色物体左右上下移动**，看云台是否反向跟随
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `K` | float | 3～10 | 比例系数。太小跟不上，太大在中心来回摆 |
+| `DEAD_ZONE` | float | 0.05～0.20 | 死区太小会持续微调抖动，太大对不准 |
+| 左右符号 | int | **-K** | 图像 x 向右增大，而 S5 向右转角度减小，必须反号 |
+| `valid_for` | float | 0.3 秒 | 必须大于循环周期 0.1 秒，否则命令中途失效 |
+| 循环周期 | float | 0.1 秒（10 Hz） | 再快意义不大，受限于摄像头出帧 |
+
+## 预期效果与排查
+
+目标在画面左侧时 S5 角度增大、云台向左转；目标偏上时 S4 角度减小。目标移到中心 10% 内后云台停住不动。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 越追越偏，反方向跑 | 左右符号搞反了 | S5 用 `-K` |
+| 到位后来回抖 | `DEAD_ZONE` 太小或 `K` 太大 | 先把 `K` 降到 3，再放宽死区 |
+| 完全不动 | 死区太大 / 一直 `lost` | 打印 `error_x` 看是否真有值 |
+| 舵机在边界咔咔响 | 角度越界没限幅 | `move_servos` 里必须做 `max/min` 卡边 |

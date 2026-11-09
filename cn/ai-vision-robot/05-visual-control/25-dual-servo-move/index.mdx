@@ -1,0 +1,84 @@
+---
+title: "5.1 双舵机运动"
+description: "用普通位置命令复位、用实时命令控制 S4/S5 云台"
+---
+
+## 本页目标
+
+摄像头能动了：本页先让 S4（上下）、S5（左右）两个舵机**复位到已知姿态**，再切到实时会话发一次角度，看清两种命令的区别 —— `pwm_servos.move_to()` 是"发一次就走"，`session.commands.pwm_position_servos.write()` 是"持续下发、有有效期"。
+
+## 前置条件
+
+- 机器人已联网，`transport="wifi"` 可连通
+- 舵机云台上没有卡住线材
+
+## 动手步骤
+
+**1. 新建 `25_dual_servo_move.py`**
+
+**2. 写入核心代码**
+
+```python
+import time
+import pymotion as pm
+
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+def main():
+    try:
+        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+            with robot.control():
+                # 第一步：复位——普通位置命令，发一次即到位
+                robot.pwm_servos.move_to({4: 75, 5: 120})
+                print("复位姿态: 上下=75°  左右=120°（居中）")
+                time.sleep(2.0)
+
+                # 第二步：实时会话——持续下发，带有效期
+                with robot.realtime.open(
+                    command_targets={"pwm_position_servos": (4, 5)}
+                ) as session:
+                    session.commands.pwm_position_servos.write(
+                        {4: 70, 5: 120}, valid_for=0.3
+                    )
+                    print("双水平居中: 上下=70°（水平）  左右=120°（居中）")
+                    time.sleep(2.0)
+    except (ValueError, pm.lite.LiteError) as exc:
+        print(f"出错: {type(exc).__name__}: {exc}")
+    except KeyboardInterrupt:
+        print("Ctrl+C 主动结束；退出 control 时会关闭 PWM 输出")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行，观察云台两次动作**
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| S4 角度 | int | **0～85°** | 控制上下俯仰，70° 基本水平，75° 是复位 |
+| S5 角度 | int | **60～180°** | 控制左右，120° 居中 |
+| `valid_for` | float | 0.3 秒 | 超过这个时间没续发，该命令自动失效 |
+| `command_targets` | dict | `{"pwm_position_servos": (4, 5)}` | 声明本会话要控制哪两个舵机，必须先声明 |
+
+## 两种命令的区别
+
+| 方式 | 入口 | 特点 | 用在 |
+| --- | --- | --- | --- |
+| 普通位置命令 | `robot.pwm_servos.move_to({...})` | 发一次即执行，不占用实时会话 | 开机复位、单次摆位 |
+| 实时命令 | `session.commands.pwm_position_servos.write({...}, valid_for=0.3)` | 必须持续续发，超时自动失效（安全兜底） | 视觉跟随等连续控制 |
+
+## 预期效果与排查
+
+云台先到 75°/120°，停 2 秒，再到 70°/120°（略微抬头到水平），程序退出时 PWM 输出关闭、舵机松力。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 舵机不动，报 `LiteError` | 实时会话没声明这个 target | `command_targets` 里必须写 `pwm_position_servos` |
+| 舵机只动一下就停 | 实时命令没续发 | 实时命令必须循环续发，或改用 `move_to()` |
+| 云台咔咔响、顶到限位 | 角度超范围 | S4 限 0～85，S5 限 60～180 |
+| 退出后舵机还在抖 | 没退出 `control()` | 用 `with robot.control()`，确保退出时关输出 |
