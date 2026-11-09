@@ -81,7 +81,39 @@
               {
                 "group": "AI Vision Robot 使用手册",
                 "pages": [
-                  "cn/ai-vision-robot/index"
+                  "cn/ai-vision-robot/index",
+                  {
+                    "group": "模块1（占位）",
+                    "pages": ["cn/ai-vision-robot/module-01/index"]
+                  },
+                  {
+                    "group": "模块2（占位）",
+                    "pages": ["cn/ai-vision-robot/module-02/index"]
+                  },
+                  {
+                    "group": "模块3（占位）",
+                    "pages": ["cn/ai-vision-robot/module-03/index"]
+                  },
+                  {
+                    "group": "模块4（占位）",
+                    "pages": ["cn/ai-vision-robot/module-04/index"]
+                  },
+                  {
+                    "group": "模块5（占位）",
+                    "pages": ["cn/ai-vision-robot/module-05/index"]
+                  },
+                  {
+                    "group": "模块6（占位）",
+                    "pages": ["cn/ai-vision-robot/module-06/index"]
+                  },
+                  {
+                    "group": "模块7（占位）",
+                    "pages": ["cn/ai-vision-robot/module-07/index"]
+                  },
+                  {
+                    "group": "模块8（占位）",
+                    "pages": ["cn/ai-vision-robot/module-08/index"]
+                  }
                 ]
               }
             ]
