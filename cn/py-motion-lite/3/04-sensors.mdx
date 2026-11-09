@@ -221,7 +221,7 @@ with pm.lite.connect(transport="usb") as lite:
 
 ### 3.4.4 超声波
 
-配套的超声波传感模块可以测量模块到物体的距离，其硬件连接如图 3-5 所示。
+配套的超声波传感模块可以测量模块到物体的距离，接线顺序是 Trig 接 IO5，Echo 接 IO6，VCC 接 3.3V，GND 接板上 GND，其硬件连接如图 3-5 所示。
 
 <img
   src="/PyMotionLite_UserManual_Image/Image-3-5.png"
@@ -316,7 +316,7 @@ with pm.lite.connect(transport="usb") as lite:
 
 ### 3.4.5 五路循迹
 
-配套五路循迹模块的 OUT1～OUT5 依次连接至 PyMotion Lite 的 GPIO14、15、16、17、18，其硬件连接如图 3-6 所示。
+配套五路循迹模块的 OUT1～OUT5 依次连接至 PyMotion Lite 的 IO14、15、16、17、18，VCC/5V 连接到板卡的 3.3V，GND 接板上 GND，其硬件连接如图 3-6 所示。
 
 <img
   src="/PyMotionLite_UserManual_Image/Image-3-6.png"
