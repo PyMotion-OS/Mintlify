@@ -1,0 +1,171 @@
+---
+title: "UI Lab（内部）"
+description: "页面表达方式验证场：四个 demo，每个给可交互示例 + 一句话结论。结论比示例重要。"
+---
+
+import { CodeRef } from "/cn/ai-vision-robot/components/code-ref.jsx";
+
+# UI Lab（内部）
+
+本页只做验证，不属于正式手册内容。四个 demo 各自回答一个问题：**这种写法能不能用**。
+验证通过后，写法才会进正文（见 `docs/spec.md` 的两条硬约束）。
+
+---
+
+## Demo 1 · 折叠
+
+**问题**：`<Accordion>` 里直接放 fenced 代码块，收起/展开正常、高亮不丢？
+**预期结论**：可用 —— 主函数默认展开，辅助函数默认收起。
+
+<Accordion title="main.py（主函数）" defaultOpen={true}>
+```python title="main.py"
+from pm.lite import connect
+
+def run(data_queue, commands):
+    frame = data_queue.read()
+    print(frame["device_id"])
+
+def main():
+    robot = connect()
+    robot.realtime.open()
+    run(robot.realtime, robot.commands)
+
+if __name__ == "__main__":
+    main()
+```
+</Accordion>
+
+<Accordion title="helper.py（辅助函数，默认收起）" defaultOpen={false}>
+```python title="helper.py"
+def clamp(value, low, high):
+    """把 value 限制在 [low, high] 区间内"""
+    return max(low, min(high, value))
+```
+</Accordion>
+
+**一句话结论**：待线上验证 —— 点开/收起正常且代码高亮不丢，则判「可用」。
+
+---
+
+## Demo 2 · 行标记
+
+**问题**：`title` / `lines` / `highlight` / `focus` 四个参数叠加，各自生效？
+**预期结论**：可用，但 focus 与 highlight 同用时行为要确认。
+
+```python title="tracking.py" showLineNumbers
+def target_offset(box, width):
+    center = (box[0] + box[2]) / 2
+    return (center - width / 2) / width
+
+def decide(offset, dead_zone):
+    if abs(offset) < dead_zone:      # 在死区内，不动
+        return 0
+    return 1 if offset > 0 else -1
+```
+
+```python title="tracking.py" highlight={2,7} showLineNumbers
+def target_offset(box, width):
+    center = (box[0] + box[2]) / 2   # ← highlight 第 2 行
+    return (center - width / 2) / width
+
+def decide(offset, dead_zone):
+    if abs(offset) < dead_zone:      # ← highlight 第 7 行
+        return 0
+    return 1 if offset > 0 else -1
+```
+
+```python title="tracking.py" focus={3} showLineNumbers
+def target_offset(box, width):
+    center = (box[0] + box[2]) / 2
+    return (center - width / 2) / width   # ← focus 第 3 行，其余淡化
+```
+
+**一句话结论**：待线上验证 —— 三个块分别看 highlight 落点与 focus 淡化效果。
+
+---
+
+## Demo 3 · 三态切换
+
+**问题**：`<Tabs>` 在 代码 / 伪代码 / 结果图 之间切换，不闪、图能显示？
+**预期结论**：可用 —— 这是「伪代码先行」规范的呈现载体。
+
+<Tabs>
+<Tab title="代码">
+```python title="qr_centering.py"
+def run(data_queue, commands):
+    qr = qr_observation.read(data_queue)
+    if qr is None:
+        servo_control.reset()
+        return
+    servo_control.turn(qr["yaw_offset"])
+```
+</Tab>
+
+<Tab title="伪代码">
+```text
+读一帧二维码观测
+├─ 没读到 → 舵机回中，结束
+└─ 读到了 → 按水平偏角转动舵机
+```
+</Tab>
+
+<Tab title="结果图">
+![检测帧示意：蓝色目标块 + 黄色检测框](/cn/ai-vision-robot/assets/ui-lab-demo3-result.svg)
+</Tab>
+</Tabs>
+
+**一句话结论**：待线上验证 —— 切换流畅、SVG 正常显示，则判「可用」。
+
+---
+
+## Demo 4 · 联动高亮
+
+**问题**：点说明区的函数名，下方代码块对应行亮起？（原生不支持，靠自定义组件）
+**预期结论**：有坑 —— 依赖 Shiki 渲染出的 DOM 行选择器，未实测前不进正文。
+
+下面代码块套了 `<div id="demo-block">`，点按钮试试：
+
+<div id="demo-block">
+
+```python title="line_following.py" showLineNumbers
+def read_line_state(data_queue):
+    lt = data_queue.read()["line_tracker"]
+    if not lt["valid"]:
+        return None
+    return lt["is_detected"]
+
+def run(data_queue, commands):
+    state = read_line_state(data_queue)
+    if state is None:
+        commands.motors(0, 0)
+        return
+    left, right = motion(state)
+    commands.motors(left, right)
+```
+
+</div>
+
+<CodeRef
+  target="demo-block"
+  items={[
+    { label: "read_line_state() → 第 1 行", line: 1 },
+    { label: "读不到传感器 → 第 3 行", line: 3 },
+    { label: "run() 主循环 → 第 8 行", line: 8 },
+    { label: "停车分支 → 第 11 行", line: 11 },
+  ]}
+/>
+
+**一句话结论**：待线上验证 —— 点按钮目标行变色、再点别的能切换，则判「可用」；点不动则按备注排查 DOM 选择器。
+
+组件实现要点（已按 spec 落地）：named export、hooks 预注入不 import、内联 style 不写全局 CSS、行选择器做 `.line` / `[data-line]` / `pre` 子元素三级兜底。
+
+---
+
+## 验收清单（T1）
+
+- [ ] Demo 1 收起展开正常，代码高亮不丢
+- [ ] Demo 2 highlight 落在正确行、focus 其余淡化
+- [ ] Demo 3 切换不闪、SVG 图能显示
+- [ ] Demo 4 点函数名目标行变色，可切换
+- [ ] 构建无报错
+- [ ] 正文 48 页零改动

@@ -181,6 +181,12 @@
                 ]
               }
             ]
+          },
+          {
+            "group": "UI Lab（内部）",
+            "pages": [
+              "cn/ai-vision-robot/ui-lab/index"
+            ]
           }
         ]
       }
