@@ -1,0 +1,88 @@
+---
+title: "1.2 变量与条件"
+description: "读一次超声波，把读数分成过近、正常、无效三种情况"
+---
+
+## 本页目标
+
+连上机器人后读一次超声波距离，用变量存住读数、用 `if / elif / else` 把它分成三档输出。同时完整看清一次 `robot.ultrasonic()` 返回的字段结构。
+
+## 前置条件
+
+- 完成例程 1.1，能稳定连上设备
+- 机器人前方无遮挡物（避免读数为 0 造成干扰）
+
+## 动手步骤
+
+**1. 新建文件 `02_variables_and_conditions.py`**
+
+**2. 写入以下代码**
+
+```python
+import pymotion as pm
+
+STOP = 200                                 # 停机阈值，毫米
+TRANSPORT = "wifi"                         # Wi-Fi 连接模式
+TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
+
+
+def main():
+    """连接后读一次距离，判断这次读数属于哪一档。"""
+    try:
+        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+            ultrasonic_data = robot.ultrasonic(max_age=2.0)   # 超过 2.0s 的数据算过期
+            print(f"distance={ultrasonic_data.distance} state={ultrasonic_data.state} "
+                  f"valid={ultrasonic_data.valid} age={ultrasonic_data.age}")
+
+            if not ultrasonic_data.valid:                     # 无效读数只有状态，没有距离
+                print(f"未知: None（{ultrasonic_data.state}）")
+            elif ultrasonic_data.distance < STOP:             # 比阈值小就是过近
+                print(f"过近: {ultrasonic_data.distance:.0f} mm")
+            else:                                             # 其余都算正常
+                print(f"正常: {ultrasonic_data.distance:.0f} mm")
+
+    except pm.lite.LiteError as exc:
+        print(f"连接失败: {exc}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行**
+
+```bash
+python 02_variables_and_conditions.py
+```
+
+## 参数说明
+
+`robot.ultrasonic(max_age=2.0)` 的完整返回结构：
+
+```
+{
+  "distance": 235,          # 距离，单位毫米
+  "state": "valid",         # 数据状态
+  "valid": true,            # 能不能用
+  "age": 0.08               # 数据有多旧，单位秒
+}
+```
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `max_age` | float | 秒，本例 2.0 | 超过该时长的数据视为过期并抛错 |
+| `distance` | int / None | 毫米 | 无效读数时为 `None` |
+| `state` | str | `valid` / 其他 | 无效时用它说明原因 |
+| `valid` | bool | `True` / `False` | 先判它，再判 `distance` |
+| `age` | float | 秒 | 数据新鲜度 |
+| `STOP` | int | 本例 200 | 你的应用阈值，按车身尺寸调 |
+
+## 预期效果与排查
+
+正常时输出一行字典信息 + `正常: 235 mm`；把纸板靠近到 20 cm 内应变成 `过近`。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 一直输出 `未知: None` | 传感器未就绪或读数过期 | 加大 `max_age`，确认前方无强反光/吸音材质 |
+| `TypeError` 比较 `None` | 没先判 `valid` 就比大小 | 保持 `if not valid` 在最前面 |
+| 距离跳动大 | 超声波本身特性 | 后续例程用多次采样+中位数，本页不必处理 |

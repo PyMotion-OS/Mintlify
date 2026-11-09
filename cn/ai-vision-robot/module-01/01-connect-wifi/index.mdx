@@ -1,0 +1,88 @@
+---
+title: "1.1 连接 Wi-Fi 与设备信息"
+description: "确认 Python 与 SDK 环境，连上机器人并读取设备编号，然后自动断开"
+---
+
+## 本页目标
+
+打印运行环境（Python 版本、SDK 版本与路径），通过 Wi-Fi 连上 AI Vision Robot，读出设备 ID 和传输方式，退出 `with` 时自动断开。这一页是后面所有例程的地基——**连不上就别往下走**。
+
+## 前置条件
+
+- 机器人已上电，处于等待连接状态
+- 电脑与机器人在同一 Wi-Fi 网络（同一网段，无客户端隔离）
+- 已安装 pymotion SDK 及其通信依赖（`pyserial`、`zeroconf`）
+
+## 动手步骤
+
+**1. 新建文件 `01_connect_wifi.py`**
+
+**2. 写入以下代码**
+
+```python
+import sys
+from pathlib import Path
+
+import pymotion as pm
+
+DEVICE_NAME = "AI Vision Robot"            # 设备名称
+TRANSPORT = "wifi"                         # Wi-Fi 连接模式
+TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
+
+
+def main():
+    """打印运行环境，连接 Robot，读取 robot 信息后自动断开。"""
+    print(f"Python: {sys.version.split()[0]} ({sys.executable})")
+    print(f"SDK:    {pm.lite.__version__} ({Path(pm.__file__).resolve()})")
+    print()
+
+    try:
+        with pm.lite.connect(
+            transport=TRANSPORT,
+            timeout=TIMEOUT
+        ) as robot:
+            print(f"设备别名: {DEVICE_NAME}")
+            print(f"设备  ID: {robot.connection.device_id}")
+            print(f"传输方式: {robot.connection.transport}")
+    except pm.lite.LiteError as exc:
+        print(f"结果: 连接失败（{exc}）")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行**
+
+```bash
+python 01_connect_wifi.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `TRANSPORT` | str | `"wifi"` | 连接方式，本例程固定 Wi-Fi |
+| `TIMEOUT` | float | `15.0` | 连接最大等待秒数，局域网内 10～20 秒足够 |
+| `DEVICE_NAME` | str | `"AI Vision Robot"` | 仅用于打印识别，不参与连接匹配 |
+| `robot.connection.device_id` | str | 由设备决定 | 设备唯一编号，排查多机冲突时看它 |
+| `robot.connection.transport` | str | 由连接方式决定 | 实际生效的传输方式 |
+
+## 预期效果与排查
+
+正常输出形如：
+
+```
+Python: 3.12.4 (C:\...\python.exe)
+SDK:    0.x.x (C:\...\pymotion\__init__.py)
+
+设备别名: AI Vision Robot
+设备  ID: A1B2C3D4
+传输方式: wifi
+```
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| `连接失败（...）` | 不在同一网段、机器人未上电、防火墙拦截 | 确认同一 Wi-Fi；关掉电脑防火墙临时测试 |
+| 一直等到超时 | mDNS 发现被路由器隔离 | 换手机热点或关掉 AP 隔离 |
+| `ModuleNotFoundError: pymotion` | SDK 未装或装到了别的 Python | 用 `sys.executable` 确认解释器，重装到同一环境 |

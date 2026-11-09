@@ -84,7 +84,15 @@
                   "cn/ai-vision-robot/index",
                   {
                     "group": "模块 1 Python 基础与连接",
-                    "pages": ["cn/ai-vision-robot/module-01/index"]
+                    "pages": [
+                      "cn/ai-vision-robot/module-01/index",
+                      "cn/ai-vision-robot/module-01/01-connect-wifi/index",
+                      "cn/ai-vision-robot/module-01/02-variables-and-conditions/index",
+                      "cn/ai-vision-robot/module-01/03-loops-and-lists/index",
+                      "cn/ai-vision-robot/module-01/04-functions-and-parameters/index",
+                      "cn/ai-vision-robot/module-01/05-exceptions-and-cleanup/index",
+                      "cn/ai-vision-robot/module-01/06-class-and-with/index"
+                    ]
                   },
                   {
                     "group": "模块 2 运动与传感器",

@@ -1,0 +1,100 @@
+---
+title: "1.5 异常与资源清理"
+description: "断网、Ctrl-C 都不会留下未释放的连接"
+---
+
+## 本页目标
+
+写一个"能被打断还不留残局"的循环：每秒读一次设备状态，中途断网或按 Ctrl+C 都由 `except` / `finally` 收尾并关闭连接。同时完整看清状态包的八个字段。
+
+## 前置条件
+
+- 完成例程 1.1
+- 建议准备一个能关掉机器人电源的时机（用来观察断连表现）
+
+## 动手步骤
+
+**1. 新建文件 `05_exceptions_and_cleanup.py`**
+
+**2. 写入以下代码**
+
+```python
+import time
+import pymotion as pm
+
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+def read_status(robot):
+    """读一次状态，把整包里八个字段全打出来。"""
+    status = robot.status(max_age=2.0)
+    print(f"device_id={status.device_id} state={status.state} "
+          f"lease_active={status.lease_active} estop_latched={status.estop_latched} "
+          f"estop_reason={status.estop_reason!r} fault_latched={status.fault_latched} "
+          f"fault_reason={status.fault_reason!r} age={status.age}")
+
+
+def main():
+    """连上以后每秒读一次；中途 Ctrl-C 或断网，都由 finally 收尾。"""
+    robot = pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT)  # 连不上直接退出
+
+    try:
+        for i in range(20):
+            read_status(robot)
+            time.sleep(1.0)
+    except KeyboardInterrupt:
+        print("被 Ctrl-C 打断")
+    except pm.lite.LiteError as exc:          # 只接 SDK 抛出的错
+        print(f"出错: {exc}")
+    finally:
+        robot.close()                          # 无论如何都执行
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行后按 Ctrl+C 观察收尾**
+
+```bash
+python 05_exceptions_and_cleanup.py
+```
+
+## 参数说明
+
+`robot.status(max_age=2.0)` 的完整返回结构：
+
+```
+{
+  "device_id": "A1B2C3D4",      # 设备编号
+  "state": "ready",             # 设备状态
+  "lease_active": true,         # 是否持有控制权
+  "estop_latched": false,       # 急停是否锁存（按下会一直锁着）
+  "estop_reason": "",           # 急停原因，未触发是空字符串
+  "fault_latched": false,       # 故障是否锁存
+  "fault_reason": "",           # 故障原因，未触发是空字符串
+  "age": 0.12                   # 数据有多旧，单位秒
+}
+```
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `max_age` | float | 秒，本例 2.0 | 超时抛 `LiteError`，交给外层 `except` |
+| `estop_latched` | bool | `True` / `False` | 为 `True` 时必须先解除急停才能运动 |
+| `lease_active` | bool | `True` / `False` | 是否拿到控制权，多端操作时看它 |
+| `robot.close()` | 方法 | — | 释放连接，必须放在 `finally` |
+
+## 预期效果与排查
+
+```
+device_id=A1B2C3D4 state=ready lease_active=True estop_latched=False estop_reason='' fault_latched=False fault_reason='' age=0.12
+...
+被 Ctrl-C 打断        ← 按 Ctrl+C 后出现，且进程干净退出
+```
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| Ctrl+C 后进程仍卡住 | `close()` 没放在 `finally` | 见本页写法，连接对象只在外层建一次 |
+| 报 `LiteError` 且 `age` 很大 | 采集频率低于 `max_age` | 加大 `max_age` 或提高读取频率 |
+| `estop_latched=True` | 急停按钮被按下过 | 松开急停并重新连一次 |

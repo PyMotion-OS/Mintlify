@@ -1,0 +1,88 @@
+---
+title: "1.6 类与 with 语句"
+description: "用自定义上下文管理器包住电机：进 with 停一次，出 with 再停一次"
+---
+
+## 本页目标
+
+同一个"前进两秒"的动作写两遍对照：一遍手动 `stop() → set_speeds() → stop()`，一遍交给自定义类 `SafeMotors`，在 `__enter__` / `__exit__` 里自动停机。理解 `with` 的本质——**进入和退出都能挂保证动作**，这是后面所有电机例程的安全底座。
+
+## 前置条件
+
+- 完成例程 1.1
+- **机器人架空**（轮子离地），或前方留出至少 1 米空地
+- 左右轮已接到 M3、M4 口
+
+## 动手步骤
+
+**1. 新建文件 `06_class_and_with.py`**
+
+**2. 写入以下代码**
+
+```python
+import pymotion as pm
+
+PORT_LEFT = 3                              # 左轮，接 M3 口
+PORT_RIGHT = 4                             # 右轮，接 M4 口
+RPM = 30                                   # 轮子转速，转/分钟，正数向前
+TRANSPORT = "wifi"
+TIMEOUT = 15.0
+
+
+class SafeMotors:
+    """两路电机的包装：进 with 时停一次，出 with 时再停一次"""
+
+    def __init__(self, robot):
+        self.motors = robot.motors         # 存下机器人的电机组
+
+    def __enter__(self):
+        self.motors.stop()                 # 进 with 时停止所有电机
+        return self.motors                 # as 后面拿到的就是电机组
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.motors.stop()                 # 出 with 时停止所有电机
+
+
+def main():
+    with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with robot.control():              # 电机执行前需要获取控制权
+            # 写法一：停、发、停，三步都得自己写
+            robot.motors.stop()
+            robot.motors.set_speeds({PORT_LEFT: RPM, PORT_RIGHT: RPM}, duration=2)
+            robot.motors.stop()
+
+            # 写法二：交给 SafeMotors 自动收尾
+            with SafeMotors(robot) as motors:
+                motors.set_speeds({PORT_LEFT: RPM, PORT_RIGHT: RPM}, duration=2)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+**3. 运行**（先架空车轮）
+
+```bash
+python 06_class_and_with.py
+```
+
+## 参数说明
+
+| 参数 | 类型 | 默认值或范围 | 说明 |
+| --- | --- | --- | --- |
+| `PORT_LEFT` / `PORT_RIGHT` | int | 本例 3 / 4 | 左轮 M3、右轮 M4，接线改了这里也要改 |
+| `RPM` | int | 本例 30 | 转速，正数前进、负数后退 |
+| `duration` | float | 秒，本例 2 | 持续时长，到期自动停 |
+| `robot.control()` | 上下文管理器 | — | 进入后才有电机控制权，退出自动释放 |
+| `__exit__` 返回值 | None | — | 返回 `False`/`None` 表示不吞异常，异常继续向外抛 |
+
+## 预期效果与排查
+
+车轮先转 2 秒停下，再转 2 秒停下（两段动作看起来一样）。区别在**可靠性**：如果第二段中途出错或网络断开，`with` 退出时仍会执行 `stop()`，车不会一直转。
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| 报权限类错误 | 没进 `robot.control()` | 电机动作必须包在它里面 |
+| 轮子不转但无报错 | 端口接错或 `RPM` 太小 | 换 M3/M4 试，`RPM` 提到 50 |
+| 只转一次就结束 | 两段动作太像，误以为只有一段 | 把第二段 `RPM` 改成 60 便于区分 |
+| 程序异常后车还在转 | 没走 `with` 或 `__exit__` 里漏了 `stop()` | 检查 `__exit__` 是否真的调用了 `stop()` |
