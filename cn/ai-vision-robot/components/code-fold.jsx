@@ -1,20 +1,20 @@
-// code-fold.jsx — 编辑器式折叠代码块 v3（结构性对齐原生，不是近似配色）
+// code-fold.jsx — 编辑器式折叠代码块 v4
 //
 // 用法：
-//   <CodeFold title="line_following.py"
-//             folds={[{ label: "read_line_state()", from: 2, to: 6 }]}
-//             code={`...`} />
+//   <CodeFold
+//     title="line_following.py"
+//     folds={[{ label: "read_line_state()  辅助函数", from: 2, to: 6 }]}
+//     docs={[{ label: "read_line_state", doc: "伪代码……" }]}
+//     code={`...`} />
 //
-// 抄法（2026-11-09 抓线上 SSR DOM + 官方 CSS）：
-// 1. 结构照搬原生：外层 .code-block（bg-gray-50 / dark:bg-white/5、border-gray-950/10、
-//    p-0.5、rounded-2xl）→ 顶栏（text-gray-400、rounded-t-[14px]、pl-4 pr-2.5 py-1）
-//    → 内层代码面板（bg-white / dark:bg-codeblock=#0b0c0e、rounded-xt=14px）
-// 2. 颜色全部走官方 Tailwind class / CSS 变量（--gray-*、--shiki-*），不自造近似灰
-// 3. token 双值：color + --shiki-dark，暗色由官方规则
-//    html.dark .shiki span{color:var(--shiki-dark)} 接管
-// 4. 行元素 class="line"，字体 var(--font-paper-mono)
+// v4 变更（2026-11-09 用户反馈）：
+// 1. 折叠箭头独立成一列，位于「行号 | 箭头 | 代码」之间（VSCode 布局）
+// 2. docs 参数：代码内（含折叠条 label）出现的函数名可 hover/点击浮出伪代码；
+//    浮层用 position:fixed（按 getBoundingClientRect 定位），不被 overflow-x-auto 裁剪
 //
-// 折叠条：融入代码流、带行号、注释灰样式，收起时行号连续。
+// 结构照搬原生（v3 结论）：外层 .code-block 灰框、顶栏 text-gray-400、
+// 内层 bg-white dark:bg-codeblock(#0b0c0e) + 14px 圆角；token 双值配色
+// 来自 Shiki 实测，暗色切换由官方 CSS 规则接管。
 // 约束：named export、hooks 预注入不 import、无第三方包。
 
 const C = (light, dark) => ({ color: light, "--shiki-dark": dark });
@@ -56,46 +56,153 @@ const tokenize = (line) => {
   return out;
 };
 
-const gutterStyle = (w) => ({
+// ---------- 伪代码浮层（fixed 定位，不被 overflow 裁剪） ----------
+
+const popupStyle = (pos) => ({
+  position: "fixed",
+  top: pos.top,
+  left: pos.left,
+  zIndex: 9999,
+  padding: "10px 14px",
+  borderRadius: "8px",
+  backgroundColor: "#0d1117",
+  color: "#c9d1d9",
+  border: "1px solid rgba(128,128,128,0.4)",
+  boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+  fontFamily: "var(--font-paper-mono, ui-monospace, SFMono-Regular, Menlo, monospace)",
+  fontSize: "12.5px",
+  lineHeight: "18px",
+  whiteSpace: "pre-wrap",
+  minWidth: "240px",
+  maxWidth: "440px",
+  margin: 0,
+});
+
+const nearRect = (el) => {
+  const r = el.getBoundingClientRect();
+  return {
+    top: Math.min(r.bottom + 6, window.innerHeight - 180),
+    left: Math.max(8, Math.min(r.left, window.innerWidth - 460)),
+  };
+};
+
+// 把一行文本按 docs 里的函数名切分；命中处渲染成可 hover 的 FnHover
+const FnHover = ({ text, doc }) => {
+  const [pos, setPos] = useState(null);
+  return (
+    <span
+      onMouseEnter={(e) => setPos(nearRect(e.currentTarget))}
+      onMouseLeave={() => setPos(null)}
+      onClick={(e) =>
+        setPos(pos ? null : nearRect(e.currentTarget))
+      }
+      style={{
+        cursor: "pointer",
+        borderRadius: "3px",
+        backgroundColor: pos ? "rgba(130,80,208,0.14)" : "transparent",
+        boxShadow: pos ? "0 0 0 1px rgba(130,80,208,0.35)" : "none",
+        transition: "background-color 80ms",
+      }}
+    >
+      {tokenize(text).map((seg, i) => (
+        <span key={i} style={PALETTE[seg.k]}>{seg.t}</span>
+      ))}
+      {pos && <span style={popupStyle(pos)}>{doc}</span>}
+    </span>
+  );
+};
+
+const splitDocs = (text, docs) => {
+  if (!docs || !docs.length) return [{ t: text }];
+  const esc = docs.map((d) => d.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const re = new RegExp("\\b(" + esc.join("|") + ")\\b", "g");
+  const out = [];
+  let last = 0;
+  let m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push({ t: text.slice(last, m.index) });
+    const hit = docs.find((d) => d.label === m[1]);
+    out.push({ t: m[0], doc: hit ? hit.doc : null });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push({ t: text.slice(last) });
+  return out;
+};
+
+// ---------- 行渲染 ----------
+
+// 箭头列宽度（行号与代码之间，VSCode 的 fold gutter）
+const ARROW_W = "1.6em";
+
+const numCol = (w) => ({
   width: w,
   flexShrink: 0,
   textAlign: "right",
-  paddingRight: "16px",
+  paddingRight: "8px",
   userSelect: "none",
 });
 
-const Line = ({ n, text, w }) => (
+const arrowCol = () => ({
+  width: ARROW_W,
+  flexShrink: 0,
+  textAlign: "center",
+  userSelect: "none",
+});
+
+const Line = ({ n, text, w, docs }) => (
   <span className="line" style={{ display: "flex" }}>
-    <span className="text-gray-400 dark:text-gray-600" style={gutterStyle(w)}>
+    <span className="text-gray-400 dark:text-gray-600" style={numCol(w)}>
       {n}
     </span>
+    <span style={arrowCol()} />
     <span style={{ whiteSpace: "pre" }}>
-      {tokenize(text).map((seg, i) => (
-        <span key={i} style={PALETTE[seg.k]}>
-          {seg.t}
-        </span>
-      ))}
+      {splitDocs(text, docs).map((seg, i) =>
+        seg.doc ? (
+          <FnHover key={i} text={seg.t} doc={seg.doc} />
+        ) : (
+          tokenize(seg.t).map((s, j) => (
+            <span key={`${i}-${j}`} style={PALETTE[s.k]}>
+              {s.t}
+            </span>
+          ))
+        )
+      )}
     </span>
   </span>
 );
 
-const FoldRow = ({ n, label, isOpen, hiddenCount, w, onClick }) => (
+const FoldRow = ({ n, label, isOpen, hiddenCount, w, docs, onClick }) => (
   <span
     className="line"
     style={{ display: "flex", cursor: "pointer" }}
     onClick={onClick}
   >
-    <span className="text-gray-400 dark:text-gray-600" style={gutterStyle(w)}>
+    <span className="text-gray-400 dark:text-gray-600" style={numCol(w)}>
       {n}
     </span>
-    <span style={{ whiteSpace: "pre", ...PALETTE.comment }}>
-      {isOpen ? "▾" : "▸"} {label}
-      {!isOpen ? ` … ${hiddenCount} 行已折叠` : ""}
+    <span style={{ ...arrowCol(), color: "#6E7781" }}>{isOpen ? "▾" : "▸"}</span>
+    <span style={{ whiteSpace: "pre" }}>
+      {isOpen && <span style={PALETTE.comment}>{label}</span>}
+      {!isOpen &&
+        splitDocs(label, docs).map((seg, i) =>
+          seg.doc ? (
+            <FnHover
+              key={i}
+              text={seg.t}
+              doc={seg.doc}
+            />
+          ) : (
+            <span key={i} style={PALETTE.comment}>{seg.t}</span>
+          )
+        )}
+      {!isOpen && (
+        <span style={PALETTE.comment}>{` … ${hiddenCount} 行已折叠`}</span>
+      )}
     </span>
   </span>
 );
 
-export const CodeFold = ({ title = "", code, folds = [] }) => {
+export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
   const [open, setOpen] = useState(folds.map(() => false));
   const [copied, setCopied] = useState(false);
   const lines = code.replace(/\n$/, "").split("\n");
@@ -161,7 +268,7 @@ export const CodeFold = ({ title = "", code, folds = [] }) => {
           >
             {blocks.map((b, bi) =>
               b.type === "line" ? (
-                <Line key={bi} n={b.n} text={b.text} w={w} />
+                <Line key={bi} n={b.n} text={b.text} w={w} docs={docs} />
               ) : open[b.idx] ? (
                 <span key={bi}>
                   <FoldRow
@@ -169,10 +276,17 @@ export const CodeFold = ({ title = "", code, folds = [] }) => {
                     label={folds[b.idx].label}
                     isOpen={true}
                     w={w}
+                    docs={docs}
                     onClick={() => toggle(b.idx)}
                   />
                   {b.text.map((t, li) => (
-                    <Line key={li} n={folds[b.idx].from + li} text={t} w={w} />
+                    <Line
+                      key={li}
+                      n={folds[b.idx].from + li}
+                      text={t}
+                      w={w}
+                      docs={docs}
+                    />
                   ))}
                 </span>
               ) : (
@@ -183,6 +297,7 @@ export const CodeFold = ({ title = "", code, folds = [] }) => {
                   isOpen={false}
                   hiddenCount={b.text.length}
                   w={w}
+                  docs={docs}
                   onClick={() => toggle(b.idx)}
                 />
               )
