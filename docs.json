@@ -83,35 +83,35 @@
                 "pages": [
                   "cn/ai-vision-robot/index",
                   {
-                    "group": "模块1（占位）",
+                    "group": "模块 1 Python 基础与连接",
                     "pages": ["cn/ai-vision-robot/module-01/index"]
                   },
                   {
-                    "group": "模块2（占位）",
+                    "group": "模块 2 运动与传感器",
                     "pages": ["cn/ai-vision-robot/module-02/index"]
                   },
                   {
-                    "group": "模块3（占位）",
+                    "group": "模块 3 循迹",
                     "pages": ["cn/ai-vision-robot/module-03/index"]
                   },
                   {
-                    "group": "模块4（占位）",
+                    "group": "模块 4 OpenCV 与摄像头",
                     "pages": ["cn/ai-vision-robot/module-04/index"]
                   },
                   {
-                    "group": "模块5（占位）",
+                    "group": "模块 5 视觉控制",
                     "pages": ["cn/ai-vision-robot/module-05/index"]
                   },
                   {
-                    "group": "模块6（占位）",
+                    "group": "模块 6 YOLO 与 AI",
                     "pages": ["cn/ai-vision-robot/module-06/index"]
                   },
                   {
-                    "group": "模块7（占位）",
+                    "group": "模块 7 综合项目",
                     "pages": ["cn/ai-vision-robot/module-07/index"]
                   },
                   {
-                    "group": "模块8（占位）",
+                    "group": "模块 8 树莓派部署",
                     "pages": ["cn/ai-vision-robot/module-08/index"]
                   }
                 ]
