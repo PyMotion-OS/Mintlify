@@ -101,41 +101,48 @@ def run(data_queue, commands):
 
 ---
 
-## Demo 4 · 编辑器式折叠 + 代码内伪代码浮层（`code-fold.jsx` v4）
+## Demo 4 · 编辑器式折叠 + 代码内伪代码浮层（`code-fold.jsx` v5）
 
-**问题**：① 箭头列在「行号 | 箭头 | 代码」之间（VSCode 布局）？② 代码里的函数名也能 hover 出伪代码浮层？
-**结论**：待线上验证 —— v4：折叠箭头独立成列；新增 `docs` 参数，代码内与折叠条 label 上的函数名均可 hover/点击浮出伪代码（fixed 定位，不被横向滚动裁剪）。
+**问题**：① 行号收起/展开都严格连续？② 折叠条对齐真实 `def` 块（折叠前后代码都是合法 Python）？③ 折叠条函数名正常配色而非灰色？④ 代码内函数名 hover 出伪代码？
+**结论**：待线上验证 —— v5：折叠区间 `[from, to]` 闭区间必须覆盖一个完整 def 块；展开后无独立头行，▾ 落在首行箭头列；折叠条 label 走正常 token 配色，仅「… N 行已折叠」后缀为注释灰。
 
 <CodeFold
   title="line_following.py"
   folds={[
-    { label: "read_line_state()  辅助函数", from: 2, to: 6 },
-    { label: "motion()  循迹运动计算", from: 10, to: 14 },
+    { label: "read_line_state(data_queue)", from: 1, to: 5 },
+    { label: "motion(state)", from: 7, to: 15 },
   ]}
   docs={[
     { label: "read_line_state", doc: "读一帧数据\n├─ valid 为假 → 返回 None\n└─ 返回 is_detected 五路布尔元组" },
     { label: "motion", doc: "两边都压线 → 直行 0.4\n只压左边 → 右转\n只压右边 → 左转\n都没压 → 慢速直行找线" },
     { label: "commands.motors", doc: "l / r：0～1 占空比\n负值 = 反转\n立即生效，下一帧覆盖" },
   ]}
-  code={`def run(data_queue, commands):
+  code={`def read_line_state(data_queue):
     lt = data_queue.read()["line_tracker"]
     if not lt["valid"]:
-        commands.motors(0, 0)
-        return
-    state = lt["is_detected"]
+        return None           # 数据过期 → 放弃本帧
+    return lt["is_detected"]
+
+def motion(state):
     SPEED = 0.4
     if state[0] and state[4]:
-        left, right = SPEED, SPEED
-    elif state[0]:
-        left, right = 0, SPEED
-    elif state[4]:
-        left, right = SPEED, 0
-    else:
-        left, right = 0.3, 0.3
+        return SPEED, SPEED   # 两边都压线 → 直行
+    if state[0]:
+        return 0, SPEED       # 只压左边 → 右转
+    if state[4]:
+        return SPEED, 0       # 只压右边 → 左转
+    return 0.3, 0.3           # 都没压 → 慢速找线
+
+def run(data_queue, commands):
+    state = read_line_state(data_queue)
+    if state is None:
+        commands.motors(0, 0)
+        return
+    left, right = motion(state)
     commands.motors(left, right)`}
 />
 
-**验收点**：① 折叠条带行号、收起时行号连续 ② 箭头列位于行号与代码之间，未折叠行该列留空对齐 ③ 配色与上方原生块一致（亮/暗都看一眼）④ 复制按钮可用 ⑤ 代码里的 `commands.motors`、`read_line_state`（折叠条上）hover 出伪代码浮层，移开消失。
+**验收点**：① 收起时行号 1、7；展开后 1～23 严格连续、无重复 ② 折叠条是真实的 def 函数签名，函数名紫色（func 色），后缀灰色；展开后 ▾ 在区域首行箭头列 ③ 注释正常灰绿色、字符串/关键字配色与原生一致 ④ 代码里的 `read_line_state`、`motion`、`commands.motors` hover 出伪代码浮层 ⑤ 复制按钮：点击粘贴出的内容应与完整源码一致（含被折叠的行）⑥ 列宽：行号与箭头列不喧宾夺主。
 
 ---
 
@@ -150,13 +157,13 @@ def run(data_queue, commands):
 
 ---
 
-## 验收清单（T1，v4）
+## 验收清单（T1，v5）
 
 - [x] 行标记：highlight 可用；focus 淡化砍掉，不进规范
 - [x] 三态 Tabs：可接受
 - [x] 联动高亮：可用
 - [x] Accordion 折叠：弃用（切成多块，非编辑器形态），由 CodeFold 替代
-- [ ] Demo 4 编辑器式折叠 v4：箭头列在行号与代码之间 + 代码内函数浮层
+- [ ] Demo 4 编辑器式折叠 v5：行号连续 / 折叠区间对齐 def 块 / 折叠条配色 / 代码内浮层 / 复制完整
 - [ ] Demo 5 伪代码浮层：待线上验证
 - [ ] 构建无报错
 - [x] 正文 48 页零改动
