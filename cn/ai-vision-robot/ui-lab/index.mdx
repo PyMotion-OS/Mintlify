@@ -101,27 +101,28 @@ def run(data_queue, commands):
 
 ---
 
-## Demo 4 · 编辑器式折叠 + 代码内伪代码浮层（`code-fold.jsx` v7）
+## Demo 4 · 编辑器式折叠 + 代码内伪代码浮层（`code-fold.jsx` v8）
 
-**问题**：① 收起时保留完整 `def` 签名、函数名是紫色？② `run` 也能折叠？③ 顶栏能关行号？④ 函数体缩进符合 Python 语法（复制出来可直接运行）？
-**结论**：待线上验证 —— v7：折叠条函数名改回紫（v6 的 bug：命中 docs 的片段被单独 tokenize，孤立函数名认不出，落成黑字）；`run` 同样有伸缩按钮；顶栏加「行号」开关。
+**问题**：① 顶栏颜色和原生代码块完全一致（不靠猜，走站点主题变量）？② `run` 有伸缩按钮 + 伪代码浮层？③ 默认约定：`run` / `main` 入口默认展开，其余函数默认折叠？④ 函数体缩进符合 Python 语法？
+**结论**：待线上验证 —— v8：抓 SSR + 官方 CSS 实锤，自定义组件的 Tailwind 类被编译成 `mint-*`，色值是默认调色板硬编码、不吃站点主题变量（`--gray-50: 243 247 245` 绿调灰），且 `mint-dark:bg-codeblock`、`mint-rounded-xt` 压根不生成。v8 颜色全部改走 `rgb(var(--gray-NN))` + 组件内 `<style>` 做暗色切换。
 
 <CodeFold
   title="line_following.py"
   folds={[
     { label: "def read_line_state(data_queue):", from: 1, to: 5 },
     { label: "def motion(state):", from: 7, to: 15 },
-    { label: "def run(data_queue, commands):", from: 17, to: 23 },
+    { label: "def run(data_queue, commands):", from: 17, to: 23, defaultOpen: true },
   ]}
   docs={[
     { label: "read_line_state", doc: "读一帧数据\n├─ valid 为假 → 返回 None\n└─ 返回 is_detected 五路布尔元组" },
     { label: "motion", doc: "两边都压线 → 直行 0.4\n只压左边 → 右转\n只压右边 → 左转\n都没压 → 慢速直行找线" },
+    { label: "run", doc: "主循环\n├─ 读传感器状态\n├─ 读不到 → 停车\n└─ 按状态算左右轮速发给电机" },
     { label: "commands.motors", doc: "l / r：0～1 占空比\n负值 = 反转\n立即生效，下一帧覆盖" },
   ]}
   code={'def read_line_state(data_queue):\n    lt = data_queue.read()["line_tracker"]\n    if not lt["valid"]:\n        return None           # 数据过期 → 放弃本帧\n    return lt["is_detected"]\n\ndef motion(state):\n    SPEED = 0.4\n    if state[0] and state[4]:\n        return SPEED, SPEED   # 两边都压线 → 直行\n    if state[0]:\n        return 0, SPEED       # 只压左边 → 右转\n    if state[4]:\n        return SPEED, 0       # 只压右边 → 左转\n    return 0.3, 0.3           # 都没压 → 慢速找线\n\ndef run(data_queue, commands):\n    state = read_line_state(data_queue)\n    if state is None:\n        commands.motors(0, 0)\n        return\n    left, right = motion(state)\n    commands.motors(left, right)'}
 />
 
-**验收点**：① 三个折叠条都是 `▸ def xxx(...):`（def 红关键字 + 函数名紫）② 展开后函数体相对 `def` 缩进 4 格，复制粘贴到 Python 可直接运行 ③ 展开后 ▾ 在区域首行箭头列、行号 1～23 连续 ④ 注释灰绿色、浮层正常 ⑤ 顶栏「行号」按钮可切换行号显示，样式与「复制」一致 ⑥ 复制按钮粘贴出 23 行完整代码。
+**验收点**：① 顶栏底色和上方 Demo 1/2 原生代码块顶栏完全一致（同用 `--gray-50` 主题变量，暗色也一致）② `read_line_state`、`motion` 默认折叠，`run` 默认展开且折叠条/代码内函数名摸上去都出伪代码 ③ 折叠条函数名紫色 ④ 复制仍是 23 行合法 Python ⑤ 「行号」开关样式与「复制」一致。
 
 ---
 
@@ -136,13 +137,13 @@ def run(data_queue, commands):
 
 ---
 
-## 验收清单（T1，v7）
+## 验收清单（T1，v8）
 
 - [x] 行标记：highlight 可用；focus 淡化砍掉，不进规范
 - [x] 三态 Tabs：可接受
 - [x] 联动高亮：可用
 - [x] Accordion 折叠：弃用（切成多块，非编辑器形态），由 CodeFold 替代
-- [ ] Demo 4 编辑器式折叠 v7：行号连续 / 折叠条函数名紫 / `run` 可折叠 / 行号开关 / 代码内浮层 / 复制完整
+- [ ] Demo 4 编辑器式折叠 v8：顶栏颜色与原生一致（主题变量）/ 折叠条函数名紫 / `run` 可折叠+浮层 / run 默认展开其余折叠 / 行号开关 / 复制完整
 - [ ] Demo 5 伪代码浮层：待线上验证
 - [ ] 构建无报错
 - [x] 正文 48 页零改动

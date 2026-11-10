@@ -1,16 +1,25 @@
-// code-fold.jsx — 编辑器式折叠代码块 v7
+// code-fold.jsx — 编辑器式折叠代码块 v8
 //
 // 用法：
 //   <CodeFold
 //     title="line_following.py"
-//     folds={[{ label: "def read_line_state(data_queue):", from: 1, to: 5 }]}  // from..to 闭区间 = 一个完整顶层块（def / run 都行）；label 传完整签名
+//     folds={[{ label: "def read_line_state(data_queue):", from: 1, to: 5 }]}  // from..to 闭区间 = 一个完整顶层块；label 传完整签名
 //     docs={[{ label: "read_line_state", doc: "伪代码……" }]}                   // 代码内（含折叠条）同名函数 hover 出伪代码
 //     code={'def ...\n    ...'} />                                            // 用 \n 转义单行串！MDX 会剥多行模板串的公共缩进
 //
-// v7 变更（2026-11-10 用户反馈）：
-// 1. FnHover 内的函数名改用 func 色：v6 里 splitDocs 把命中片段单独交给 FnHover，
-//    FnHover 又自己 tokenize 一遍——孤立的 "read_line_state" 不带 def 前缀，tokenizer
-//    认不出是函数名，于是渲染成 plain 黑字（折叠条里 def 红、函数名不紫的真正原因）
+// 默认展开/折叠约定：`run` / `main`（入口方法）默认展开，其余函数默认折叠 —— 在对应
+// fold 项上传 defaultOpen: true 即可，组件不强判函数名。
+//
+// v8 变更（2026-11-10 用户反馈"头部颜色和人家不一致，颜色不能靠猜"）：
+// 抓 SSR + 官方 CSS 实锤：自定义组件里的 Tailwind 类会被 Mintlify 改名成 mint-*，
+// 且生成的 mint-* 色值是 Tailwind 默认调色板硬编码（bg-gray-50=#F9FAFB），
+// 不吃站点主题变量（--gray-50: 243 247 245 绿调灰）→ 我们顶栏 (249,250,251) vs 原生 (243,247,245)。
+// 另外 mint-dark:bg-codeblock / mint-rounded-xt 这两个类压根不生成（Mintlify 内部工具类）。
+// 修法：所有颜色改用站点真实变量 rgb(var(--gray-NN))，暗色切换用组件内 <style> 的
+// .pfold-* 类（模仿官方 :is(.dark *) 写法）；布局类继续走 Tailwind。
+//
+// v7：
+// 1. FnHover 内的函数名改用 func 色（v6 里命中 docs 的片段被孤立 tokenize，落成黑字）
 // 2. 顶栏加「行号」开关按钮，样式与「复制」一致
 // 3. folds 支持任意顶层块（含 def run），不限于 def
 //
@@ -25,6 +34,28 @@
 // 暗色切换由官方 CSS 规则接管。约束：named export、hooks 预注入不 import、无第三方包。
 
 const C = (light, dark) => ({ color: light, "--shiki-dark": dark });
+
+// pfold-* —— 组件自有颜色样式（v8）。
+// 为什么不用 Tailwind 颜色类：见文件头 v8 说明 —— mint-* 编译产物是默认调色板
+// 硬编码，不吃站点主题变量。这里全部走 rgb(var(--gray-NN))，与原生代码块同源；
+// 暗色切换模仿官方 `:is(.dark *)` 选择器。fallback 值 = 主题实值。
+// 来源（官方 CSS 实测）：--gray-50:243 247 245 / --gray-300:206 211 208 /
+// --gray-400:159 163 160 / --gray-600:80 84 82 / --gray-700:63 67 64 /
+// --gray-950:10 15 12 / 暗色外框 rgb(255 255 255/.05)、描边 /.1
+const PFOLD_CSS = `
+.pfold-outer{background-color:rgb(var(--gray-50, 243 247 245));border:1px solid rgb(var(--gray-950, 10 15 12) / 0.1);color:rgb(var(--gray-950, 10 15 12))}
+.pfold-outer:is(.dark *){background-color:rgb(255 255 255 / 0.05);border-color:rgb(255 255 255 / 0.1)}
+.pfold-head{color:rgb(var(--gray-400, 159 163 160))}
+.pfold-filename{color:rgb(var(--gray-700, 63 67 64))}
+.pfold-filename:is(.dark *){color:rgb(var(--gray-300, 206 211 208))}
+.pfold-num{color:rgb(var(--gray-400, 159 163 160))}
+.pfold-num:is(.dark *){color:rgb(var(--gray-600, 80 84 82))}
+.pfold-btn{color:rgb(var(--gray-400, 159 163 160))}
+.pfold-btn:hover{color:rgb(var(--gray-600, 80 84 82))}
+.pfold-btn:is(.dark *):hover{color:rgb(var(--gray-300, 206 211 208))}
+.pfold-btn[aria-pressed="false"]{color:rgb(var(--gray-300, 206 211 208))}
+.pfold-btn[aria-pressed="false"]:is(.dark *){color:rgb(var(--gray-600, 80 84 82))}
+`;
 
 // Shiki github-light-default / dark-plus 实测配色（与原生 token 完全一致）
 const PALETTE = {
@@ -182,7 +213,7 @@ const renderCode = (text, docs) =>
 const Line = ({ n, text, w, docs, arrow, onFold, nums }) => (
   <span className="line" style={{ display: "flex" }}>
     {nums && (
-      <span className="text-gray-400 dark:text-gray-600" style={numCol(w)}>
+      <span className="pfold-num" style={numCol(w)}>
         {n}
       </span>
     )}
@@ -207,7 +238,7 @@ const FoldRow = ({ n, label, w, docs, onClick, nums }) => (
     onClick={onClick}
   >
     {nums && (
-      <span className="text-gray-400 dark:text-gray-600" style={numCol(w)}>
+      <span className="pfold-num" style={numCol(w)}>
         {n}
       </span>
     )}
@@ -221,7 +252,8 @@ const FoldRow = ({ n, label, w, docs, onClick, nums }) => (
 );
 
 export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
-  const [open, setOpen] = useState(folds.map(() => false));
+  // 默认折叠；fold 项传 defaultOpen: true 则初始展开（约定：run / main 入口方法）
+  const [open, setOpen] = useState(folds.map((f) => !!f.defaultOpen));
   const [copied, setCopied] = useState(false);
   const [nums, setNums] = useState(true);
   const lines = code.replace(/\n$/, "").split("\n");
@@ -269,13 +301,16 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
 
   return (
     <div
-      className="code-block not-prose rounded-2xl relative min-w-0 bg-gray-50 dark:bg-white/5 text-gray-950 dark:text-gray-50 border border-gray-950/10 dark:border-white/10 p-0.5"
+      // 外壳颜色走 pfold-outer（站点主题变量），布局类继续 Tailwind；
+      // 原 bg-gray-50/dark:bg-white/5/border-*/text-* 颜色类全部弃用（mint-* 硬编码默认调色板）
+      className="code-block not-prose rounded-2xl relative min-w-0 p-0.5"
       style={{ margin: "16px 0" }}
       data-has-header=""
     >
+      <style>{PFOLD_CSS}</style>
       {/* 顶栏：结构与 class 照搬原生 code-block-header */}
-      <div className="flex text-gray-400 text-xs rounded-t-[14px] leading-6 font-medium pl-4 pr-2.5 py-1">
-        <div className="grow-0 flex items-center gap-1.5 text-gray-700 dark:text-gray-300 min-w-0">
+      <div className="pfold-head flex text-xs rounded-t-[14px] leading-6 font-medium pl-4 pr-2.5 py-1">
+        <div className="pfold-filename grow-0 flex items-center gap-1.5 min-w-0">
           <span className="truncate min-w-0" title={title}>
             {title}
           </span>
@@ -285,29 +320,27 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
             onClick={() => setNums(!nums)}
             title={nums ? "隐藏行号" : "显示行号"}
             aria-pressed={nums}
-            className={
-              "text-xs rounded-md px-1.5 py-0.5 bg-transparent border-0 cursor-pointer transition-colors " +
-              (nums
-                ? "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                : "text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400")
-            }
+            className="pfold-btn text-xs rounded-md px-1.5 py-0.5 bg-transparent border-0 cursor-pointer"
           >
             行号
           </button>
           <button
             onClick={copy}
-            className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md px-1.5 py-0.5 bg-transparent border-0 cursor-pointer"
+            className="pfold-btn text-xs rounded-md px-1.5 py-0.5 bg-transparent border-0 cursor-pointer"
           >
             {copied ? "✓ 已复制" : "复制"}
           </button>
         </div>
       </div>
 
-      {/* 代码面板：原生 code-block-root 的 bg-white / dark:bg-codeblock(#0b0c0e) */}
+      {/* 代码面板：原生 code-block-root 的 bg-white / dark:bg-codeblock(#0b0c0e)。
+          暗色底由官方规则接管：html.dark .code-block-background{background:var(--shiki-dark-bg)!important}
+          内圆角 rounded-xt 在 mint-* 里不生成，改内联 var(--rounded-xl) */}
       <div
-        className="shiki code-block-background bg-white dark:bg-codeblock rounded-xt text-sm leading-6"
+        className="shiki code-block-background bg-white text-sm leading-6"
         style={{
           backgroundColor: "#ffffff",
+          borderRadius: "var(--rounded-xl, 14px)",
           "--shiki-dark-bg": "#0B0C0E",
           ...PALETTE.plain,
         }}
