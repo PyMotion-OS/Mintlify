@@ -303,7 +303,8 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
     <div
       // 外壳颜色走 pfold-outer（站点主题变量），布局类继续 Tailwind；
       // 原 bg-gray-50/dark:bg-white/5/border-*/text-* 颜色类全部弃用（mint-* 硬编码默认调色板）
-      className="code-block not-prose rounded-2xl relative min-w-0 p-0.5"
+      // v8.1 修复：v8 漏挂 pfold-outer 类（CSS 在线上、无元素使用 → 壳白底无边框）
+      className="pfold-outer code-block not-prose rounded-2xl relative min-w-0 p-0.5"
       style={{ margin: "16px 0" }}
       data-has-header=""
     >
