@@ -101,48 +101,26 @@ def run(data_queue, commands):
 
 ---
 
-## Demo 4 · 编辑器式折叠 + 代码内伪代码浮层（`code-fold.jsx` v5）
+## Demo 4 · 编辑器式折叠 + 代码内伪代码浮层（`code-fold.jsx` v6）
 
-**问题**：① 行号收起/展开都严格连续？② 折叠条对齐真实 `def` 块（折叠前后代码都是合法 Python）？③ 折叠条函数名正常配色而非灰色？④ 代码内函数名 hover 出伪代码？
-**结论**：待线上验证 —— v5：折叠区间 `[from, to]` 闭区间必须覆盖一个完整 def 块；展开后无独立头行，▾ 落在首行箭头列；折叠条 label 走正常 token 配色，仅「… N 行已折叠」后缀为注释灰。
+**问题**：① 收起时保留完整 `def` 签名？② 函数体缩进符合 Python 语法（复制出来可直接运行）？③ 折叠条无废话？
+**结论**：待线上验证 —— v6：折叠条显示完整签名 `def motion(state):`；代码改用 `\n` 转义字符串传入（MDX 会剥掉 JSX 属性多行模板串的公共缩进，v5 因此函数体顶格，复制出来是非法 Python）；去掉「N 行已折叠」后缀。
 
 <CodeFold
   title="line_following.py"
   folds={[
-    { label: "read_line_state(data_queue)", from: 1, to: 5 },
-    { label: "motion(state)", from: 7, to: 15 },
+    { label: "def read_line_state(data_queue):", from: 1, to: 5 },
+    { label: "def motion(state):", from: 7, to: 15 },
   ]}
   docs={[
     { label: "read_line_state", doc: "读一帧数据\n├─ valid 为假 → 返回 None\n└─ 返回 is_detected 五路布尔元组" },
     { label: "motion", doc: "两边都压线 → 直行 0.4\n只压左边 → 右转\n只压右边 → 左转\n都没压 → 慢速直行找线" },
     { label: "commands.motors", doc: "l / r：0～1 占空比\n负值 = 反转\n立即生效，下一帧覆盖" },
   ]}
-  code={`def read_line_state(data_queue):
-    lt = data_queue.read()["line_tracker"]
-    if not lt["valid"]:
-        return None           # 数据过期 → 放弃本帧
-    return lt["is_detected"]
-
-def motion(state):
-    SPEED = 0.4
-    if state[0] and state[4]:
-        return SPEED, SPEED   # 两边都压线 → 直行
-    if state[0]:
-        return 0, SPEED       # 只压左边 → 右转
-    if state[4]:
-        return SPEED, 0       # 只压右边 → 左转
-    return 0.3, 0.3           # 都没压 → 慢速找线
-
-def run(data_queue, commands):
-    state = read_line_state(data_queue)
-    if state is None:
-        commands.motors(0, 0)
-        return
-    left, right = motion(state)
-    commands.motors(left, right)`}
+  code={'def read_line_state(data_queue):\n    lt = data_queue.read()["line_tracker"]\n    if not lt["valid"]:\n        return None           # 数据过期 → 放弃本帧\n    return lt["is_detected"]\n\ndef motion(state):\n    SPEED = 0.4\n    if state[0] and state[4]:\n        return SPEED, SPEED   # 两边都压线 → 直行\n    if state[0]:\n        return 0, SPEED       # 只压左边 → 右转\n    if state[4]:\n        return SPEED, 0       # 只压右边 → 左转\n    return 0.3, 0.3           # 都没压 → 慢速找线\n\ndef run(data_queue, commands):\n    state = read_line_state(data_queue)\n    if state is None:\n        commands.motors(0, 0)\n        return\n    left, right = motion(state)\n    commands.motors(left, right)'}
 />
 
-**验收点**：① 收起时行号 1、7；展开后 1～23 严格连续、无重复 ② 折叠条是真实的 def 函数签名，函数名紫色（func 色），后缀灰色；展开后 ▾ 在区域首行箭头列 ③ 注释正常灰绿色、字符串/关键字配色与原生一致 ④ 代码里的 `read_line_state`、`motion`、`commands.motors` hover 出伪代码浮层 ⑤ 复制按钮：点击粘贴出的内容应与完整源码一致（含被折叠的行）⑥ 列宽：行号与箭头列不喧宾夺主。
+**验收点**：① 收起时折叠条是 `▸ def read_line_state(data_queue):`（def 红关键字 + 紫函数名）② 展开后函数体相对 `def` 缩进 4 格，复制粘贴到 Python 可直接运行 ③ 展开后 ▾ 在区域首行箭头列、行号 1～23 连续 ④ 注释灰绿色、浮层正常 ⑤ 复制按钮粘贴出 23 行完整代码。
 
 ---
 

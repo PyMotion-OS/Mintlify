@@ -1,19 +1,17 @@
-// code-fold.jsx — 编辑器式折叠代码块 v5
+// code-fold.jsx — 编辑器式折叠代码块 v6
 //
 // 用法：
 //   <CodeFold
 //     title="line_following.py"
-//     folds={[{ label: "read_line_state(data_queue)", from: 1, to: 5 }]}   // from..to 闭区间，必须是一个完整 def 块
-//     docs={[{ label: "read_line_state", doc: "伪代码……" }]}               // 代码内（含折叠条）同名函数 hover 出伪代码
-//     code={`...`} />
+//     folds={[{ label: "def read_line_state(data_queue):", from: 1, to: 5 }]}  // from..to 闭区间 = 完整 def 块；label 传完整 def 签名
+//     docs={[{ label: "read_line_state", doc: "伪代码……" }]}                   // 代码内（含折叠条）同名函数 hover 出伪代码
+//     code={'def ...\n    ...'} />                                            // 用 \n 转义单行串！MDX 会剥多行模板串的公共缩进
 //
-// v5 变更（2026-11-10 用户反馈）：
-// 1. 行号修复：折叠区间 [from, to] 闭区间整体被折叠条替代；展开后不再渲染单独头行，
-//    ▾ 直接落在区域首行的箭头列 —— 行号严格连续，不再出现重复编号
-// 2. 折叠条配色：label 走正常 token（def 函数名 = func 色），只有「… N 行已折叠」后缀是注释灰
-// 3. copy 兜底：clipboard API 不可用（非安全上下文）时退回 execCommand
-// 4. tokenize 顺序：字符串先于注释判断，避免字符串里的 # 被误判
-// 5. 列宽收紧：行号 paddingRight 8px，箭头列 1.4em
+// v6 变更（2026-11-10 用户反馈）：
+// 1. 折叠条显示完整 def 签名（def 关键字红 + 函数名紫），不再缺 def
+// 2. 去掉「… N 行已折叠」后缀（无用信息）
+// 3. 页面侧：code 改 \n 转义单行串传入 —— MDX 剥 JSX 属性多行模板串的公共缩进，
+//    导致 v5 函数体顶格、复制出来是非法 Python
 //
 // 结构照搬原生（v3 结论）：外层 .code-block 灰框、顶栏 text-gray-400、
 // 内层 bg-white dark:bg-codeblock(#0b0c0e)；token 双值配色来自 Shiki 实测，
@@ -176,9 +174,10 @@ const Line = ({ n, text, w, docs, arrow, onFold }) => (
   </span>
 );
 
-// 折叠条：替代 [from, to] 整块。行号 = from，函数名按 token 正常配色，
-// 「… N 行已折叠」后缀为注释灰；label 里命中 docs 的函数名同样可 hover。
-const FoldRow = ({ n, label, hiddenCount, w, docs, onClick }) => (
+// 折叠条：替代 [from, to] 整块。行号 = from；label 应传完整 def 签名（如
+// "def motion(state):"），tokenize 后 def 红关键字 + 紫函数名，无额外后缀；
+// label 里命中 docs 的函数名同样可 hover。
+const FoldRow = ({ n, label, w, docs, onClick }) => (
   <span
     className="line"
     style={{ display: "flex" }}
@@ -202,7 +201,6 @@ const FoldRow = ({ n, label, hiddenCount, w, docs, onClick }) => (
           ))
         )
       )}
-      <span style={PALETTE.comment}>{` … ${hiddenCount} 行已折叠`}</span>
     </span>
   </span>
 );
@@ -313,7 +311,6 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
                   key={bi}
                   n={folds[b.idx].from}
                   label={folds[b.idx].label}
-                  hiddenCount={b.text.length}
                   w={w}
                   docs={docs}
                   onClick={() => toggle(b.idx)}
