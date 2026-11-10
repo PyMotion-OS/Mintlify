@@ -1,13 +1,20 @@
-// code-fold.jsx — 编辑器式折叠代码块 v6
+// code-fold.jsx — 编辑器式折叠代码块 v7
 //
 // 用法：
 //   <CodeFold
 //     title="line_following.py"
-//     folds={[{ label: "def read_line_state(data_queue):", from: 1, to: 5 }]}  // from..to 闭区间 = 完整 def 块；label 传完整 def 签名
+//     folds={[{ label: "def read_line_state(data_queue):", from: 1, to: 5 }]}  // from..to 闭区间 = 一个完整顶层块（def / run 都行）；label 传完整签名
 //     docs={[{ label: "read_line_state", doc: "伪代码……" }]}                   // 代码内（含折叠条）同名函数 hover 出伪代码
 //     code={'def ...\n    ...'} />                                            // 用 \n 转义单行串！MDX 会剥多行模板串的公共缩进
 //
-// v6 变更（2026-11-10 用户反馈）：
+// v7 变更（2026-11-10 用户反馈）：
+// 1. FnHover 内的函数名改用 func 色：v6 里 splitDocs 把命中片段单独交给 FnHover，
+//    FnHover 又自己 tokenize 一遍——孤立的 "read_line_state" 不带 def 前缀，tokenizer
+//    认不出是函数名，于是渲染成 plain 黑字（折叠条里 def 红、函数名不紫的真正原因）
+// 2. 顶栏加「行号」开关按钮，样式与「复制」一致
+// 3. folds 支持任意顶层块（含 def run），不限于 def
+//
+// v6：
 // 1. 折叠条显示完整 def 签名（def 关键字红 + 函数名紫），不再缺 def
 // 2. 去掉「… N 行已折叠」后缀（无用信息）
 // 3. 页面侧：code 改 \n 转义单行串传入 —— MDX 剥 JSX 属性多行模板串的公共缩进，
@@ -86,6 +93,20 @@ const nearRect = (el) => {
   };
 };
 
+// 命中 docs 的片段单独渲染：语法着色由这里决定，不能再交给 tokenize ——
+// 孤立一个 "read_line_state" 或 "commands.motors"，tokenizer 无从判断它是函数名。
+// 规则：a.b.c → 前缀 plain（对象）+ 末段 func；纯标识符 → func（与 def 行、调用处一致）
+const docParts = (text) => {
+  const dot = text.lastIndexOf(".");
+  if (dot > 0) {
+    return [
+      { t: text.slice(0, dot + 1), k: "plain" },
+      { t: text.slice(dot + 1), k: "func" },
+    ];
+  }
+  return [{ t: text, k: "func" }];
+};
+
 const FnHover = ({ text, doc }) => {
   const [pos, setPos] = useState(null);
   return (
@@ -101,7 +122,7 @@ const FnHover = ({ text, doc }) => {
         transition: "background-color 80ms",
       }}
     >
-      {tokenize(text).map((seg, i) => (
+      {docParts(text).map((seg, i) => (
         <span key={i} style={PALETTE[seg.k]}>{seg.t}</span>
       ))}
       {pos && <span style={popupStyle(pos)}>{doc}</span>}
@@ -158,11 +179,13 @@ const renderCode = (text, docs) =>
     )
   );
 
-const Line = ({ n, text, w, docs, arrow, onFold }) => (
+const Line = ({ n, text, w, docs, arrow, onFold, nums }) => (
   <span className="line" style={{ display: "flex" }}>
-    <span className="text-gray-400 dark:text-gray-600" style={numCol(w)}>
-      {n}
-    </span>
+    {nums && (
+      <span className="text-gray-400 dark:text-gray-600" style={numCol(w)}>
+        {n}
+      </span>
+    )}
     <span
       style={arrowCol(!!arrow)}
       onClick={onFold}
@@ -174,33 +197,25 @@ const Line = ({ n, text, w, docs, arrow, onFold }) => (
   </span>
 );
 
-// 折叠条：替代 [from, to] 整块。行号 = from；label 应传完整 def 签名（如
+// 折叠条：替代 [from, to] 整块。行号 = from；label 应传完整签名（如
 // "def motion(state):"），tokenize 后 def 红关键字 + 紫函数名，无额外后缀；
 // label 里命中 docs 的函数名同样可 hover。
-const FoldRow = ({ n, label, w, docs, onClick }) => (
+const FoldRow = ({ n, label, w, docs, onClick, nums }) => (
   <span
     className="line"
     style={{ display: "flex" }}
     onClick={onClick}
   >
-    <span className="text-gray-400 dark:text-gray-600" style={numCol(w)}>
-      {n}
-    </span>
+    {nums && (
+      <span className="text-gray-400 dark:text-gray-600" style={numCol(w)}>
+        {n}
+      </span>
+    )}
     <span style={arrowCol(true)} title="点击展开">
       <span style={{ color: "#6E7781" }}>▸</span>
     </span>
     <span style={{ whiteSpace: "pre", cursor: "pointer" }}>
-      {splitDocs(label, docs).map((seg, i) =>
-        seg.doc ? (
-          <FnHover key={i} text={seg.t} doc={seg.doc} />
-        ) : (
-          tokenize(seg.t).map((s, j) => (
-            <span key={`${i}-${j}`} style={PALETTE[s.k]}>
-              {s.t}
-            </span>
-          ))
-        )
-      )}
+      {renderCode(label, docs)}
     </span>
   </span>
 );
@@ -208,6 +223,7 @@ const FoldRow = ({ n, label, w, docs, onClick }) => (
 export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
   const [open, setOpen] = useState(folds.map(() => false));
   const [copied, setCopied] = useState(false);
+  const [nums, setNums] = useState(true);
   const lines = code.replace(/\n$/, "").split("\n");
   const w = `${String(lines.length).length + 1}em`;
 
@@ -266,6 +282,19 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
         </div>
         <div className="flex-1 flex items-center justify-end gap-1.5">
           <button
+            onClick={() => setNums(!nums)}
+            title={nums ? "隐藏行号" : "显示行号"}
+            aria-pressed={nums}
+            className={
+              "text-xs rounded-md px-1.5 py-0.5 bg-transparent border-0 cursor-pointer transition-colors " +
+              (nums
+                ? "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                : "text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400")
+            }
+          >
+            行号
+          </button>
+          <button
             onClick={copy}
             className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md px-1.5 py-0.5 bg-transparent border-0 cursor-pointer"
           >
@@ -290,7 +319,7 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
           >
             {blocks.map((b, bi) =>
               b.type === "line" ? (
-                <Line key={bi} n={b.n} text={b.text} w={w} docs={docs} />
+                <Line key={bi} n={b.n} text={b.text} w={w} docs={docs} nums={nums} />
               ) : open[b.idx] ? (
                 // 展开：正常渲染 [from, to] 全部行，▾ 落在首行箭头列，无独立头行 → 行号连续
                 <span key={bi}>
@@ -301,6 +330,7 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
                       text={t}
                       w={w}
                       docs={docs}
+                      nums={nums}
                       arrow={li === 0 ? "▾" : ""}
                       onFold={li === 0 ? () => toggle(b.idx) : undefined}
                     />
@@ -313,6 +343,7 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
                   label={folds[b.idx].label}
                   w={w}
                   docs={docs}
+                  nums={nums}
                   onClick={() => toggle(b.idx)}
                 />
               )
