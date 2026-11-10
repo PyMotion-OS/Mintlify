@@ -211,7 +211,9 @@ const renderCode = (text, docs) =>
   );
 
 const Line = ({ n, text, w, docs, arrow, onFold, nums }) => (
-  <span className="line" style={{ display: "flex" }}>
+  // minHeight：空行在行号关闭后没有任何有高度的内容，flex 行会塌成 0，
+  // 函数之间的空行就消失了——锁死与 leading-6 一致的 24px
+  <span className="line" style={{ display: "flex", minHeight: "24px" }}>
     {nums && (
       <span className="pfold-num" style={numCol(w)}>
         {n}
