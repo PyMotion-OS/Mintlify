@@ -5,6 +5,20 @@ description: "跑完一条命令，看到 Python 版本、SDK 版本，以及机
 
 ## 跑完你会看到
 
+<!-- TEMP-TEST-A: 顶层 CodeFold -->
+<CodeFold title="a.py" code={'x = 1\nprint(x)'} />
+
+<!-- TEMP-TEST-B: Tabs 内 CodeFold -->
+<Tabs>
+  <Tab title="t">
+
+    <CodeFold title="b.py" code={'y = 2\nprint(y)'} />
+
+  </Tab>
+</Tabs>
+
+<!-- TEMP-TEST-END -->
+
 跑完一条命令，终端打印 Python 版本、SDK 版本（SDK——控制机器人用的程序库），以及机器人的设备编号和传输方式。设备编号是这台机器人在网络里的"身份证"，后面所有命令都是发给它。
 
 前提只有两件事：机器人已上电；电脑和机器人连的是同一个 Wi-Fi。
