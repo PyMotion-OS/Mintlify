@@ -29,14 +29,14 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 
     <CodeFold
       title="motor_speed.py"
-      docs=[
+      docs={[
         { label: "main", doc: "限幅 → 连接 → 控制权\n→ 开会话 → 正转\n→ sleep 2 秒看到期\n→ 反转 → 主动停" },
         { label: "valid_for", doc: "命令存活秒数\n到期设备端自动停\nsleep 比它长就能看到" },
         { label: "stop", doc: "提前结束\n不等到期" },
-      ]
-      folds=[
+      ]}
+      folds={[
         { label: "def main():", from: 13, to: 47, defaultOpen: true },
-      ]
+      ]}
       code='import time\n\nimport pymotion as pm\n\n# --- 本例程可调整的参数 ---\nPORT_MOTOR = 4                             # 选择主动轮：3 接 M3 左轮，4 接 M4 右轮\nRPM = 30                                   # 目标转速，单位转/分；正数正转，负数反转\n\n# --- 共用配置（一般不用动）---\nMAX_RPM = 60                               # 允许的最高转速，单位转/分\n\n\ndef main():\n    """给一个主动轮写速度命令，用 valid_for 和 sleep 配合观察"到期自动停机"。"""\n    rpm = max(-MAX_RPM, min(MAX_RPM, RPM))                  # 把目标转速限制在正负 MAX_RPM 以内\n\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            with robot.control():                           # 电机执行前需要获取控制权\n                # 打开实时控制会话，只声明本课要用的一个电机端口\n                with robot.realtime.open(\n                    command_targets={"motor_speeds": (PORT_MOTOR,)}\n                ) as session:\n\n                    # valid_for=1.0：这条速度命令只活 1 秒，1 秒后设备自己停机\n                    session.commands.motor_speeds.write(\n                        {PORT_MOTOR: rpm},                  # 正转速度\n                        valid_for=1.0,\n                    )\n                    print(f"正转: 端口 {PORT_MOTOR}，{rpm} 转/分，命令 1 秒后到期")\n                    # sleep 比 valid_for 长：前 1 秒在转，后 1 秒已经停了\n                    time.sleep(2.0)\n                    print("第 1 秒已过，命令到期，轮子应已自动停下")\n\n                    session.commands.motor_speeds.write(\n                        {PORT_MOTOR: -rpm},                 # 反转速度\n                        valid_for=2.0,                      # 这次命令能活 2 秒\n                    )\n                    print(f"反转: 端口 {PORT_MOTOR}，{-rpm} 转/分，命令 2 秒后到期")\n                    time.sleep(1.0)                         # 只等 1 秒，命令还没过期\n                    session.commands.motor_speeds.stop()    # 主动停机，不等剩下的 1 秒\n                    print("主动 stop(): 只转了 1 秒就停")\n\n    except pm.lite.LiteError as exc:\n        print(f"出错: {type(exc).__name__}: {exc}")\n    except KeyboardInterrupt:\n        print("Ctrl+C 主动结束；退出 control 时会关闭 PWM 输出")\n\n\nif __name__ == "__main__":\n    main()'
     />
 

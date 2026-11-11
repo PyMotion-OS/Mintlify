@@ -27,15 +27,15 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 
         <CodeFold
       title="realtime_data_queue.py"
-      docs=[
+      docs={[
         { label: "while", doc: "两种数据都还没拿到\n就继续读" },
         { label: "read", doc: "取走一条\n队列里就没有了" },
         { label: "TimeoutError", doc: "超时说明数据没到齐" },
         { label: "pprint", doc: "结构体太长\n限宽避免乱折行" },
-      ]
-      folds=[
+      ]}
+      folds={[
         { label: "def main():", from: 6, to: 65, defaultOpen: true },
-      ]
+      ]}
       code='from pprint import pprint                  # 让字典按结构换行显示\n\nimport pymotion as pm\n\n\ndef main():\n    """接收两种传感数据，打印它们的完整结构。"""\n    ultrasonic_data = None                                  # 定义超声波数据\n    tracker_line_data = None                                # 定义五路循迹数据\n\n    with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n        with robot.control():\n            # 打开实时控制会话，声明本会话要收哪两种数据\n            with robot.realtime.open(\n                data_sources=("ultrasonic", "line_tracker")  # 同时接收超声波和五路循迹数据\n            ) as session:\n\n                # while 在条件为真时会重复：两种数据还没都拿到，就继续读\n                while ultrasonic_data is None or tracker_line_data is None:\n                    # 取出一条；队列为空时最多等 0.5 秒\n                    sensor_data = session.data.read(timeout=0.5)\n                    if sensor_data is None:                 # 等超时了还没拿到，说明数据没到齐\n                        raise TimeoutError("没有收齐超声波和五路循迹数据")\n\n                    # 根据数据来源，保存对应的最新数据\n                    if sensor_data.source == "ultrasonic":\n                        ultrasonic_data = sensor_data\n                    elif sensor_data.source == "line_tracker":\n                        tracker_line_data = sensor_data\n\n    print("\\ndata_queue.read() 返回的超声波结构:")\n    pprint(\n        {\n            "source": ultrasonic_data.source,\n            "data": {\n                "valid": ultrasonic_data.data.valid,\n                "state": ultrasonic_data.data.state,\n                "age": ultrasonic_data.data.age,\n                "distance": ultrasonic_data.data.distance,\n            },\n            "sequence": ultrasonic_data.sequence,\n            "received_monotonic": ultrasonic_data.received_monotonic,\n            "age": ultrasonic_data.age,\n        },\n        width=120,                                          # 每行最多 120 个字符，减少不必要的换行\n        sort_dicts=False,                                   # 按上面的字段顺序显示\n    )\n\n    print("\\ndata_queue.read() 返回的五路循迹结构:")\n    pprint(\n        {\n            "source": tracker_line_data.source,\n            "data": {\n                "valid": tracker_line_data.data.valid,\n                "state": tracker_line_data.data.state,\n                "age": tracker_line_data.data.age,\n                "is_detected": tracker_line_data.data.is_detected,\n            },\n            "sequence": tracker_line_data.sequence,\n            "received_monotonic": tracker_line_data.received_monotonic,\n            "age": tracker_line_data.age,\n        },\n        width=120,\n        sort_dicts=False,\n    )\n\n\nif __name__ == "__main__":\n    main()'
     />
 
