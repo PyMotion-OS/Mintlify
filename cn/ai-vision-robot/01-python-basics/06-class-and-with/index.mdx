@@ -1,86 +1,63 @@
 ---
-title: "1.6 类与 with 语句"
-description: "用自定义上下文管理器包住电机：进 with 停一次，出 with 再停一次"
+title: "1.6 电机与类"
+description: "同一个前进 2 秒写两遍——手动停发停一遍，交给 SafeMotors 类一遍，进出自动停"
 ---
 
-## 本页目标
-
-同一个"前进两秒"的动作写两遍对照：一遍手动 `stop() → set_speeds() → stop()`，一遍交给自定义类 `SafeMotors`，在 `__enter__` / `__exit__` 里自动停机。理解 `with` 的本质——**进入和退出都能挂保证动作**，这是后面所有电机例程的安全底座。
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 
 ## 前置条件
 
-- 完成例程 1.1
-- **机器人架空**（轮子离地），或前方留出至少 1 米空地
-- 左右轮已接到 M3、M4 口
+- 已完成 [1.1 WIFI模式连接](../01-connect-wifi/index)
+- 机器人架空（轮子离地）或前方留出至少 1 米空地
+- 左右轮接到 M3、M4 口
 
-## 动手步骤
+## 关键函数
 
-**1. 新建文件 `06_class_and_with.py`**
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `with robot.control()` | 先拿控制权再动作，防止两个程序同时指挥，呼应 1.5 的 `lease_active` |
+| `robot.motors.set_speeds({端口: 转速}, duration)` | 给电机发转速，`duration` 秒后自动停 |
+| `robot.motors.stop()` | 立即停止所有电机 |
+| `class / __init__ / __enter__ / __exit__` | 自定义类，实现 1.1 同款 `with` 协议 |
 
-**2. 写入以下代码**
+这一页回答「为什么要写类」：1.1 的 `with` 不是魔法，它是一种约定——进的时候做什么、出的时候做什么。`SafeMotors` 把同样的约定套在电机上，进出自动停，忘不了。
 
-```python
-import pymotion as pm
+## 完整示例
 
-PORT_LEFT = 3                              # 左轮，接 M3 口
-PORT_RIGHT = 4                             # 右轮，接 M4 口
-RPM = 30                                   # 轮子转速，转/分钟，正数向前
+<Tabs>
+  <Tab title="代码">
 
+    <CodeFold
+      title="safe_motors.py"
+      docs={[
+        { label: "SafeMotors", doc: "两路电机的包装\n进 with 停一次\n出 with 再停一次" },
+        { label: "__init__", doc: "创建对象时执行\n把电机组记下来" },
+        { label: "__enter__", doc: "进 with 时执行\n先停一次再把电机组交给 as 后的名字" },
+        { label: "__exit__", doc: "出 with 时执行\n停一次电机\n三个参数 Python 自动传" },
+        { label: "main", doc: "同一个动作写两遍\n写法一自己写 stop\n写法二交给 SafeMotors" },
+        { label: "robot.control", doc: "先拿控制权\n电机动作必须包在它里面" },
+      ]}
+      code={'import pymotion as pm\n\nPORT_LEFT = 3                              # 左轮接 M3 口\nPORT_RIGHT = 4                             # 右轮接 M4 口\nRPM = 30                                   # 转速：转/分钟，正数向前\n\n\nclass SafeMotors:\n    """两路电机的包装：进 with 时停一次，出 with 时再停一次。"""\n\n    def __init__(self, robot):\n        """创建对象时执行：把机器人的电机组记下来。"""\n        self.motors = robot.motors\n\n    def __enter__(self):\n        """进 with 时执行：先停一次，再把电机组交给 as 后面的名字。"""\n        self.motors.stop()\n        return self.motors\n\n    def __exit__(self, exc_type, exc_value, traceback):     # Python 自动传这三个参数\n        """出 with 时执行：停一次电机。"""\n        self.motors.stop()\n\n\ndef main():\n    """同一个动作写两遍：一遍自己写 stop，一遍交给 SafeMotors。"""\n\n    with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n        with robot.control():                               # 先拿控制权\n            # 写法一：不用类——停、发、停，三步都得自己写，忘一步就出事\n            robot.motors.stop()                             # 跑前停一次\n            robot.motors.set_speeds({PORT_LEFT: RPM, PORT_RIGHT: RPM}, duration=2)  # 前进 2 秒\n            robot.motors.stop()                             # 收尾停一次\n\n            # 写法二：用类——进出 with 自动停，中间只写动作\n            with SafeMotors(robot) as motors:\n                motors.set_speeds({PORT_LEFT: RPM, PORT_RIGHT: RPM}, duration=2)\n\n\nif __name__ == "__main__":\n    main()'}
+    />
 
-class SafeMotors:
-    """两路电机的包装：进 with 时停一次，出 with 时再停一次"""
+  </Tab>
+  <Tab title="结果预览">
 
-    def __init__(self, robot):
-        self.motors = robot.motors         # 存下机器人的电机组
+    ![](/cn/ai-vision-robot/assets/placeholder-visual.svg)
 
-    def __enter__(self):
-        self.motors.stop()                 # 进 with 时停止所有电机
-        return self.motors                 # as 后面拿到的就是电机组
+  </Tab>
+</Tabs>
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.motors.stop()                 # 出 with 时停止所有电机
-
-
-def main():
-    with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
-        with robot.control():              # 电机执行前需要获取控制权
-            # 写法一：停、发、停，三步都得自己写
-            robot.motors.stop()
-            robot.motors.set_speeds({PORT_LEFT: RPM, PORT_RIGHT: RPM}, duration=2)
-            robot.motors.stop()
-
-            # 写法二：交给 SafeMotors 自动收尾
-            with SafeMotors(robot) as motors:
-                motors.set_speeds({PORT_LEFT: RPM, PORT_RIGHT: RPM}, duration=2)
-
-
-if __name__ == "__main__":
-    main()
-```
-
-**3. 运行**（先架空车轮）
+### 运行方式
 
 ```bash
-python 06_class_and_with.py
+python safe_motors.py
 ```
 
 ## 参数说明
 
-| 参数 | 类型 | 默认值或范围 | 说明 |
+| 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
 | `PORT_LEFT` / `PORT_RIGHT` | int | 本例 3 / 4 | 左轮 M3、右轮 M4，接线改了这里也要改 |
-| `RPM` | int | 本例 30 | 转速，正数前进、负数后退 |
-| `duration` | float | 秒，本例 2 | 持续时长，到期自动停 |
-| `robot.control()` | 上下文管理器 | — | 进入后才有电机控制权，退出自动释放 |
-| `__exit__` 返回值 | None | — | 返回 `False`/`None` 表示不吞异常，异常继续向外抛 |
-
-## 预期效果与排查
-
-车轮先转 2 秒停下，再转 2 秒停下（两段动作看起来一样）。区别在**可靠性**：如果第二段中途出错或网络断开，`with` 退出时仍会执行 `stop()`，车不会一直转。
-
-| 现象 | 原因 | 处理 |
-| --- | --- | --- |
-| 报权限类错误 | 没进 `robot.control()` | 电机动作必须包在它里面 |
-| 轮子不转但无报错 | 端口接错或 `RPM` 太小 | 换 M3/M4 试，`RPM` 提到 50 |
-| 只转一次就结束 | 两段动作太像，误以为只有一段 | 把第二段 `RPM` 改成 60 便于区分 |
-| 程序异常后车还在转 | 没走 `with` 或 `__exit__` 里漏了 `stop()` | 检查 `__exit__` 是否真的调用了 `stop()` |
+| `RPM` | int | 本例 30 | 转速，转/分钟；正数前进，负数后退 |
+| `duration` | float | 秒，本例 2 | 命令有效期，到期自动停 |

@@ -1,86 +1,66 @@
 ---
-title: "1.2 变量与条件"
-description: "读一次超声波，把读数分成过近、正常、无效三种情况"
+title: "1.2 超声波测距"
+description: "跑完一条命令，先看到超声波返回的完整数据结构，再看到一行结论：过近 / 正常 / 未知"
 ---
 
-## 本页目标
-
-连上机器人后读一次超声波距离，用变量存住读数、用 `if / elif / else` 把它分成三档输出。同时完整看清一次 `robot.ultrasonic()` 返回的字段结构。
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 
 ## 前置条件
 
-- 完成例程 1.1，能稳定连上设备
-- 机器人前方无遮挡物（避免读数为 0 造成干扰）
+- 已完成 [1.1 WIFI模式连接](../01-connect-wifi/index)
 
-## 动手步骤
+## 关键函数
 
-**1. 新建文件 `02_variables_and_conditions.py`**
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `robot.ultrasonic(max_age=2.0)` | 读一次超声波距离；超声波像蝙蝠发声音听回声，算出前方障碍物有多远 |
+| `if / elif / else` | 按条件分成三档，依次判断，命中一个就停 |
 
-**2. 写入以下代码**
+## 完整示例
 
-```python
-import pymotion as pm
+<Tabs>
+  <Tab title="代码">
 
-STOP = 200                                 # 停机阈值，毫米
+    <CodeFold
+      title="check_distance.py"
+      docs={[
+        { label: "main", doc: "连接后读一次距离\n先原样打印返回结构\n再按 valid 和 distance 分三档" },
+        { label: "robot.ultrasonic", doc: "读一次超声波数据\nmax_age=2.0 表示超过 2 秒的旧数据不算数" },
+        { label: "if", doc: "先查 valid 再判断距离\n无效读数没有 distance 可用" },
+      ]}
+      code={'import pymotion as pm\n\nSTOP = 200                                 # 判断阈值：200 毫米以内算"过近"\n\n\ndef main():\n    """连接后读一次距离，判断这次读数属于哪一档。"""\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            ultrasonic_data = robot.ultrasonic(max_age=2.0)            # 读一次超声波数据\n\n            print("超声波传感器的数据结构：")                            # 完整字段，一个不省\n            print("{")\n            print(f\'  "distance": {ultrasonic_data.distance},\')        # 距离，毫米\n            print(f\'  "state": "{ultrasonic_data.state}",\')            # 状态文字\n            print(f\'  "valid": {ultrasonic_data.valid},\')              # 这条数据能不能用\n            print(f\'  "age": {ultrasonic_data.age}\')                   # 数据有多旧，单位秒\n            print("}")\n\n            # valid=False 时没有 distance 可用，必须先查它再做判断\n            if not ultrasonic_data.valid:\n                print(f"未知: None（{ultrasonic_data.state}）")\n            elif ultrasonic_data.distance < STOP:                      # 比阈值小就是过近\n                print(f"过近: {ultrasonic_data.distance:.0f} mm")\n            else:                                                      # 其余都算正常\n                print(f"正常: {ultrasonic_data.distance:.0f} mm")\n\n    except pm.lite.LiteError as exc:\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
+    />
 
+  </Tab>
+  <Tab title="结果预览">
 
-def main():
-    """连接后读一次距离，判断这次读数属于哪一档。"""
-    try:
-        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
-            ultrasonic_data = robot.ultrasonic(max_age=2.0)   # 超过 2.0s 的数据算过期
-            print(f"distance={ultrasonic_data.distance} state={ultrasonic_data.state} "
-                  f"valid={ultrasonic_data.valid} age={ultrasonic_data.age}")
+    ```text
+    超声波传感器的数据结构：
+    {
+      "distance": 95,
+      "state": "ok",
+      "valid": true,
+      "age": 0.0
+    }
+    过近: 95 mm
+    ```
 
-            if not ultrasonic_data.valid:                     # 无效读数只有状态，没有距离
-                print(f"未知: None（{ultrasonic_data.state}）")
-            elif ultrasonic_data.distance < STOP:             # 比阈值小就是过近
-                print(f"过近: {ultrasonic_data.distance:.0f} mm")
-            else:                                             # 其余都算正常
-                print(f"正常: {ultrasonic_data.distance:.0f} mm")
+  </Tab>
+</Tabs>
 
-    except pm.lite.LiteError as exc:
-        print(f"连接失败: {exc}")
-
-
-if __name__ == "__main__":
-    main()
-```
-
-**3. 运行**
+### 运行方式
 
 ```bash
-python 02_variables_and_conditions.py
+python check_distance.py
 ```
 
 ## 参数说明
 
-`robot.ultrasonic(max_age=2.0)` 的完整返回结构：
-
-```
-{
-  "distance": 235,          # 距离，单位毫米
-  "state": "valid",         # 数据状态
-  "valid": true,            # 能不能用
-  "age": 0.08               # 数据有多旧，单位秒
-}
-```
-
-| 参数 | 类型 | 默认值或范围 | 说明 |
+| 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
-| `max_age` | float | 秒，本例 2.0 | 超过该时长的数据视为过期并抛错 |
-| `distance` | int / None | 毫米 | 无效读数时为 `None` |
-| `state` | str | `valid` / 其他 | 无效时用它说明原因 |
-| `valid` | bool | `True` / `False` | 先判它，再判 `distance` |
-| `age` | float | 秒 | 数据新鲜度 |
-| `STOP` | int | 本例 200 | 你的应用阈值，按车身尺寸调 |
-
-## 预期效果与排查
-
-正常时输出一行字典信息 + `正常: 235 mm`；把纸板靠近到 20 cm 内应变成 `过近`。
-
-| 现象 | 原因 | 处理 |
-| --- | --- | --- |
-| 一直输出 `未知: None` | 传感器未就绪或读数过期 | 加大 `max_age`，确认前方无强反光/吸音材质 |
-| `TypeError` 比较 `None` | 没先判 `valid` 就比大小 | 保持 `if not valid` 在最前面 |
-| 距离跳动大 | 超声波本身特性 | 后续例程用多次采样+中位数，本页不必处理 |
+| `max_age` | float | 秒，本例 2.0 | 容忍的数据有效期，超过的旧数据算过期并抛错 |
+| `distance` | int / None | 毫米 | 距离，无效读数时为 `None` |
+| `state` | str | `ok` / 其他 | 数据状态，无效时用它说明原因 |
+| `valid` | bool | `True` / `False` | 先判它再判 `distance` |
+| `age` | float | 秒 | 数据有多旧 |
+| `STOP` | int | 本例 200 | 判断阈值，毫米；改小更灵敏，改大更迟钝 |

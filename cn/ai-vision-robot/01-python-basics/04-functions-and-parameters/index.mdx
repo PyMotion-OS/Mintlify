@@ -1,89 +1,60 @@
 ---
-title: "1.4 函数与参数"
-description: "把电压判断封装成带参数的函数，连续读三次电池电压"
+title: "1.4 电压与函数"
+description: "连读三次电池电压，每次立刻报出偏低 / 一般 / 充足；判断逻辑写成一个可复用的函数"
 ---
 
-## 本页目标
-
-把"电压分三档"的判断逻辑抽成一个函数 `check_V(V, low, full)`，主程序只负责读数据和调用函数。学会把阈值做成参数，而不是写死在判断里——后面调整行为时不用改逻辑。
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 
 ## 前置条件
 
-- 完成例程 1.1
-- 机器人已装电池并上电（读得到真实电压）
+- 已完成 [1.1 WIFI模式连接](../01-connect-wifi/index)
 
-## 动手步骤
+## 关键函数
 
-**1. 新建文件 `04_functions_and_parameters.py`**
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `robot.power()` | 读一次电源数据 |
+| `def check_V(V)` | 把判断逻辑装进函数反复用，主流程只剩「读数 + 调用」 |
 
-**2. 写入以下代码**
+1.2 的判断只用一次，写在主流程里没问题；电压要反复判、阈值会调，包成函数才值得。
 
-```python
-import time
-import pymotion as pm
+## 完整示例
 
-LOW = 10.5                                 # 告警电压，伏特
-FULL = 12.5                                # 标称电压，伏特
+<Tabs>
+  <Tab title="代码">
 
+    <CodeFold
+      title="battery_check.py"
+      docs={[
+        { label: "check_V", doc: "只管判断电压属于哪一档\n读不到时 V 是 None\n直接打印结论" },
+        { label: "main", doc: "连读三次电压\n每读一次立刻调用 check_V 判一次" },
+        { label: "def", doc: "定义函数\n把判断逻辑装进去\n后面只用名字调用" },
+      ]}
+      code={'import time\n\nimport pymotion as pm\n\nLOW = 10.5                                 # 告警电压：低于它就要充电（伏特）\nFULL = 12.5                                # 标称电压：低于它算"一般"\n\n\ndef check_V(V):\n    """判断电压属于哪一档，直接打印结论。\n\n    V 是电压数值；读不到时 SDK 给的是 None（Python 表示"没有值"）。\n    """\n    if V is None:                                     # 读不到电压\n        print("电压: 读不到（None）")\n    elif V < LOW:                                     # 低于告警电压\n        print(f"电压: {V:.2f} V，偏低")\n    elif V < FULL:                                    # 低于标称电压\n        print(f"电压: {V:.2f} V，一般")\n    else:                                             # 其余都算充足\n        print(f"电压: {V:.2f} V，充足")\n\n\ndef main():\n    """连上后读三次电压，每读一次立刻判一次。"""\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            for i in range(3):                          # 连读三次\n                power_data = robot.power()              # 读一次电源数据\n                check_V(power_data.voltage)             # 判断交给函数，主流程只管读\n                time.sleep(0.5)\n\n    except pm.lite.LiteError as exc:\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
+    />
 
-def check_V(V, low, full):
-    """电压分三档：偏低 / 一般 / 充足；读不到单独说。"""
-    if V is None:                          # 读不到电压时给的是 None
-        print("电压: 读不到（None）")
-    elif V < low:
-        print(f"电压: {V:.2f} V，偏低")
-    elif V < full:
-        print(f"电压: {V:.2f} V，一般")
-    else:
-        print(f"电压: {V:.2f} V，充足")
+  </Tab>
+  <Tab title="结果预览">
 
+    ```text
+    电压: 11.87 V，一般
+    电压: 11.87 V，一般
+    电压: 11.87 V，一般
+    ```
 
-def main():
-    """连上后读三次电压，每读一次立刻判一次。"""
-    try:
-        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
-            for i in range(3):
-                power_data = robot.power()
-                check_V(power_data.voltage, LOW, FULL)
-                time.sleep(0.5)
-    except pm.lite.LiteError as exc:
-        print(f"连接失败: {exc}")
+  </Tab>
+</Tabs>
 
-
-if __name__ == "__main__":
-    main()
-```
-
-**3. 运行**
+### 运行方式
 
 ```bash
-python 04_functions_and_parameters.py
+python battery_check.py
 ```
 
 ## 参数说明
 
-| 参数 | 类型 | 默认值或范围 | 说明 |
+| 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
-| `LOW` | float | 本例 10.5 | 低于此值判"偏低"，按电池化学体系调整 |
-| `FULL` | float | 本例 12.5 | 达到此值判"充足" |
-| `V` | float / None | 伏特 | `robot.power().voltage` 的取值，可能为 `None` |
-| `low` / `full` | float | 由调用方传入 | 做成参数，换电池组只改常量 |
-| `check_V` 返回值 | None | — | 只打印，不返回，便于对照 |
-
-## 预期效果与排查
-
-满电时输出类似：
-
-```
-电压: 12.31 V，一般
-电压: 12.31 V，一般
-电压: 12.31 V，一般
-```
-
-拔掉电池供电改 USB 供电时，可能变成 `读不到（None）`。
-
-| 现象 | 原因 | 处理 |
-| --- | --- | --- |
-| 一直是 `None` | 设备不支持或未上电检测 | 确认电池已接，`robot.power()` 需设备供电正常 |
-| 三次数值完全相同 | `sleep` 太短，电压变化本就缓慢 | 属正常，改 30 秒一次观察放电曲线 |
-| 报 `AttributeError: voltage` | 用了别的对象名 | `power()` 返回对象的字段就是 `voltage` |
+| `voltage` | float / None | 伏特 | 电池电压，读不到时为 `None` |
+| `LOW` | float | 本例 10.5 | 低于它判「偏低」；改大更早告警 |
+| `FULL` | float | 本例 12.5 | 达到它判「充足」；改小更容易判「充足」 |

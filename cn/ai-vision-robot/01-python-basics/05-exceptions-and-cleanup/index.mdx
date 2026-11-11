@@ -1,97 +1,77 @@
 ---
-title: "1.5 异常与资源清理"
-description: "断网、Ctrl-C 都不会留下未释放的连接"
+title: "1.5 状态与异常清理"
+description: "每秒打印一次机器人状态包；中途按 Ctrl-C 或拔网线，程序都说一句发生了什么，然后干净退出"
 ---
 
-## 本页目标
-
-写一个"能被打断还不留残局"的循环：每秒读一次设备状态，中途断网或按 Ctrl+C 都由 `except` / `finally` 收尾并关闭连接。同时完整看清状态包的八个字段。
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 
 ## 前置条件
 
-- 完成例程 1.1
-- 建议准备一个能关掉机器人电源的时机（用来观察断连表现）
+- 已完成 [1.1 WIFI模式连接](../01-connect-wifi/index)
 
-## 动手步骤
+## 关键函数
 
-**1. 新建文件 `05_exceptions_and_cleanup.py`**
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `robot.status(max_age=2.0)` | 读一次状态包，里面 8 个字段 |
+| `robot.close()` | 手动收尾，释放连接 |
+| `try / except / finally` | 三种收尾：出错接住、最后一定执行 |
+| `except KeyboardInterrupt` | Ctrl-C 也是一种异常，可以接住 |
 
-**2. 写入以下代码**
+这一页故意不用 `with`（1.1 那种自动收尾写法），改成手动 `try/finally`——为了看见 `finally` 存在的理由：不管程序怎么结束（跑完、被打断、出错），`finally` 里的代码一定会执行。`with` 的机制 1.6 讲。
 
-```python
-import time
-import pymotion as pm
+## 完整示例
 
+<Tabs>
+  <Tab title="代码">
 
-def read_status(robot):
-    """读一次状态，把整包里八个字段全打出来。"""
-    status = robot.status(max_age=2.0)
-    print(f"device_id={status.device_id} state={status.state} "
-          f"lease_active={status.lease_active} estop_latched={status.estop_latched} "
-          f"estop_reason={status.estop_reason!r} fault_latched={status.fault_latched} "
-          f"fault_reason={status.fault_reason!r} age={status.age}")
+    <CodeFold
+      title="watch_status.py"
+      docs={[
+        { label: "read_status", doc: "读一次状态\n把整包 8 个字段全打出来" },
+        { label: "main", doc: "连上后每秒读一次\n不用 with，手动收尾\nCtrl-C 和断网都干净退出" },
+        { label: "except KeyboardInterrupt", doc: "Ctrl-C 也是异常\n接住它打印一句" },
+        { label: "finally", doc: "不管上面怎么结束\n这里都会执行\nrobot.close() 一定被调到" },
+      ]}
+      code={'import time\n\nimport pymotion as pm\n\n\ndef read_status(robot):\n    """读一次状态，把整包 8 个字段全打出来。数据过期会自己抛错，交给外面的 except 接住。"""\n    status = robot.status(max_age=2.0)                      # 读一次状态\n    print("{")\n    print(f\'  "device_id": "{status.device_id}",\')          # 设备编号\n    print(f\'  "state": "{status.state}",\')                  # 设备当前状态\n    print(f\'  "lease_active": {status.lease_active},\')      # 是否持有控制权（1.6 会用到）\n    print(f\'  "estop_latched": {status.estop_latched},\')    # 急停是否锁存：按下会一直锁着\n    print(f\'  "estop_reason": "{status.estop_reason}",\')    # 急停原因，没触发是空字符串\n    print(f\'  "fault_latched": {status.fault_latched},\')    # 故障是否锁存\n    print(f\'  "fault_reason": "{status.fault_reason}",\')    # 故障原因\n    print(f\'  "age": {status.age}\')                         # 数据有多旧\n    print("}")\n\n\ndef main():\n    """连上以后每秒读一次；中途 Ctrl-C 或断网，都由 finally 收尾。"""\n    robot = pm.lite.connect(transport="wifi", timeout=15.0)  # 注意：没有 with\n\n    try:\n        for i in range(20):                                 # 连续读 20 轮\n            read_status(robot)\n            time.sleep(1.0)                                 # 每轮停 1 秒\n    except KeyboardInterrupt:                               # Ctrl-C 也是异常，可以接住\n        print("被 Ctrl-C 打断")\n    except pm.lite.LiteError as exc:                        # 只接 SDK 冒出来的错\n        print(f"出错（{exc}）")\n    finally:\n        robot.close()                                       # 不管上面怎么结束，这里都会执行\n\n\nif __name__ == "__main__":\n    main()'}
+    />
 
+  </Tab>
+  <Tab title="结果预览">
 
-def main():
-    """连上以后每秒读一次；中途 Ctrl-C 或断网，都由 finally 收尾。"""
-    robot = pm.lite.connect(transport="wifi", timeout=15.0)  # 连不上直接退出
+    ```text
+    {
+      "device_id": "<12位十六进制，每台唯一>",
+      "state": "ready",
+      "lease_active": false,
+      "estop_latched": false,
+      "estop_reason": "",
+      "fault_latched": false,
+      "fault_reason": "",
+      "age": 0.0
+    }
+    被 Ctrl-C 打断
+    ```
 
-    try:
-        for i in range(20):
-            read_status(robot)
-            time.sleep(1.0)
-    except KeyboardInterrupt:
-        print("被 Ctrl-C 打断")
-    except pm.lite.LiteError as exc:          # 只接 SDK 抛出的错
-        print(f"出错: {exc}")
-    finally:
-        robot.close()                          # 无论如何都执行
+  </Tab>
+</Tabs>
 
-
-if __name__ == "__main__":
-    main()
-```
-
-**3. 运行后按 Ctrl+C 观察收尾**
+### 运行方式
 
 ```bash
-python 05_exceptions_and_cleanup.py
+python watch_status.py
 ```
 
 ## 参数说明
 
-`robot.status(max_age=2.0)` 的完整返回结构：
-
-```
-{
-  "device_id": "A1B2C3D4",      # 设备编号
-  "state": "ready",             # 设备状态
-  "lease_active": true,         # 是否持有控制权
-  "estop_latched": false,       # 急停是否锁存（按下会一直锁着）
-  "estop_reason": "",           # 急停原因，未触发是空字符串
-  "fault_latched": false,       # 故障是否锁存
-  "fault_reason": "",           # 故障原因，未触发是空字符串
-  "age": 0.12                   # 数据有多旧，单位秒
-}
-```
-
-| 参数 | 类型 | 默认值或范围 | 说明 |
+| 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
-| `max_age` | float | 秒，本例 2.0 | 超时抛 `LiteError`，交给外层 `except` |
-| `estop_latched` | bool | `True` / `False` | 为 `True` 时必须先解除急停才能运动 |
-| `lease_active` | bool | `True` / `False` | 是否拿到控制权，多端操作时看它 |
-| `robot.close()` | 方法 | — | 释放连接，必须放在 `finally` |
-
-## 预期效果与排查
-
-```
-device_id=A1B2C3D4 state=ready lease_active=True estop_latched=False estop_reason='' fault_latched=False fault_reason='' age=0.12
-...
-被 Ctrl-C 打断        ← 按 Ctrl+C 后出现，且进程干净退出
-```
-
-| 现象 | 原因 | 处理 |
-| --- | --- | --- |
-| Ctrl+C 后进程仍卡住 | `close()` 没放在 `finally` | 见本页写法，连接对象只在外层建一次 |
-| 报 `LiteError` 且 `age` 很大 | 采集频率低于 `max_age` | 加大 `max_age` 或提高读取频率 |
-| `estop_latched=True` | 急停按钮被按下过 | 松开急停并重新连一次 |
+| `max_age` | float | 秒，本例 2.0 | 超过的旧数据算过期并抛错 |
+| `device_id` | str | 由设备决定 | 设备唯一编号 |
+| `state` | str | `ready` / 其他 | 设备当前状态 |
+| `lease_active` | bool | `True` / `False` | 是否持有控制权，1.6 会用到 |
+| `estop_latched` | bool | `True` / `False` | 急停是否锁存，按下会一直锁着 |
+| `estop_reason` | str | 空串 / 原因 | 急停原因，没触发是空字符串 |
+| `fault_latched` | bool | `True` / `False` | 故障是否锁存 |
+| `fault_reason` | str | 空串 / 原因 | 故障原因 |
+| `age` | float | 秒 | 数据有多旧 |

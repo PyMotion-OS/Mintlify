@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+  <!-- 占位图：画面型结果预览（小车/舵机动作画面待真机补充） -->
+  <rect x="0" y="0" width="720" height="320" rx="14" fill="#F3F7F5"/>
+  <rect x="0" y="0" width="720" height="320" rx="14" fill="none" stroke="#CBD1CE" stroke-width="1"/>
+  <text x="360" y="150" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="17" fill="#3F4340">画面占位图</text>
+  <text x="360" y="185" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#6E7781">真机动作画面待补充</text>
+  <text x="360" y="210" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#6E7781">（应显示实际运行时的画面，如轮子转动 / 舵机转向）</text>
+</svg>
