@@ -1,7 +1,4 @@
----
-title: "AI 工具配置（SKILL）"
-description: "写给 AI 工具的 Robot 产品说明书，交给 Claude Code、Cursor 即可让 AI 帮你操作 Robot"
----
+# PyMotion Robot · SKILL
 
 这是一份写给 AI 工具（Claude Code、Cursor 这类「AI 朋友」）看的产品说明书。把它交给 AI，AI 就能理解这台 Robot 怎么连、每个例程怎么跑、参数什么含义，进而帮你完成环境配置、修改例程、解释代码。
 
