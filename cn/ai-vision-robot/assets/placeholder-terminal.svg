@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+  <!-- 占位图：1.1 结果预览（终端截图待真机补充） -->
+  <rect x="0" y="0" width="720" height="320" rx="14" fill="#0B0C0E"/>
+  <rect x="0" y="0" width="720" height="40" rx="14" fill="#16181A"/>
+  <rect x="0" y="26" width="720" height="14" fill="#16181A"/>
+  <circle cx="22" cy="20" r="6" fill="#3A3D40"/>
+  <circle cx="42" cy="20" r="6" fill="#3A3D40"/>
+  <circle cx="62" cy="20" r="6" fill="#3A3D40"/>
+  <text x="708" y="25" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#6E7781">hello_robot.py</text>
+  <text x="360" y="150" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="17" fill="#8B949E">结果预览占位图</text>
+  <text x="360" y="185" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#6E7781">真机运行 hello_robot.py 的终端截图待补充</text>
+  <text x="360" y="210" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#6E7781">（应显示 5 行输出：Python / SDK 版本 + 设备 ID / 传输方式）</text>
+</svg>
