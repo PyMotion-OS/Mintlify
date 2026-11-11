@@ -3,6 +3,8 @@ title: "1.1 WIFI模式连接"
 description: "跑完一条命令，看到 Python 版本、SDK 版本，以及机器人的设备编号和传输方式"
 ---
 
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
 ## 前置条件
 
 - Robot 与电脑完成网络环境配置，参考 PyMotion Lite 使用手册的 [2.1 安装开发环境](https://pymotion.mintlify.site/does./cn/py-motion-lite/2/01-development-environment)
@@ -23,42 +25,38 @@ print、f-string、`sys.version` 是纯展示手段，直接看下面代码，�
 <Tabs>
   <Tab title="代码">
 
-    ```python
-    import sys
-    from pathlib import Path
-
-    import pymotion as pm
-
-    TRANSPORT = "wifi"   # 连接方式：本手册全程用 Wi-Fi
-    TIMEOUT = 15.0       # 连接最多等 15 秒
-
-
-    def main():
-        # 打印环境 → 连接 → 读设备信息；with 块结束自动断开
-        print(f"Python: {sys.version.split()[0]} ({sys.executable})")
-        print(f"SDK:    {pm.lite.__version__} ({Path(pm.__file__).resolve()})")
-        print()
-
-        try:
-            with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
-                print(f"设备  ID: {robot.connection.device_id}")   # 机器人的网络身份证
-                print(f"传输方式: {robot.connection.transport}")   # 实际用的连接方式
-        except pm.lite.LiteError as exc:
-            # LiteError 是 SDK 的统一报错类型，本模块所有失败都由它报告
-            print(f"连接失败（{exc}）")
-
-
-    if __name__ == "__main__":
-        main()
-    ```
+    <CodeFold
+      title="hello_robot.py"
+      docs={[
+        { label: "main", doc: "入口\n├─ 打印 Python 与 SDK 版本\n├─ 连接机器人、读设备信息\n└─ 失败时 LiteError 报告原因" },
+        { label: "pm.lite.connect", doc: "建立连接，返回机器人对象\n配 with 用完自动断开\n最多等 timeout 秒" },
+      ]}
+      code={'import sys\nfrom pathlib import Path\n\nimport pymotion as pm\n\nTRANSPORT = "wifi"   # 连接方式：本手册全程用 Wi-Fi\nTIMEOUT = 15.0       # 连接最多等 15 秒\n\n\ndef main():\n    # 打印环境 → 连接 → 读设备信息；with 块结束自动断开\n    print(f"Python: {sys.version.split()[0]} ({sys.executable})")\n    print(f"SDK:    {pm.lite.__version__} ({Path(pm.__file__).resolve()})")\n    print()\n\n    try:\n        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:\n            print(f"设备  ID: {robot.connection.device_id}")   # 机器人的网络身份证\n            print(f"传输方式: {robot.connection.transport}")   # 实际用的连接方式\n    except pm.lite.LiteError as exc:\n        # LiteError 是 SDK 的统一报错类型，本模块所有失败都由它报告\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
+    />
 
   </Tab>
   <Tab title="结果预览">
 
-    ![1.1 结果预览（占位图，真机截图待补充）](/cn/ai-vision-robot/assets/placeholder-terminal.svg)
+    终端会依次打印下面几行。设备 ID 是一串 12 位的十六进制数字（形如 `90E5B1AA2CEC`，每台机器不同）：
+
+    ```text
+    Python: 3.11.9 (C:\...\python.exe)
+    SDK:    1.2.0 (C:\...\pymotion\__init__.py)
+
+    设备  ID: <12位十六进制，每台唯一>
+    传输方式: wifi
+    ```
 
   </Tab>
 </Tabs>
+
+## 运行方式
+
+把上面代码存成 `hello_robot.py`，在终端里运行：
+
+```bash
+python hello_robot.py
+```
 
 ## 参数说明
 
