@@ -26,7 +26,7 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
         { label: "main", doc: "入口\n├─ 打印 Python 与 SDK 版本\n├─ 连接机器人、读设备信息\n└─ 失败时 LiteError 报告原因" },
         { label: "pm.lite.connect", doc: "建立连接，返回机器人对象\n配 with 用完自动断开\n最多等 timeout 秒" },
       ]}
-      code={'import sys\nfrom pathlib import Path\n\nimport pymotion as pm\n\n\ndef main():\n    # 打印环境 → 连接 → 读设备信息；with 块结束自动断开\n    print(f"Python: {sys.version.split()[0]} ({sys.executable})")\n    print(f"SDK:    {pm.lite.__version__} ({Path(pm.__file__).resolve()})")\n    print()\n\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            print(f"设备  ID: {robot.connection.device_id}")   # 机器人的网络身份证\n            print(f"传输方式: {robot.connection.transport}")   # 实际用的连接方式\n    except pm.lite.LiteError as exc:\n        # LiteError 是 SDK 的统一报错类型，本模块所有失败都由它报告\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
+      code={'import sys\nfrom pathlib import Path\n\nimport pymotion as pm\n\nTRANSPORT = "wifi"   # 连接方式\nTIMEOUT = 15.0       # 连接最长等待时间（秒）\n\n\ndef main():\n    # 打印环境 → 连接 → 读设备信息；with 块结束自动断开\n    print(f"Python: {sys.version.split()[0]} ({sys.executable})")\n    print(f"SDK:    {pm.lite.__version__} ({Path(pm.__file__).resolve()})")\n    print()\n\n    try:\n        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:\n            print(f"设备  ID: {robot.connection.device_id}")   # 机器人的网络身份证\n            print(f"传输方式: {robot.connection.transport}")   # 实际用的连接方式\n    except pm.lite.LiteError as exc:\n        # LiteError 是 SDK 的统一报错类型，本模块所有失败都由它报告\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
     />
 
   </Tab>
@@ -60,4 +60,4 @@ python hello_robot.py
 | `robot.connection.device_id` | str | 由设备决定 | 设备唯一编号，多台机器人同网时靠它区分 |
 | `robot.connection.transport` | str | `"wifi"` / `"usb"` | 实际生效的连接方式，以它为准不以前面常量为准 |
 
-想改连接等待时间，直接改 `connect` 里的 `timeout` 值；`transport` 保持 `"wifi"` 不动。
+想改连接等待时间，直接改 `TIMEOUT` 常量；`transport` 保持 `"wifi"` 不动。
