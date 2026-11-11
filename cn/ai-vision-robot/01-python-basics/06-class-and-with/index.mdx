@@ -9,20 +9,21 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 
 - 已完成 [1.1 WIFI模式连接](../01-connect-wifi/index)
 - 机器人架空（轮子离地）或前方留出至少 1 米空地
-- 左右轮接到 M3、M4 口
 
 ## 关键函数
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `with robot.control()` | 先拿控制权再动作，防止两个程序同时指挥，呼应 1.5 的 `lease_active` |
+| `with robot.control()` | 先拿控制权再动作，防止两个程序同时指挥 |
 | `robot.motors.set_speeds({端口: 转速}, duration)` | 给电机发转速，`duration` 秒后自动停 |
 | `robot.motors.stop()` | 立即停止所有电机 |
 | `class / __init__ / __enter__ / __exit__` | 自定义类，实现 1.1 同款 `with` 协议 |
 
-这一页回答「为什么要写类」：1.1 的 `with` 不是魔法，它是一种约定——进的时候做什么、出的时候做什么。`SafeMotors` 把同样的约定套在电机上，进出自动停，忘不了。
+这里回答「为什么要写类」：1.1 的 `with` 不是魔法，它是一种约定——进的时候做什么、出的时候做什么。`SafeMotors` 把同样的约定套在电机上，进出自动停，忘不了。
 
 ## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -43,7 +44,7 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
   </Tab>
   <Tab title="结果预览">
 
-    ![](/cn/ai-vision-robot/assets/placeholder-visual.svg)
+    前进两秒，停一下，前进两秒。
 
   </Tab>
 </Tabs>

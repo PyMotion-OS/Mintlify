@@ -13,12 +13,15 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `robot.line_tracker(max_age=2.0)` | 读五路循迹；车底并排 5 个红外探头看地上黑线 |
+| `robot.line_tracker()` | 读五路循迹；车底并排 5 个红外探头看地上黑线 |
 | `for i in range(10)` | 计数循环，重复 10 轮 |
+| `for row in rows` | 遍历列表，逐个取出每轮记录 |
 | `rows.append(...)` | 把每轮结果存进列表，攒起来最后一起看 |
-| `time.sleep(0.3)` | 让程序等 0.3 秒，两轮之间给传感器喘息 |
+| `time.sleep(0.3)` | 让程序在这个位置等 0.3 秒，本程序就是每隔 0.3 读一次 |
 
 ## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -28,11 +31,11 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
       docs={[
         { label: "main", doc: "先看一次五路读数结构\n循环 10 轮存进列表\n最后逐轮打印" },
         { label: "robot.line_tracker", doc: "读五路循迹数据\nTrue 表示探头压在黑线上" },
-        { label: "for", doc: "循环 10 轮\n每轮读一次、存一次、等 0.3 秒" },
+        { label: "for", doc: "两种循环：\nfor i in range(10) 计数循环\nfor row in rows 遍历列表" },
         { label: "rows.append", doc: "把这一轮的 is_detected\n追加到列表末尾" },
-        { label: "time.sleep", doc: "让程序暂停 0.3 秒\n给传感器喘息" },
+        { label: "time.sleep", doc: "在这个位置等 0.3 秒\n每隔 0.3 读一次" },
       ]}
-      code={'import time                                 # time 模块：让程序"等一会儿"\n\nimport pymotion as pm\n\n\ndef main():\n    """连上后先看一次五路读数的结构，再读 10 轮存进列表，最后逐轮打印。"""\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            tracker_line_data = robot.line_tracker(max_age=2.0)          # 第一次读，只为看结构\n\n            print("五路传感器的数据结构：")\n            print("{")\n            print(f\'  "is_detected": {tracker_line_data.is_detected},\')  # 五路是否压到黑线\n            print(f\'  "state": "{tracker_line_data.state}",\')            # 状态文字\n            print(f\'  "valid": {tracker_line_data.valid},\')              # 数据能不能用\n            print(f\'  "age": {tracker_line_data.age}\')                   # 数据有多旧\n            print("}")\n\n            rows = []                                       # 空列表，存每一轮的读数\n            for i in range(10):                             # 循环 10 轮\n                tracker_line_data = robot.line_tracker(max_age=2.0)\n                if tracker_line_data.valid:                 # 有效才存进列表\n                    rows.append(list(tracker_line_data.is_detected))\n                time.sleep(0.3)                             # 两轮之间等 0.3 秒\n\n            for row in rows:                                # 逐行打印 10 轮记录\n                print(row)\n\n    except pm.lite.LiteError as exc:\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
+      code={'import time                                 # time 模块：让程序"等一会儿"\n\nimport pymotion as pm\n\n\ndef main():\n    """连上后先看一次五路读数的结构，再读 10 轮存进列表，最后逐轮打印。"""\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            tracker_line_data = robot.line_tracker()          # 第一次读，只为看结构\n\n            print("五路传感器的数据结构：")\n            print("{")\n            print(f\'  "is_detected": {tracker_line_data.is_detected},\')  # 五路是否压到黑线\n            print(f\'  "state": "{tracker_line_data.state}",\')            # 状态文字\n            print(f\'  "valid": {tracker_line_data.valid},\')              # 数据能不能用\n            print(f\'  "age": {tracker_line_data.age}\')                   # 数据有多旧\n            print("}")\n\n            rows = []                                       # 空列表，存每一轮的读数\n            for i in range(10):                             # 计数循环，跑 10 轮\n                tracker_line_data = robot.line_tracker()\n                if tracker_line_data.valid:                 # 有效才存进列表\n                    rows.append(list(tracker_line_data.is_detected))\n                time.sleep(0.3)                             # 在这个位置等 0.3 秒\n\n            for row in rows:                                # 遍历列表，逐行打印 10 轮记录\n                print(row)\n\n    except pm.lite.LiteError as exc:\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
     />
 
   </Tab>
@@ -41,21 +44,21 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
     ```text
     五路传感器的数据结构：
     {
-      "is_detected": [False, True, True, False, False],
-      "state": "ok",
-      "valid": true,
-      "age": 0.0
+      "is_detected": (False, False, False, True, False),
+      "state": "valid",
+      "valid": True,
+      "age": 0.025
     }
-    [False, True, True, False, False]
-    [False, True, True, False, False]
-    [False, True, True, False, False]
-    [False, True, True, False, False]
-    [False, True, True, False, False]
-    [False, True, True, False, False]
-    [False, True, True, False, False]
-    [False, True, True, False, False]
-    [False, True, True, False, False]
-    [False, True, True, False, False]
+    [False, False, False, True, False]
+    [False, False, False, True, False]
+    [False, False, False, True, False]
+    [False, False, False, True, False]
+    [False, False, False, True, False]
+    [False, False, False, True, False]
+    [False, False, False, True, False]
+    [False, False, True, False, False]
+    [False, False, True, False, False]
+    [False, False, True, False, False]
     ```
 
   </Tab>
@@ -71,7 +74,7 @@ python read_tracker.py
 
 | 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
-| `is_detected` | list[bool] | 5 个 `True` / `False` | 五路探头是否压到黑线，依次对应车底从左到右 5 个探头 |
-| `state` | str | `ok` / 其他 | 数据状态 |
-| `valid` | bool | `True` / `False` | 有效才存进列表 |
-| `age` | float | 秒 | 数据有多旧 |
+| `tracker_line_data.is_detected` | 元组 | 5 个 `True` / `False` | 五路探头是否压到黑线，依次对应车底从左到右 5 个探头 |
+| `tracker_line_data.state` | str | `valid` / 其他 | 数据状态 |
+| `tracker_line_data.valid` | bool | `True` / `False` | 有效才存进列表 |
+| `tracker_line_data.age` | float | 秒 | 数据有多旧 |

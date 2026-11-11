@@ -13,14 +13,16 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `robot.status(max_age=2.0)` | 读一次状态包，里面 8 个字段 |
+| `robot.status()` | 读一次状态包，里面 8 个字段 |
 | `robot.close()` | 手动收尾，释放连接 |
 | `try / except / finally` | 三种收尾：出错接住、最后一定执行 |
 | `except KeyboardInterrupt` | Ctrl-C 也是一种异常，可以接住 |
 
-这一页故意不用 `with`（1.1 那种自动收尾写法），改成手动 `try/finally`——为了看见 `finally` 存在的理由：不管程序怎么结束（跑完、被打断、出错），`finally` 里的代码一定会执行。`with` 的机制 1.6 讲。
+这里故意不用 `with`（1.1 那种自动收尾写法），改成手动 `try/finally`——为了看见 `finally` 存在的理由：不管程序怎么结束（跑完、被打断、出错），`finally` 里的代码一定会执行。`with` 的机制 1.6 讲。
 
 ## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -33,7 +35,7 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
         { label: "except KeyboardInterrupt", doc: "Ctrl-C 也是异常\n接住它打印一句" },
         { label: "finally", doc: "不管上面怎么结束\n这里都会执行\nrobot.close() 一定被调到" },
       ]}
-      code={'import time\n\nimport pymotion as pm\n\n\ndef read_status(robot):\n    """读一次状态，把整包 8 个字段全打出来。数据过期会自己抛错，交给外面的 except 接住。"""\n    status = robot.status(max_age=2.0)                      # 读一次状态\n    print("{")\n    print(f\'  "device_id": "{status.device_id}",\')          # 设备编号\n    print(f\'  "state": "{status.state}",\')                  # 设备当前状态\n    print(f\'  "lease_active": {status.lease_active},\')      # 是否持有控制权（1.6 会用到）\n    print(f\'  "estop_latched": {status.estop_latched},\')    # 急停是否锁存：按下会一直锁着\n    print(f\'  "estop_reason": "{status.estop_reason}",\')    # 急停原因，没触发是空字符串\n    print(f\'  "fault_latched": {status.fault_latched},\')    # 故障是否锁存\n    print(f\'  "fault_reason": "{status.fault_reason}",\')    # 故障原因\n    print(f\'  "age": {status.age}\')                         # 数据有多旧\n    print("}")\n\n\ndef main():\n    """连上以后每秒读一次；中途 Ctrl-C 或断网，都由 finally 收尾。"""\n    robot = pm.lite.connect(transport="wifi", timeout=15.0)  # 注意：没有 with\n\n    try:\n        for i in range(20):                                 # 连续读 20 轮\n            read_status(robot)\n            time.sleep(1.0)                                 # 每轮停 1 秒\n    except KeyboardInterrupt:                               # Ctrl-C 也是异常，可以接住\n        print("被 Ctrl-C 打断")\n    except pm.lite.LiteError as exc:                        # 只接 SDK 冒出来的错\n        print(f"出错（{exc}）")\n    finally:\n        robot.close()                                       # 不管上面怎么结束，这里都会执行\n\n\nif __name__ == "__main__":\n    main()'}
+      code={'import time\n\nimport pymotion as pm\n\n\ndef read_status(robot):\n    """读一次状态，把整包 8 个字段全打出来。"""\n    status = robot.status()                      # 读一次状态\n    print("{")\n    print(f\'  "device_id": "{status.device_id}",\')          # 设备编号\n    print(f\'  "state": "{status.state}",\')                  # 设备当前状态\n    print(f\'  "lease_active": {status.lease_active},\')      # 是否持有控制权（1.6 会用到）\n    print(f\'  "estop_latched": {status.estop_latched},\')    # 急停是否锁存：按下会一直锁着\n    print(f\'  "estop_reason": "{status.estop_reason}",\')    # 急停原因，没触发是空字符串\n    print(f\'  "fault_latched": {status.fault_latched},\')    # 故障是否锁存\n    print(f\'  "fault_reason": "{status.fault_reason}",\')    # 故障原因\n    print(f\'  "age": {status.age}\')                         # 数据有多旧\n    print("}")\n\n\ndef main():\n    """连上以后每秒读一次；中途 Ctrl-C 或断网，都由 finally 收尾。"""\n    robot = pm.lite.connect(transport="wifi", timeout=15.0)  # 注意：没有 with\n\n    try:\n        for i in range(20):                                 # 连续读 20 轮\n            read_status(robot)\n            time.sleep(1.0)                                 # 每轮停 1 秒\n    except KeyboardInterrupt:                               # Ctrl-C 也是异常，可以接住\n        print("被 Ctrl-C 打断")\n    except pm.lite.LiteError as exc:                        # 只接 SDK 冒出来的错\n        print(f"出错（{exc}）")\n    finally:\n        robot.close()                                       # 不管上面怎么结束，这里都会执行\n\n\nif __name__ == "__main__":\n    main()'}
     />
 
   </Tab>
@@ -42,11 +44,11 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
     ```text
     {
       "device_id": "<12位十六进制，每台唯一>",
-      "state": "ready",
-      "lease_active": false,
-      "estop_latched": false,
+      "state": "IDLE",
+      "lease_active": False,
+      "estop_latched": False,
       "estop_reason": "",
-      "fault_latched": false,
+      "fault_latched": False,
       "fault_reason": "",
       "age": 0.0
     }
@@ -66,12 +68,11 @@ python watch_status.py
 
 | 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
-| `max_age` | float | 秒，本例 2.0 | 超过的旧数据算过期并抛错 |
-| `device_id` | str | 由设备决定 | 设备唯一编号 |
-| `state` | str | `ready` / 其他 | 设备当前状态 |
-| `lease_active` | bool | `True` / `False` | 是否持有控制权，1.6 会用到 |
-| `estop_latched` | bool | `True` / `False` | 急停是否锁存，按下会一直锁着 |
-| `estop_reason` | str | 空串 / 原因 | 急停原因，没触发是空字符串 |
-| `fault_latched` | bool | `True` / `False` | 故障是否锁存 |
-| `fault_reason` | str | 空串 / 原因 | 故障原因 |
-| `age` | float | 秒 | 数据有多旧 |
+| `status.device_id` | str | 由设备决定 | 设备唯一编号 |
+| `status.state` | str | `IDLE` / 其他 | 设备当前状态 |
+| `status.lease_active` | bool | `True` / `False` | 是否持有控制权，1.6 会用到 |
+| `status.estop_latched` | bool | `True` / `False` | 急停是否锁存，按下会一直锁着 |
+| `status.estop_reason` | str | 空串 / 原因 | 急停原因，没触发是空字符串 |
+| `status.fault_latched` | bool | `True` / `False` | 故障是否锁存 |
+| `status.fault_reason` | str | 空串 / 原因 | 故障原因 |
+| `status.age` | float | 秒 | 数据有多旧 |

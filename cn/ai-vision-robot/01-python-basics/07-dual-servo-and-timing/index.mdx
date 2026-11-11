@@ -1,6 +1,6 @@
 ---
 title: "1.7 双舵机与计时"
-description: "上下、左右两路 PWM 舵机各动三次（最后一次复位），结束时打印整套动作的耗时"
+description: "上下、左右两路 PWM 舵机依次转到三个角度，结束时打印整套动作的耗时"
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
@@ -14,12 +14,13 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `robot.pwm_servos.move_to({端口: 角度, ...})` | 批量发角度，PWM 舵机按角度定位 |
-| `robot.pwm_servos.stop()` | 关 PWM 输出，放 `finally` |
 | `time.monotonic()` | 只增不减的时钟，适合算耗时 |
 
 PWM 舵机像机械臂的关节：你给它目标角度，它自己转过去。它不会汇报「到了」，所以要 `sleep` 等一会儿——这是舵机的标准写法。
 
 ## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -27,24 +28,22 @@ PWM 舵机像机械臂的关节：你给它目标角度，它自己转过去。�
     <CodeFold
       title="dual_servo.py"
       docs={[
-        { label: "main", doc: "复位 → 移动 → 复位三次动作\n间隔 0.2s / 0.5s\n最后打印总耗时" },
+        { label: "main", doc: "三个角度依次转过去\n间隔 0.2s / 0.5s\n最后打印总耗时" },
         { label: "move_to", doc: "批量发目标角度\n舵机自己转过去\n不会汇报到位" },
         { label: "time.monotonic", doc: "只增不减的时钟\n适合算一段动作耗时" },
       ]}
-      code={'import time\n\nimport pymotion as pm\n\nPORT_UP_DOWN = 4                           # 上下舵机接 PWM 端口 4\nPORT_LEFT_RIGHT = 5                        # 左右舵机接 PWM 端口 5\n\n\ndef main():\n    """复位 → 移动 → 复位三次动作，间隔 0.2s / 0.5s，最后打印总耗时。"""\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            with robot.control():                 # 舵机也是执行器，先拿控制权（1.6）\n                start = time.monotonic()          # 开始前记时间：只增不减，适合算耗时\n\n                try:\n                    # 第一次：复位姿态\n                    robot.pwm_servos.move_to({PORT_UP_DOWN: 75, PORT_LEFT_RIGHT: 120})\n                    print("复位: 上下 75°，左右 120°")\n                    time.sleep(0.2)               # 两次动作之间停 0.2 秒\n\n                    # 第二次：转到水平位\n                    robot.pwm_servos.move_to({PORT_UP_DOWN: 70, PORT_LEFT_RIGHT: 120})\n                    print("移动: 上下 70°，左右 120°")\n                    time.sleep(0.5)               # 停 0.5 秒\n\n                    # 第三次：回到复位姿态\n                    robot.pwm_servos.move_to({PORT_UP_DOWN: 75, PORT_LEFT_RIGHT: 120})\n                    print("复位: 上下 75°，左右 120°")\n                finally:\n                    robot.pwm_servos.stop()       # 不管动作怎么中断，都关掉 PWM 输出\n\n                print(f"执行时间: {time.monotonic() - start:.2f} 秒")\n\n    except pm.lite.LiteError as exc:\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
+      code={'import time\n\nimport pymotion as pm\n\nPORT_UP_DOWN = 4                           # 上下舵机接 PWM 端口 4\nPORT_LEFT_RIGHT = 5                        # 左右舵机接 PWM 端口 5\n\n\ndef main():\n    """三个角度依次转过去，间隔 0.2s / 0.5s，最后打印总耗时。"""\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            with robot.control():                 # 舵机也是执行器，先拿控制权（1.6）\n                start = time.monotonic()          # 开始前记时间：只增不减，适合算耗时\n\n                robot.pwm_servos.move_to({PORT_UP_DOWN: 60, PORT_LEFT_RIGHT: 100})\n                print("移动: 上下 60°，左右 100°")\n                time.sleep(0.2)                   # 停 0.2 秒\n\n                robot.pwm_servos.move_to({PORT_UP_DOWN: 75, PORT_LEFT_RIGHT: 100})\n                print("移动: 上下 75°，左右 100°")\n                time.sleep(0.5)                   # 停 0.5 秒\n\n                robot.pwm_servos.move_to({PORT_UP_DOWN: 75, PORT_LEFT_RIGHT: 120})\n                print("复位: 上下 75°，左右 120°")\n\n                print(f"执行时间: {time.monotonic() - start:.2f} 秒")\n\n    except pm.lite.LiteError as exc:\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
     />
 
   </Tab>
   <Tab title="结果预览">
 
     ```text
+    移动: 上下 60°，左右 100°
+    移动: 上下 75°，左右 100°
     复位: 上下 75°，左右 120°
-    移动: 上下 70°，左右 120°
-    复位: 上下 75°，左右 120°
-    执行时间: 1.23 秒
+    执行时间: 0.73 秒
     ```
-
-    ![](/cn/ai-vision-robot/assets/placeholder-visual.svg)
 
   </Tab>
 </Tabs>
@@ -62,13 +61,3 @@ python dual_servo.py
 | `PORT_UP_DOWN` | int | 本例 4 | 上下舵机端口，角度范围 0～85°，70° 是水平 |
 | `PORT_LEFT_RIGHT` | int | 本例 5 | 左右舵机端口，角度范围 60～180°，120° 是居中 |
 | `time.monotonic()` | float | 秒 | 只增不减的时钟，两次相减得到耗时 |
-
-## sleep 的边界
-
-一次性动作 `sleep` 等一等是对的：舵机转到位就完事，没有别的事要做。但如果动作要连续调整——比如跟着目标转头——`sleep` 会把程序卡成一格一格的。模块二第一课就会遇到这个问题，解决办法叫实时命令（realtime）。
-
-## 本模块可复用代码
-
-- 连接模板（见 [1.1 WIFI模式连接](../01-connect-wifi/index)）
-- 双舵机三次动作 + 计时骨架（模块五云台复用）
-- `check_V` 电压分档（见 [1.4 电压与函数](../04-functions-and-parameters/index)）
