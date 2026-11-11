@@ -1,0 +1,75 @@
+---
+title: "2.6 避障停车"
+description: "超声波读数分三档——远就全速、近了减速、太近停住；数据断了也停"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [2.1 单轮电机速度](../08-motor-speed/index) 与 [2.3 实时数据队列](../10-realtime-data-queue/index)
+- **车轮架空**（或扶起对准墙面）
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `choose_rpm(ultrasonic_data)` | 按距离与状态返回 (转速, 说明) 二元组 |
+| `run(data_queue, commands)` | 主循环：读一条 → 选转速 → 发送 |
+| `session.data.read(timeout=…)` | 数据断流时靠它退出，不靠 `while True` 卡死 |
+
+## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="obstacle_stop.py"
+      docs=[
+        { label: "choose_rpm", doc: "无回波 → 正常\n无效 → 停\n距离分档" },
+        { label: "run", doc: "读 → 判 → 发\n循环体" },
+        { label: "main", doc: "控制权 → 会话\n→ 起循环" },
+      ]
+      folds=[
+        { label: "def choose_rpm(ultrasonic_data):", from: 13, to: 27 },
+        { label: "def run(data_queue, commands):", from: 30, to: 49 },
+        { label: "def main():", from: 52, to: 67, defaultOpen: true },
+      ]
+      code='import pymotion as pm\n\n# --- 本例程可调整的参数 ---\nSTOP_DISTANCE = 350                        # 停机距离，单位毫米\nSLOW_DISTANCE = 500                        # 减速距离，单位毫米\nNORMAL_RPM = 30                            # 正常双轮转速，单位转/分\nSLOW_RPM = 15                              # 减速双轮转速，单位转/分\n\n# --- 共用配置（一般不用动）---\nPORT_LEFT, PORT_RIGHT = 3, 4               # 左轮接 M3，右轮接 M4\n\n\ndef choose_rpm(ultrasonic_data):\n    """根据超声波状态和距离选择正常、减速或停机。"""\n    if ultrasonic_data.state == "no_echo":                 # 本例程把无回波作为未测到障碍，保持正常速度\n        return NORMAL_RPM, "未测到障碍"\n\n    if not ultrasonic_data.valid:                           # 其他不可用状态把速度设为 0\n        return 0, "数据无效"\n\n    if ultrasonic_data.distance <= STOP_DISTANCE:           # 距离过近时速度设为 0\n        return 0, "停机"\n\n    if ultrasonic_data.distance < SLOW_DISTANCE:            # 进入减速区间时降低速度\n        return SLOW_RPM, "减速"\n\n    return NORMAL_RPM, "正常"                               # 距离较远时保持正常速度\n\n\ndef run(data_queue, commands):\n    """持续获取距离、选择速度、发送双轮目标并打印状态变化。"""\n    last_state = None\n\n    while True:                                             # 条件一直为真，所以持续重复避障控制\n        # read() 会等待下一条新数据，所以 while 不会一直快速循环；最多等待 0.3 秒\n        sensor_data = data_queue.read(timeout=0.3)\n        if sensor_data is None:                             # 0.3 秒内没有新数据\n            rpm, state = 0, "等待数据"\n            distance = None\n        else:\n            ultrasonic_data = sensor_data.data\n            rpm, state = choose_rpm(ultrasonic_data)        # 根据距离选择转速和状态\n            distance = ultrasonic_data.distance\n        # 指令有效期要大于 read() 最长等待的 0.3 秒，避免等待新数据时指令提前失效\n        commands.motor_speeds.write({PORT_LEFT: rpm, PORT_RIGHT: rpm}, valid_for=0.35)\n\n        if state != last_state:                             # 当前状态改变时才打印，并保存为上一次状态\n            print(f"状态: {state}  距离(mm): {distance}  目标: {rpm} RPM")\n            last_state = state\n\n\ndef main():\n    """连接 Robot，持续根据前方距离调整双轮转速。"""\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            with robot.control():\n                # 打开实时控制会话：既收超声波，也能发双轮速度\n                # frequency="high" 让超声波读得更勤；data_queue_size=1 只留最新一条，不堆积旧数据\n                with robot.realtime.open(\n                    data_sources=("ultrasonic",),\n                    command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)},\n                    frequency="high",\n                    data_queue_size=1,\n                ) as session:\n                    run(session.data, session.commands)\n    except KeyboardInterrupt:\n        print("Ctrl+C 主动停机")\n\n\nif __name__ == "__main__":\n    main()'
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    状态: 正常  距离(mm): 812  目标: 30 RPM
+    状态: 减速  距离(mm): 420  目标: 15 RPM
+    状态: 停机  距离(mm): 300  目标: 0 RPM
+    状态: 等待数据  距离(mm): None  目标: 0 RPM
+    ```
+
+    只在状态变化时打印，不是每轮都刷。断流时打印 `等待数据` 并停机。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python obstacle_stop.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `STOP_DISTANCE` | int | 350 毫米 | 小于等于它就停机 |
+| `SLOW_DISTANCE` | int | 500 毫米 | 进入该距离开始减速 |
+| `NORMAL_RPM` / `SLOW_RPM` | int | 30 / 15 | 两档速度 |
+| `state` | str | `no_echo` / `valid` | `no_echo` 视为未测到障碍 |
+| `frequency` | str | `"high"` | 超声波读得更勤 |
+| `data_queue_size` | int | 1 | 队列只留最新一条，不堆旧数据 |
+
+> 分档边界：`< 350` 停、`350～500` 减速、`> 500` 全速；无回波不算障碍，但无效读数必须停。

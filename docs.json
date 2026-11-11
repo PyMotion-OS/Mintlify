@@ -99,12 +99,13 @@
                     "group": "2 运动与传感器",
                     "pages": [
                       "cn/ai-vision-robot/02-motion-and-sensors/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/07-motor-control/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/08-realtime-data-queue/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/09-differential-drive/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/10-keyboard-control/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/11-obstacle-stop/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/12-safe-stop/index"
+                      "cn/ai-vision-robot/02-motion-and-sensors/08-motor-speed/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/09-servo-position/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/10-realtime-data-queue/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/11-differential-drive/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/12-keyboard-control/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/13-obstacle-stop/index",
+                      "cn/ai-vision-robot/02-motion-and-sensors/14-safe-stop/index"
                     ]
                   },
                   {

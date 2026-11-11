@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360">
+  <!-- 占位图：2.5 键盘遥控窗口截图（真机待补充） -->
+  <rect x="0" y="0" width="720" height="360" rx="14" fill="#0B0C0E"/>
+  <rect x="0" y="0" width="720" height="44" rx="14" fill="#16181A"/>
+  <rect x="0" y="30" width="720" height="14" fill="#16181A"/>
+  <circle cx="22" cy="22" r="6" fill="#3A3D40"/>
+  <circle cx="42" cy="22" r="6" fill="#3A3D40"/>
+  <circle cx="62" cy="22" r="6" fill="#3A3D40"/>
+  <text x="360" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#6E7781">键盘遥控</text>
+  <text x="360" y="150" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="17" fill="#8B949E">结果预览占位图</text>
+  <text x="360" y="190" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#6E7781">Tkinter 键盘遥控窗口截图待补充</text>
+  <text x="360" y="216" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#6E7781">（应显示提示文字：点击窗口后按方向键；上下控制前后，左右控制转向，可以组合按键）</text>
+</svg>

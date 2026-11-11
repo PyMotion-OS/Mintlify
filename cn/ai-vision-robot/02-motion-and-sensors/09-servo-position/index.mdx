@@ -1,0 +1,74 @@
+---
+title: "2.2 舵机位置与实时命令"
+description: "双舵机先复位到 70°/120°，再用实时命令各偏 10°；命令 0.3 秒就过期，舵机却停在目标角度不动"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [1.7 双舵机与计时](../../01-python-basics/07-dual-servo-and-timing/index)（1.7 用 `move_to` 做过动作，本页换成实时命令）
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `robot.pwm_servos.move_to({端口: 角度, ...})` | 普通位置命令：发一次角度，舵机自己转过去（1.7 学过，本页只做复位） |
+| `commands.pwm_position_servos.write({端口: 角度}, valid_for=0.3)` | 实时位置命令：走会话通道发角度，可带有效期 |
+| 角度限幅（`if/elif`） | 上下 0～85°、左右 60～180°，超范围夹到边界 |
+| `def move_servos(commands, up_down_angle=70, left_right_angle=120)` | 带默认参数的函数，省略时停在复位姿态 |
+
+## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+    <CodeFold
+      title="servo_position.py"
+      docs=[
+        { label: "reset_servos", doc: "move_to 复位\n+ sleep 1 秒\n等转到位" },
+        { label: "move_servos", doc: "先限幅再发命令\n返回实际发送的角度" },
+        { label: "pwm_position_servos", doc: "实时通道\nvalid_for=0.3\n只约束命令本身" },
+        { label: "commands", doc: "会话的命令入口\n和 robot. 开头的调用\n不是一回事" },
+      ]
+      folds=[
+        { label: "def reset_servos(robot):", from: 11, to: 15 },
+        { label: "def move_servos(commands, up_down_angle=70, left_right_angle=120):", from: 18, to: 35 },
+        { label: "def main():", from: 38, to: 66, defaultOpen: true },
+      ]
+      code='import time\n\nimport pymotion as pm\n\n# --- 本例程可调整的参数 ---\nPORT_UP_DOWN = 4                           # 上下舵机接 PWM 端口 4（S4），角度范围 0°～85°\nPORT_LEFT_RIGHT = 5                        # 左右舵机接 PWM 端口 5（S5），角度范围 60°～180°\nUP_DOWN_HOME, LEFT_RIGHT_HOME = 70, 120     # 复位姿态：上下70°，左右居中120°\n\n\ndef reset_servos(robot):\n    """用普通位置命令复位双舵机，并返回两个复位角度。"""\n    robot.pwm_servos.move_to({PORT_UP_DOWN: UP_DOWN_HOME, PORT_LEFT_RIGHT: LEFT_RIGHT_HOME})\n    time.sleep(1.0)                                         # 等待双舵机到达复位姿态\n    return UP_DOWN_HOME, LEFT_RIGHT_HOME                    # 后续角度从复位姿态开始计算\n\n\ndef move_servos(commands, up_down_angle=70, left_right_angle=120):\n    """限制双舵机角度并发送实时命令，返回实际发送的两个角度。"""\n    # commands 是实时会话的命令入口，两个角度单位为度；省略时停在复位姿态\n    if up_down_angle < 0:\n        up_down_angle = 0                                   # S4 转不到 0° 以下\n    elif up_down_angle > 85:\n        up_down_angle = 85                                  # S4 最多抬到 85°\n\n    if left_right_angle < 60:\n        left_right_angle = 60                               # S5 转不到 60° 以下\n    elif left_right_angle > 180:\n        left_right_angle = 180                              # S5 最多转到 180°\n\n    # 0.3 秒只约束命令本身：过期后不再重发，舵机仍停在最后的角度\n    commands.pwm_position_servos.write(\n        {PORT_UP_DOWN: up_down_angle, PORT_LEFT_RIGHT: left_right_angle}, valid_for=0.3\n    )\n    return up_down_angle, left_right_angle                  # 主程序继续使用限制后的安全角度\n\n\ndef main():\n    """先复位到 70°/120°，再用实时命令各偏 10°，观察"命令到期但角度仍保持"。"""\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            with robot.control():                           # 舵机也是执行器，先拿控制权\n\n                # 第一步：move_to 复位。普通位置命令，不需要实时会话（1.7 学过）\n                up_down_angle, left_right_angle = reset_servos(robot)\n                print(f"复位: 上下 {up_down_angle}°，左右 {left_right_angle}°")\n\n                # 第二步：打开实时控制会话，只声明两路舵机\n                with robot.realtime.open(\n                    command_targets={"pwm_position_servos": (PORT_UP_DOWN, PORT_LEFT_RIGHT)}\n                ) as session:\n                    up_down_angle, left_right_angle = move_servos(\n                        session.commands,\n                        up_down_angle=60,                   # 比复位 70° 更低 10°\n                        left_right_angle=130,               # 比居中 120° 偏右 10°\n                    )\n                    print(f"舵机: 上下 {up_down_angle}°，左右 {left_right_angle}°")\n                    time.sleep(2.0)                         # 给舵机转动和保持的时间\n\n                    # valid_for=0.3 秒早过期了，位置命令失效后舵机仍停在目标角度\n                    print(f"命令 0.3 秒就过期，但舵机保持在 {up_down_angle}°/{left_right_angle}°")\n\n    except pm.lite.LiteError as exc:\n        print(f"出错: {type(exc).__name__}: {exc}")\n    except KeyboardInterrupt:\n        print("Ctrl+C 主动结束；退出 control 时会关闭 PWM 输出")\n\n\nif __name__ == "__main__":\n    main()'
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    复位: 上下 70°，左右 120°
+    舵机: 上下 60°，左右 130°
+    命令 0.3 秒就过期，但舵机保持在 60°/130°
+    ```
+
+    上下抬 10°、向右偏 10°，舵机停住不回弹。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python servo_position.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `PORT_UP_DOWN` | int | 4 | 上下舵机端口，角度范围 0～85° |
+| `PORT_LEFT_RIGHT` | int | 5 | 左右舵机端口，角度范围 60～180° |
+| `UP_DOWN_HOME` / `LEFT_RIGHT_HOME` | int | 70 / 120 | 复位姿态：上下 70°、左右居中 120° |
+| `valid_for` | float | 0.3 | 只约束命令本身，不约束角度——命令过期角度仍保持 |
+| `move_servos` 两个默认参数 | int | 70 / 120 | 省略时停在复位姿态 |
+
+> 本页是 1.7 的对照页：1.7 讲「怎么转到某个角度」，本页讲「实时命令与角度保持」——电机命令过期就停，舵机命令过期角度还在。
