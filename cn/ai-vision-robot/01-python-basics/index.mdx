@@ -5,26 +5,27 @@ description: "先能把机器人连上、读出数据，再谈运动和视觉"
 
 ## 模块目标
 
-本模块解决一件事：**让代码能可靠地与机器人通信**。完成本模块后，你可以做到——
+这是整本手册的第一站，用来完成两件事：**认识这台 Robot，并学会控制它所需的 Python 基础**。完成本模块后，你可以做到——
 
-- 连接设备并读取设备信息
+- 连接 Robot，读取它的设备信息
+- 认识 Robot 的硬件模块：超声波、循迹、电池、电机、舵机
 - 读取传感器数据（超声波、循迹、电池电压）
-- 用循环持续采样、用函数封装判断逻辑
-- 用 `with` 保证异常时设备被正确释放
+- 控制电机前进、后退，控制舵机转到指定角度
+- 用循环持续采样、用函数封装判断逻辑、用 `with` 保证异常时设备被正确释放
 
-后续的运动、循迹、视觉例程都建立在这些动作之上。
+这些是后续运动、循迹、视觉例程的共同基础。
 
 ## 例程顺序
 
 | 例程 | 内容 | 学完能做什么 |
 | --- | --- | --- |
-| [1.1 WIFI模式连接](../01-connect-wifi/index) | `connect()`、设备信息 | 确认环境和设备都正常 |
-| [1.2 超声波测距](../02-variables-and-conditions/index) | 读超声波 + `if` 判断 | 把读数分成"过近/正常/未知" |
-| [1.3 循迹与循环](../03-loops-and-lists/index) | `for` 循环持续采样 | 攒一段数据看趋势 |
-| [1.4 电压与函数](../04-functions-and-parameters/index) | 把判断封装成函数 | 同一逻辑多处复用 |
-| [1.5 状态与异常清理](../05-exceptions-and-cleanup/index) | `try/except/finally` | 断网、Ctrl-C 都不留残局 |
-| [1.6 电机与类](../06-class-and-with/index) | 自定义上下文管理器 | 进出自动停机的电机组 |
-| [1.7 双舵机与计时](../07-dual-servo-and-timing/index) | PWM 舵机 + `time.monotonic()` | 动作与耗时测量，模块收尾 |
+| [1.1 WIFI模式连接](../01-connect-wifi/index) | `connect()`、设备信息 | 连接 Robot，确认环境和设备都正常 |
+| [1.2 超声波测距](../02-variables-and-conditions/index) | 读超声波 + `if/elif/else` 判断 | 把前方距离分成"过近/正常"，无效读数单独处理 |
+| [1.3 循迹与循环](../03-loops-and-lists/index) | `for` 循环持续采样五路循迹 | 攒一段循迹数据看趋势 |
+| [1.4 电压与函数](../04-functions-and-parameters/index) | 读电池电压 + 封装判断函数 | 把判断逻辑写成一个可复用的函数 |
+| [1.5 状态与异常清理](../05-exceptions-and-cleanup/index) | `try/except/finally` 读状态包 | 断网、Ctrl-C 都能干净退出 |
+| [1.6 电机与类](../06-class-and-with/index) | `class` 封装电机启停 | 让电机前进、后退，进出自动停机 |
+| [1.7 双舵机与计时](../07-dual-servo-and-timing/index) | PWM 舵机转角度 + `time.monotonic()` | 控制两个舵机转到指定角度，并测出动作耗时 |
 
 ## 学习建议
 
@@ -36,5 +37,5 @@ description: "先能把机器人连上、读出数据，再谈运动和视觉"
 随产品提供一份 SKILL 文件——写给 AI 工具（Claude Code、Cursor 这类「AI 朋友」）看的产品说明书。把它交给 AI，AI 就能理解这台 Robot 怎么连、每个例程怎么跑、参数什么含义。
 
 - **能帮什么**：完成环境配置与首次连接、按你的要求改例程、解释每段代码在做什么
-- **怎么给**：把 SKILL 文件放进 AI 工具，[下载 SKILL 文件](/cn/ai-vision-robot/skill/SKILL.md)
+- **怎么给**：把 SKILL 文件放进 AI 工具，[下载 SKILL 文件](/cn/ai-vision-robot/skill/SKILL.txt)
 - **安全**：AI 动手前会先说明要做什么，动作类命令需你确认
