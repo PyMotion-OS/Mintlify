@@ -1,13 +1,11 @@
 ---
-title: "1.1 Wi-Fi 连接"
+title: "1.1 WIFI模式连接"
 description: "跑完一条命令，看到 Python 版本、SDK 版本，以及机器人的设备编号和传输方式"
 ---
 
 ## 前置条件
 
-- 机器人已上电，App 里显示在线
-- 电脑和机器人连的是同一个 Wi-Fi
-- 电脑已安装 pymotion SDK
+- Robot 与电脑完成网络环境配置，参考 PyMotion Lite 使用手册的 [2.1 安装开发环境](https://pymotion.mintlify.site/does./cn/py-motion-lite/2/01-development-environment)
 
 ## 关键函数
 
@@ -53,14 +51,6 @@ print、f-string、`sys.version` 是纯展示手段，直接看下面代码，�
     if __name__ == "__main__":
         main()
     ```
-
-  </Tab>
-  <Tab title="运行逻辑">
-
-    1. 先打印 Python 版本和 SDK 版本——环境就绪才有下一步
-    2. 尝试连接：等机器人应答，最多 15 秒
-    3. 连上后打印设备 ID 和传输方式，`with` 块结束自动断开
-    4. 没连上时，LiteError 报出失败原因
 
   </Tab>
   <Tab title="结果预览">
