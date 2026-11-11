@@ -58,26 +58,10 @@ python check_distance.py
 
 ## 参数说明
 
-<ParamField path="ultrasonic_data" type="object">
-  一次超声波读数的完整返回，下面的 `distance` / `state` / `valid` / `age` 都是它的字段。
-</ParamField>
-
-<ParamField path="ultrasonic_data.distance" type="float">
-  前方障碍物距离，单位毫米；无效读数时为 `None`。
-</ParamField>
-
-<ParamField path="ultrasonic_data.state" type="string">
-  数据状态文字，`valid` 表示可用，其他值说明无效原因。
-</ParamField>
-
-<ParamField path="ultrasonic_data.valid" type="boolean">
-  这条数据能不能用；先判它、再判 `distance`。
-</ParamField>
-
-<ParamField path="ultrasonic_data.age" type="float">
-  数据有多旧，单位秒。
-</ParamField>
-
-<ParamField path="STOP" type="int">
-  判断阈值（毫米），本例用 200；改小更灵敏，改大更迟钝。
-</ParamField>
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `ultrasonic_data.distance` | float | 毫米 | 前方障碍物距离，无效读数时为 `None` |
+| `ultrasonic_data.state` | str | `valid` / 其他 | 数据状态，无效时用它说明原因 |
+| `ultrasonic_data.valid` | bool | `True` / `False` | 先判它再判 `distance` |
+| `ultrasonic_data.age` | float | 秒 | 数据有多旧 |
+| `STOP` | int | 本例 200 | 判断阈值，毫米；改小更灵敏，改大更迟钝 |
