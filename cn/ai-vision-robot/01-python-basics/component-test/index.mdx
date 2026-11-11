@@ -3,7 +3,7 @@ title: "组件测试（内部）"
 description: "验证根路径 import（/snippets/）能否让深层页面用上 CodeFold，含三态 Tabs 形态"
 ---
 
-import { CodeFold } from "/snippets/code-fold.jsx"
+import { CodeFold } from "/snippets/code-fold"
 
 本页验证 F15 的修法：组件放根 `snippets/`，页面用**根路径 import** 引入（Mintlify 官方文档指定方式，相对路径不被支持）。本页在 `01-python-basics/component-test/`，与正式例程页同深度，能渲染即代表所有模块页可用。
 
