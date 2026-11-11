@@ -16,8 +16,6 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 | `robot.pwm_servos.move_to({端口: 角度, ...})` | 批量发角度，PWM 舵机按角度定位 |
 | `time.monotonic()` | 只增不减的时钟，适合算耗时 |
 
-PWM 舵机像机械臂的关节：你给它目标角度，它自己转过去。它不会汇报「到了」，所以要 `sleep` 等一会儿——这是舵机的标准写法。
-
 ## 完整示例
 
 代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
