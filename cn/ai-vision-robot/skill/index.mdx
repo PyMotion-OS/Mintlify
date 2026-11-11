@@ -1,12 +1,15 @@
-<!-- SKILL 文件（写给 AI 工具的产品说明书）—— 内容初稿，待产品资料到位后由产品/设计者核对补全 -->
+---
+title: "AI 工具配置（SKILL）"
+description: "写给 AI 工具的 Robot 产品说明书，交给 Claude Code、Cursor 即可让 AI 帮你操作 Robot"
+---
 
-# PyMotion Robot · SKILL
+这是一份写给 AI 工具（Claude Code、Cursor 这类「AI 朋友」）看的产品说明书。把它交给 AI，AI 就能理解这台 Robot 怎么连、每个例程怎么跑、参数什么含义，进而帮你完成环境配置、修改例程、解释代码。
 
-这是一份写给 AI 工具（Claude Code、Cursor 等）看的产品说明书。把它交给 AI，AI 就能理解这台 Robot 怎么连、每个例程怎么跑、参数什么含义，进而帮你完成环境配置、修改例程、解释代码。
+> 用法：把下面这份 SKILL 全文复制到 AI 工具的上下文里（或保存为 `.md` 文件交给 AI）。
 
 ## 产品定位
 
-PyMotion Robot 是一台面向编程教学的视觉小车。Python 侧通过 `pymotion` SDK 的 `lite` 接口与机器人通信，覆盖连接、传感器读取、电机/舵机控制、视觉与 YOLO 等能力。
+PyMotion Robot 是一台面向编程教学的视觉小车。Python 侧通过 `pymotion` SDK 的 `lite` 接口与 Robot 通信，覆盖连接、传感器读取、电机/舵机控制、视觉与 YOLO 等能力。
 
 ## 连接方式
 

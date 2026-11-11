@@ -1,8 +1,8 @@
-# skill · SKILL 文件下载目录
+# skill · AI 工具配置（SKILL）目录
 
-全站唯一对外提供下载的地方：**AI 配置用的 SKILL 文件**（模块一首页「让 AI 帮你操作 Robot」章节引用）。
+全站唯一提供 SKILL 全文的地方：**写给 AI 工具（Claude Code、Cursor）看的 Robot 产品说明书**（模块一首页「让 AI 帮你操作 Robot」章节引用）。
 
-- 文件放这里，页面里引用：`[下载 SKILL 文件](/cn/ai-vision-robot/skill/SKILL.txt)`
-- **文件后缀用 `.txt`，不要用 `.md`**：`.md` 会被 Mintlify 当文档页渲染，点击后软跳到站点首页而非下载；`.txt` 是纯文本，浏览器直接下载
-- Mintlify 免费档 **ZIP/PDF 不能直接下载**（Enterprise 限定），所以用 `.txt` 原始文件
-- `.gitkeep` 是占位文件，文件放入后可删
+- 页面：`index.mdx`，标题「AI 工具配置（SKILL）」，已注册进 docs.json 导航（模块一组内、1.7 之后）
+- **用法口径**：Mintlify 免费档不支持下载独立文件（`.md`/`.txt`/`.zip`/`.pdf` 都会被当页面或软跳首页），所以 SKILL 做成**页面 + 复制全文**，用户在线阅读后复制给 AI 工具
+- 不要再尝试做「下载链接」——平台能力不支持，实测 `.md` 软跳首页、`.txt` 也无法稳定下载
+- 内容初稿，产品资料到位后由产品/设计者核对补全
