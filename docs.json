@@ -83,7 +83,7 @@
                 "pages": [
                   "cn/ai-vision-robot/index",
                   {
-                    "group": "1 Python 基础与连接",
+                    "group": "1 Robot 与 Python 基础",
                     "pages": [
                       "cn/ai-vision-robot/01-python-basics/index",
                       "cn/ai-vision-robot/01-python-basics/01-connect-wifi/index",

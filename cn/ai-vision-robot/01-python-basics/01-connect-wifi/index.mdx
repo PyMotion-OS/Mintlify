@@ -1,27 +1,13 @@
 ---
-title: "1.1 连接并打印环境信息"
+title: "1.1 Wi-Fi 连接"
 description: "跑完一条命令，看到 Python 版本、SDK 版本，以及机器人的设备编号和传输方式"
 ---
 
-## 跑完你会看到
+## 前置条件
 
-<!-- TEMP-TEST-A: 顶层 CodeFold -->
-<CodeFold title="a.py" code={'x = 1\nprint(x)'} />
-
-<!-- TEMP-TEST-B: Tabs 内 CodeFold -->
-<Tabs>
-  <Tab title="t">
-
-    <CodeFold title="b.py" code={'y = 2\nprint(y)'} />
-
-  </Tab>
-</Tabs>
-
-<!-- TEMP-TEST-END -->
-
-跑完一条命令，终端打印 Python 版本、SDK 版本（SDK——控制机器人用的程序库），以及机器人的设备编号和传输方式。设备编号是这台机器人在网络里的"身份证"，后面所有命令都是发给它。
-
-前提只有两件事：机器人已上电；电脑和机器人连的是同一个 Wi-Fi。
+- 机器人已上电，App 里显示在线
+- 电脑和机器人连的是同一个 Wi-Fi
+- 电脑已安装 pymotion SDK
 
 ## 关键函数
 
@@ -38,10 +24,36 @@ print、f-string、`sys.version` 是纯展示手段，直接看下面代码，�
 
 <Tabs>
   <Tab title="代码">
-    <CodeFold
-      title="hello_robot.py"
-      code={'import sys\nfrom pathlib import Path\n\nimport pymotion as pm\n\nTRANSPORT = "wifi"   # 连接方式：本手册全程用 Wi-Fi\nTIMEOUT = 15.0       # 连接最多等 15 秒\n\n\ndef main():\n    # 打印环境 → 连接 → 读设备信息；with 块结束自动断开\n    print(f"Python: {sys.version.split()[0]} ({sys.executable})")\n    print(f"SDK:    {pm.lite.__version__} ({Path(pm.__file__).resolve()})")\n    print()\n\n    try:\n        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:\n            print(f"设备  ID: {robot.connection.device_id}")   # 机器人的网络身份证\n            print(f"传输方式: {robot.connection.transport}")   # 实际用的连接方式\n    except pm.lite.LiteError as exc:\n        # LiteError 是 SDK 的统一报错类型，本模块所有失败都由它报告\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
-    />
+
+    ```python
+    import sys
+    from pathlib import Path
+
+    import pymotion as pm
+
+    TRANSPORT = "wifi"   # 连接方式：本手册全程用 Wi-Fi
+    TIMEOUT = 15.0       # 连接最多等 15 秒
+
+
+    def main():
+        # 打印环境 → 连接 → 读设备信息；with 块结束自动断开
+        print(f"Python: {sys.version.split()[0]} ({sys.executable})")
+        print(f"SDK:    {pm.lite.__version__} ({Path(pm.__file__).resolve()})")
+        print()
+
+        try:
+            with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+                print(f"设备  ID: {robot.connection.device_id}")   # 机器人的网络身份证
+                print(f"传输方式: {robot.connection.transport}")   # 实际用的连接方式
+        except pm.lite.LiteError as exc:
+            # LiteError 是 SDK 的统一报错类型，本模块所有失败都由它报告
+            print(f"连接失败（{exc}）")
+
+
+    if __name__ == "__main__":
+        main()
+    ```
+
   </Tab>
   <Tab title="运行逻辑">
 
