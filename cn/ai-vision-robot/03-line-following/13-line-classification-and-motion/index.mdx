@@ -26,8 +26,6 @@ V = 80                     # 基础前进速度 mm/s
 K = 25                     # 转弯增益，每格偏差 25 °/s
 MAX_LINE_SENSORS = 3       # 正常线最多连续触发 3 个探头
 SENSOR_POSITIONS = (-2, -1, 0, 1, 2)
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 PATTERN_NAMES = {"line": "单段连续线", "lost": "没有探测到线",
                  "wide": "连续图案过宽", "multiple": "探测到多段图案",
@@ -60,7 +58,7 @@ def line_tracker_to_vw(sensor_states, v, k):
 def main():
     last = None
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             while True:
                 data = robot.line_tracker(max_age=1.0)
                 v, w, pattern_type = line_tracker_to_vw(data.is_detected, V, K)

@@ -28,8 +28,6 @@ from obstacle_policy import OBSTACLE_NAMES, ultrasonic_to_vw
 
 V = 60
 K = 25
-TRANSPORT = "usb"          # 树莓派上用 USB，不用 wifi
-TIMEOUT = 15.0
 
 COLLECT_SECONDS = 0.3      # 收齐两种数据的时限
 MAX_AGE = 0.3              # 事件最大存放时间
@@ -91,7 +89,7 @@ def run(data_queue, commands):
 
 def main():
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="usb", timeout=15.0) as robot:
             with robot.control():
                 with robot.realtime.open(
                     data_sources=("line_tracker", "ultrasonic"),

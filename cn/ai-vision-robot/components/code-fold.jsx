@@ -257,7 +257,7 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
   // 默认折叠；fold 项传 defaultOpen: true 则初始展开（约定：run / main 入口方法）
   const [open, setOpen] = useState(folds.map((f) => !!f.defaultOpen));
   const [copied, setCopied] = useState(false);
-  const [nums, setNums] = useState(true);
+  const [nums, setNums] = useState(false);
   const lines = code.replace(/\n$/, "").split("\n");
   const w = `${String(lines.length).length + 1}em`;
 

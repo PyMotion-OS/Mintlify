@@ -27,8 +27,6 @@ SLOW_DISTANCE = 500        # 减速距离 mm
 NORMAL_RPM = 30
 SLOW_RPM = 15
 PORT_LEFT, PORT_RIGHT = 3, 4
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 
 def choose_rpm(ultrasonic_data):
@@ -62,7 +60,7 @@ def run(data_queue, commands):
 
 def main():
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():
                 with robot.realtime.open(
                     data_sources=("ultrasonic",),

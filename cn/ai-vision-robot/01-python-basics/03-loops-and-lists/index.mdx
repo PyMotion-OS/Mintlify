@@ -22,14 +22,11 @@ description: "用 for 循环连续采样五路循迹数据，攒进列表再统�
 import time
 import pymotion as pm
 
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
-
 
 def main():
     """连上后先看一次五路读数结构，再读 10 轮存进列表，最后逐轮打印。"""
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             tracker_line_data = robot.line_tracker(max_age=2.0)
             print(f"is_detected={tracker_line_data.is_detected} "
                   f"state={tracker_line_data.state} valid={tracker_line_data.valid} "

@@ -24,15 +24,13 @@ from pprint import pprint
 import pymotion as pm
 
 PORT_LEFT, PORT_RIGHT = 3, 4
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 
 def main():
     ultrasonic_data = None
     tracker_line_data = None
 
-    with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+    with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
         with robot.control():
             with robot.realtime.open(
                 data_sources=("ultrasonic", "line_tracker"),   # 订阅两路数据

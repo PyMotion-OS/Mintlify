@@ -22,9 +22,6 @@ description: "断网、Ctrl-C 都不会留下未释放的连接"
 import time
 import pymotion as pm
 
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
-
 
 def read_status(robot):
     """读一次状态，把整包里八个字段全打出来。"""
@@ -37,7 +34,7 @@ def read_status(robot):
 
 def main():
     """连上以后每秒读一次；中途 Ctrl-C 或断网，都由 finally 收尾。"""
-    robot = pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT)  # 连不上直接退出
+    robot = pm.lite.connect(transport="wifi", timeout=15.0)  # 连不上直接退出
 
     try:
         for i in range(20):

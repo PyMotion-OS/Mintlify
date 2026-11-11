@@ -26,14 +26,12 @@ import pymotion as pm
 PORT = 4                                   # 3 接 M3 左轮，4 接 M4 右轮
 RPM = 30                                   # 目标转速，正数正转，负数反转
 MAX_RPM = 60                               # 允许的最高转速
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 
 def main():
     rpm = max(-MAX_RPM, min(MAX_RPM, RPM))          # 限幅，防止超速
 
-    with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+    with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
         with robot.control():                       # 电机动作前要拿控制权
             with robot.realtime.open(command_targets={"motor_speeds": (PORT,)}) as session:
                 session.commands.motor_speeds.write({PORT: rpm}, valid_for=1.0)

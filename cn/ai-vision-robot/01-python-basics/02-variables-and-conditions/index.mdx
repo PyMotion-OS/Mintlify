@@ -22,14 +22,12 @@ description: "读一次超声波，把读数分成过近、正常、无效三种
 import pymotion as pm
 
 STOP = 200                                 # 停机阈值，毫米
-TRANSPORT = "wifi"                         # Wi-Fi 连接模式
-TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
 
 def main():
     """连接后读一次距离，判断这次读数属于哪一档。"""
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             ultrasonic_data = robot.ultrasonic(max_age=2.0)   # 超过 2.0s 的数据算过期
             print(f"distance={ultrasonic_data.distance} state={ultrasonic_data.state} "
                   f"valid={ultrasonic_data.valid} age={ultrasonic_data.age}")

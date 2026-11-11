@@ -25,8 +25,6 @@ import pymotion as pm
 PORT_LEFT = 3                              # 左轮，接 M3 口
 PORT_RIGHT = 4                             # 右轮，接 M4 口
 RPM = 30                                   # 轮子转速，转/分钟，正数向前
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 
 class SafeMotors:
@@ -44,7 +42,7 @@ class SafeMotors:
 
 
 def main():
-    with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+    with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
         with robot.control():              # 电机执行前需要获取控制权
             # 写法一：停、发、停，三步都得自己写
             robot.motors.stop()

@@ -26,8 +26,6 @@ import pymotion as pm
 
 RUN_SECONDS = 20.0
 PORT_LEFT, PORT_RIGHT = 3, 4
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 
 def listen_keyboard(is_running):
@@ -41,7 +39,7 @@ def listen_keyboard(is_running):
 
 def main():
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():
                 with robot.realtime.open(command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)}) as session:
                     is_running = [True]      # 用列表而不是 bool，才能被线程改

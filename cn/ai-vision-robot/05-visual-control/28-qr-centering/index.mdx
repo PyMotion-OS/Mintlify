@@ -43,8 +43,6 @@ TARGET_TEXT = "GREETING"     # 只对准这个文字
 LOST_SECONDS = 0.5           # 连续消失多久才认定丢失
 W = 80                       # 横向转动强度，转不动就加大
 SERVO_K = 5                  # 纵向每单位偏差调 5°
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 
 def check_qr_state(qr_data, target_text, last_detected_time, lost_seconds):
@@ -106,7 +104,7 @@ def run(camera, commands, up_down_angle, left_right_angle):
 def main():
     try:
         with Camera() as camera:
-            with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+            with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
                 with robot.control():
                     up_down_angle, left_right_angle = reset_servos(robot)
                     with robot.realtime.open(

@@ -24,8 +24,6 @@ import pymotion as pm
 
 LOW = 10.5                                 # 告警电压，伏特
 FULL = 12.5                                # 标称电压，伏特
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 
 def check_V(V, low, full):
@@ -43,7 +41,7 @@ def check_V(V, low, full):
 def main():
     """连上后读三次电压，每读一次立刻判一次。"""
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             for i in range(3):
                 power_data = robot.power()
                 check_V(power_data.voltage, LOW, FULL)

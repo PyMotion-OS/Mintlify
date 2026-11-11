@@ -31,8 +31,6 @@ R = 33.75                   # 轮子半径 mm
 D = 160.0                   # 左右轮间距 mm
 PORT_LEFT, PORT_RIGHT = 3, 4
 MAX_RPM = 60
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 ACTIONS = {
     "forward": (V, 0), "backward": (-V, 0),
@@ -63,7 +61,7 @@ def main():
     v, w = ACTIONS[ACTION]
     left, right = vw_to_rpm(v, w)
     print(f"动作: {ACTION}  左轮: {left} RPM  右轮: {right} RPM")
-    with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+    with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
         with robot.control():
             with robot.realtime.open(command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)}) as session:
                 session.commands.motor_speeds.write(

@@ -25,9 +25,6 @@ import numpy as np
 import pymotion as pm
 from camera import Camera, log_message
 
-TRANSPORT = "usb"
-TIMEOUT = 15.0
-
 
 def draw_status(image, ultrasonic_data, tracker_line_data):
     marked_image = image.copy()
@@ -78,7 +75,7 @@ def run(camera, data_queue):
 
 def main():
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="usb", timeout=15.0) as robot:
             with robot.realtime.open(
                 data_sources=("ultrasonic", "line_tracker"),
                 frequency="medium",

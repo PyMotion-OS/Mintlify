@@ -26,8 +26,6 @@ from obstacle_policy import OBSTACLE_NAMES, ultrasonic_to_vw   # 距离 100/300 
 V = 80
 K = 25
 PORT_LEFT, PORT_RIGHT = 3, 4
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 
 def receive_sensors(data_queue):
@@ -74,7 +72,7 @@ def run(data_queue, commands):
 
 def main():
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():
                 with robot.realtime.open(
                     data_sources=("line_tracker", "ultrasonic"),

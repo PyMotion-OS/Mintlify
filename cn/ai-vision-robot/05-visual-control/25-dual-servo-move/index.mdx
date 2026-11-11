@@ -22,13 +22,10 @@ description: "用普通位置命令复位、用实时命令控制 S4/S5 云台"
 import time
 import pymotion as pm
 
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
-
 
 def main():
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():
                 # 第一步：复位——普通位置命令，发一次即到位
                 robot.pwm_servos.move_to({4: 75, 5: 120})

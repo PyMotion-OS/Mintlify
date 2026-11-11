@@ -44,8 +44,6 @@ from obstacle_policy import ultrasonic_to_vw
 
 V = 60          # 循迹基础速度 mm/s
 K = 25          # 每格偏差对应 °/s
-TRANSPORT = "wifi"
-TIMEOUT = 15.0
 
 EVENT_MAX_AGE = 0.3      # 事件最大存活时间
 
@@ -101,7 +99,7 @@ def run(data_queue, commands):
 
 def main():
     try:
-        with pm.lite.connect(transport=TRANSPORT, timeout=TIMEOUT) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():
                 with robot.realtime.open(
                     data_sources=("line_tracker", "ultrasonic"),
