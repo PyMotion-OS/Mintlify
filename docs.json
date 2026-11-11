@@ -177,6 +177,12 @@
                       "cn/ai-vision-robot/08-raspberry-pi/47-measure-opencv/index",
                       "cn/ai-vision-robot/08-raspberry-pi/48-measure-yolo/index"
                     ]
+                  },
+                  {
+                    "group": "组件测试（内部）",
+                    "pages": [
+                      "cn/ai-vision-robot/01-python-basics/component-test/index"
+                    ]
                   }
                 ]
               }
