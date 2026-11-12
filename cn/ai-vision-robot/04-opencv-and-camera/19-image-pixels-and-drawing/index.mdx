@@ -1,0 +1,67 @@
+---
+title: "4.2 图像像素与绘制"
+description: "读一张图片，看像素的 BGR 值，再画点、矩形和坐标轴"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [4.1 摄像头基础](../18-camera-basics/index)
+- 同目录放一张 `camera_frame.jpg`（用 4.1 拍的即可）
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `load_image(path)` | `np.fromfile` + `imdecode` 读图，兼容中文路径 |
+| `image.shape` | 返回 `(高, 宽, 通道数)`，NumPy 按「行、列」定位像素 |
+| `image[Y, X]` | 取像素，`[Y, X]` 不是 `[X, Y]`（Y 是行、X 是列） |
+| `cv2.circle` / `rectangle` / `arrowedLine` / `putText` | 画圆、矩形、箭头、文字 |
+
+## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="image_pixels_and_drawing.py"
+      docs={[]}
+      folds={[
+        { label: "def load_image(path):", from: 13, to: 16 },
+        { label: "def main():", from: 18, to: 58, defaultOpen: true },
+      ]}
+      code={'from pathlib import Path                   # 用路径对象找到与例程放在一起的图片\n\nimport cv2                                 # 继续使用 OpenCV 解码和绘制图片\nimport numpy as np                         # 使用 NumPy 读取图片字节和定位像素\n\n# --- 本例程可调整的参数 ---\nPOINT_X, POINT_Y = 960, 900                # 选中像素的坐标 (x, y)，x 位于水平中心，y 位于画面下方\n\n# --- 共用配置（一般不用动）---\nBASE_DIR = Path(__file__).parent           # 当前例程文件所在的文件夹\nIMAGE_PATH = BASE_DIR / "camera_frame.jpg" # 摄像头取得的真实图片:当前例程文件所在的文件夹下的camera_frame.jpg\n\ndef load_image(path):\n    """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""\n    image_bytes = np.fromfile(path, dtype=np.uint8)         # 把图片文件读成一组原始字节\n    return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)      # 把原始字节解码成 BGR 图片\n\ndef main():\n    """读取图片，查看一个像素，并显示点、矩形和坐标轴。"""\n    # 第一步：读取图片，取得尺寸、颜色通道和指定像素\n    image = load_image(IMAGE_PATH)\n    height, width, color_channels = image.shape             # 依次取得高、宽和通道数；通道数表示每个像素有几个颜色值\n\n    # NumPy 数组按“行、列”定位，Y 对应行、X 对应列，所以像素坐标 (X, Y) 要写成 image[Y, X]\n    pixel = image[POINT_Y, POINT_X].tolist()                # 取得这个像素的颜色，并转成 [蓝, 绿, 红] 列表\n\n    print(f"图片尺寸: {width} × {height}")\n    print(f"颜色通道: {color_channels}（每个像素有 {color_channels} 个颜色值，OpenCV 按 BGR 排列）")\n    print(f"像素坐标: ({POINT_X}, {POINT_Y})  BGR: {pixel}")\n\n    # 第二步：在指定像素处画红点，并把像素坐标和 BGR 值写在旁边\n    # circle() 会直接在 image 上画圆，这里用红色实心圆放大标出选中的像素\n    # 参数依次是图片、圆心像素坐标 (POINT_X, POINT_Y)、半径、BGR 颜色和线宽；-1 表示填满圆形\n    cv2.circle(image, (POINT_X, POINT_Y), 8, (0, 0, 255), -1)\n\n    # putText() 会直接在 image 上写字，这里把像素坐标和原始 BGR 显示在红点旁\n    # 参数包括图片、文字、文字左下角的坐标位置、字体、字号、BGR 颜色和线宽\n    cv2.putText(image, f"({POINT_X}, {POINT_Y})  BGR={pixel}", (POINT_X + 20, POINT_Y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)\n\n    # 第三步：使用左上角和右下角的像素坐标画出绿色矩形\n    # rectangle() 的参数是图片、左上角 (710, 390)、右下角 (1210, 690)、BGR 颜色和线宽\n    cv2.rectangle(image, (710, 390), (1210, 690), (0, 255, 0), 4)\n\n    # 第四步：从图片左上角画出 X、Y 坐标轴并写上方向\n    # arrowedLine() 会直接在 image 上画带箭头的线，这里从图片左上角画出两条坐标轴\n    # 参数依次是图片、起点、终点、BGR 颜色和线宽；X 向右增加，Y 向下增加\n    cv2.arrowedLine(image, (0, 0), (400, 0), (0, 255, 255), 8)\n    cv2.arrowedLine(image, (0, 0), (0, 400), (0, 255, 255), 8)\n\n    # 给坐标轴进行文字注释\n    cv2.putText(image, "origin (0, 0)", (20, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)\n    cv2.putText(image, "+X", (410, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)\n    cv2.putText(image, "+Y", (20, 430), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)\n\n    # 第五步：显示绘制结果，等待任意按键后关闭窗口\n    cv2.imshow("Image Pixels and Drawing - Press Any Key", image)\n    cv2.waitKey(0)\n    cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    图片尺寸: 1920 × 1080
+    颜色通道: 3（每个像素有 3 个颜色值，OpenCV 按 BGR 排列）
+    像素坐标: (960, 900)  BGR: [45, 67, 89]
+    ```
+
+    图上标出红点（选中像素）、绿矩形、坐标轴和原点。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 19_image_pixels_and_drawing.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `POINT_X, POINT_Y` | int | 960, 900 | 选中像素坐标，X 水平、Y 垂直 |
+| `pixel` | list | `[B, G, R]` | 该像素的 BGR 值 |
+| `image.shape` | tuple | (高, 宽, 通道) | NumPy 数组形状 |
+
+> 本页产出 `load_image()`，模块四后续读图都用它。

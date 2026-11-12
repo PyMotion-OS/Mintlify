@@ -1,0 +1,67 @@
+---
+title: "6.3 目标跟踪"
+description: "给检测框分配持续编号，跨帧锁定同一个人物"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [6.2 YOLO 实时检测](../32-yolo-live-detection/index)
+- 把 `camera.py`、`yolo_detection.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `model.track(persist=True, tracker="bytetrack.yaml")` | 模型自带跟踪，跨帧给同一目标保持编号 |
+| `track_objects(...)` | 在检测字段上增加 `track_id`，返回 tracks 和耗时 |
+| `choose_target(...)` | 第一次选面积最大的 person，之后只找同一编号 |
+
+## 完整示例
+
+在 6.2 检测基础上增加 ByteTrack 跟踪，红框锁定目标、橘框是其他候选。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="object_tracking.py"
+      docs={[]}
+      folds={[
+        { label: "def track_objects(model, image, confidence):", from: 12, to: 43 },
+        { label: "def choose_target(tracks, selected_id, target_label):", from: 45, to: 68 },
+        { label: "def draw_tracks(image, tracks, selected_id, target_label, tracking_time):", from: 70, to: 88 },
+        { label: "def main():", from: 90, to: 124, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport cv2\n\nfrom camera import Camera, log_message     # 沿用例程 32 的实时摄像头输入\nfrom yolo_detection import IMAGE_SIZE, load_yolo_resources  # 沿用例程 32 的模型、标签和输入尺寸\n\n# --- 本例程可调整的参数 ---\nTARGET_LABEL = "person"                    # 只保留 person 类别的跟踪结果\nCONFIDENCE = 0.25                          # 全模块统一只保留置信度达到 0.25 的结果\n\ndef track_objects(model, image, confidence):\n    """调用模型自带的跟踪能力，在稳定检测字段中增加持续编号。"""\n    start_time = time.monotonic()                           # 记录开始时刻，用于计算整次跟踪耗时\n    # track() 是 Ultralytics 模型对象自带的跟踪入口；本例程调用能力，不自行实现跟踪算法\n    # 返回值仍是 Results 列表，但每个已关联目标比普通检测多一个持续使用的 id\n    tracking_results = model.track(\n        image,                                              # 要跟踪的摄像头图片\n        persist=True,                                       # 保留前一张图片的目标关系和编号\n        # bytetrack.yaml 随 Ultralytics 安装，保存跟踪器类型和匹配阈值，不是本例程的材料文件\n        tracker="bytetrack.yaml",                           # 读取内置配置，使用 ByteTrack 关联前后图片中的目标\n        conf=confidence,                                    # 丢弃低于这个置信度的跟踪结果\n        imgsz=IMAGE_SIZE,                                   # 沿用例程 32 的固定输入尺寸\n        device="cpu",                                       # 明确使用 CPU，电脑和树莓派都能运行\n        verbose=False,                                      # 不打印 Ultralytics 自带的逐张日志\n    )\n    yolo_result = tracking_results[0]                       # 本次只有一张图片，取得它对应的 Results\n\n    # 把 Results 中的张量转换为容易筛选、绘图和传给后续例程的 Python 字段\n    tracks = []\n    if yolo_result.boxes.id is not None:\n        for box in yolo_result.boxes:\n            class_id = int(box.cls.item())\n            tracks.append({\n                "track_id": int(box.id.item()),             # 同一个目标在连续图片中的持续编号\n                "class_id": class_id,                       # 沿用例程 32 的稳定类别编号\n                "label": yolo_result.names[class_id],       # 沿用模型内部的英文规范名\n                "confidence": float(box.conf.item()),       # 0 到 1 的跟踪置信度\n                "box": box.xyxy[0].cpu().tolist(),          # 左上角 x/y 和右下角 x/y\n            })\n\n    tracking_time = (time.monotonic() - start_time) * 1000   # 秒乘 1000 得到本次跟踪耗时，单位毫秒\n    return tracks, tracking_time\n\ndef choose_target(tracks, selected_id, target_label):\n    """第一次选择面积最大的指定类别，之后只寻找同一个跟踪编号。"""\n    # 先从模型返回的所有类别中，只留下本例程要跟踪的人物\n    candidates = []\n    for track in tracks:\n        if track["label"] == target_label:\n            candidates.append(track)\n\n    if selected_id is None and candidates:\n        # 程序刚开始时还没有锁定编号，用检测框面积选择画面中最主要的人物\n        largest_candidate = candidates[0]                   # 比较前的初始赋值\n        largest_area = 0\n        for candidate in candidates:\n            x1, y1, x2, y2 = candidate["box"]\n            area = (x2 - x1) * (y2 - y1)\n            if area > largest_area:\n                largest_candidate, largest_area = candidate, area\n        selected_id = largest_candidate["track_id"]         # 第一次选最大目标，后续不自动换成其他编号\n\n    for candidate in candidates:\n        if candidate["track_id"] == selected_id:\n            return candidate, selected_id                   # 编号仍在画面中，继续返回同一个人物\n\n    return None, selected_id                                # 目标丢失时保留编号，但本帧不产生目标\n\ndef draw_tracks(image, tracks, selected_id, target_label, tracking_time):\n    """候选画橘框，当前选中目标画红框，并显示类别、编号和置信度。"""\n    marked_image = image.copy()\n    for track in tracks:                                    # 逐个读取跟踪对象，给符合类别的对象画边框\n        if track["label"] != target_label:                  # 过滤其他类别，只继续处理本例程指定的 person\n            continue                                        # 跳过本次剩余绘图，进入下一个跟踪对象\n        x1, y1, x2, y2 = track["box"]\n        x1, y1, x2, y2 = round(x1), round(y1), round(x2), round(y2)\n\n        color = (0, 140, 255)\n        if track["track_id"] == selected_id:\n            color = (0, 0, 255)                             # 红框表示程序当前锁定的人物\n\n        cv2.rectangle(marked_image, (x1, y1), (x2, y2), color, 3)\n        text = f"{track[\'label\']}  ID {track[\'track_id\']}  {track[\'confidence\']:.2f}"\n        cv2.putText(marked_image, text, (x1, max(25, y1 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)\n\n    cv2.putText(marked_image, f"time={tracking_time:.0f} ms", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)\n    return marked_image\n\ndef main():\n    """实时跟踪摄像头中的人物，并持续锁定第一次选择的编号。"""\n    _, model = load_yolo_resources()                        # 沿用例程 32 的本地模型设置\n    selected_id = None                                      # None 表示还没有选定要持续跟踪的编号\n    last_state = None                                       # 只在状态或编号改变时输出一行日志\n    try:\n        with Camera() as camera:\n            while True:\n                if cv2.waitKey(1) == 27:\n                    break                                   # Esc 结束实时跟踪循环\n                image = camera.latest()                     # 取得 0.5 秒内的最新图片\n                if image is None:\n                    continue                                # 没有有效图片时等待摄像头更新\n\n                # 第一步：模型关联前后图片中的目标，并为同一个目标尽量保持相同编号\n                tracks, tracking_time = track_objects(model, image, CONFIDENCE)\n\n                # 第二步：第一次选择主要人物，之后只寻找同一个 track_id，不自动换人\n                target, selected_id = choose_target(tracks, selected_id, TARGET_LABEL)\n                state = "lost"\n                if target is not None:\n                    state = "tracking"                      # tracking 表示锁定编号仍在当前画面中\n\n                # 第三步：状态变化时打印；窗口中红框是锁定目标，橘框是其他候选\n                current_state = (state, selected_id)\n                if current_state != last_state:\n                    log_message("INFO", "tracking", f"状态: {state}  编号: {selected_id}")\n                    last_state = current_state\n                cv2.imshow("Object tracking - Esc to close", draw_tracks(image, tracks, selected_id, TARGET_LABEL, tracking_time))\n    except ValueError as exc:\n        log_message("ERROR", "tracking", str(exc))\n    except KeyboardInterrupt:\n        log_message("INFO", "tracking", "Ctrl+C 主动结束")\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    10:00:00.123 INFO    tracking 状态: tracking  编号: 1
+    10:00:03.500 INFO    tracking 状态: lost  编号: 1
+    ```
+
+    画面中锁定人物画红框，其他 person 候选画橘框，各显示 `ID` 和置信度。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 33_object_tracking.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `TARGET_LABEL` | str | `"person"` | 只跟踪 person 类别 |
+| `CONFIDENCE` | float | 0.25 | 跟踪置信度门槛 |
+| `track_id` | int | 模型分配 | 同一目标的跨帧持续编号 |
+
+> 本页产出 `track_objects` / `choose_target` / `draw_tracks`，6.12 会演化成"只接受唯一人物"的选主规则。

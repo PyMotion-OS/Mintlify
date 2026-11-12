@@ -1,0 +1,73 @@
+---
+title: "3.1 循迹分类与运动计算"
+description: "五路状态先分类再算偏差，用比例控制把偏差换成角速度"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [2.3 实时数据队列](../02-motion-and-sensors/10-realtime-data-queue/index)
+- 车放在黑线赛道上（或黑白卡纸），五路传感器高度 5～10 mm
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `classify_pattern(sensor_states)` | 五路状态 → `(图案分类, 偏差)`，先判无效/丢线，再判多段/宽线，最后质心求偏差 |
+| `line_tracker_to_vw(sensor_states, v, k)` | 把偏差乘增益变成 W，`W = k × (0 − 偏差)` |
+| `SENSOR_POSITIONS` | 五路探头从左到右的位置 `(-2,-1,0,1,2)`，决定偏差刻度 |
+| `robot.line_tracker(max_age=1.0)` | 取一次五路循迹数据，`is_detected` 是五路 True/False |
+
+## 完整示例
+
+本页**只打印结果、不发电机指令**，先把算法看明白。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="line_classification_and_motion.py"
+      docs={[
+        { label: "classify_pattern", doc: "五路状态 → 分类+偏差\\n先判无效、再判丢线\\n多段/宽线/质心" },
+        { label: "line_tracker_to_vw", doc: "只有单段线才动\\nW = K × (0 − 偏差)" },
+        { label: "main", doc: "读五路 → 算 V/W\\n只在结果变化时打印" },
+      ]}
+      folds={[
+        { label: "def classify_pattern(sensor_states):", from: 23, to: 52 },
+        { label: "def line_tracker_to_vw(sensor_states, v, k):", from: 55, to: 64 },
+        { label: "def main():", from: 66, to: 93, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport pymotion as pm\n\n# --- 本例程可调整的参数 ---\nV = 80                                     # 基础前进速度，毫米/秒\nK = 25                                     # 转弯增益，每一格偏差增加 25 度/秒的 W\nMAX_LINE_SENSORS = 3                       # 正常循迹线最多连续触发三个探头\n\n# --- 共用配置（一般不用动）---\nSENSOR_POSITIONS = (-2, -1, 0, 1, 2)       # 五个探头从左到右的位置\n\n# --- 分类结果 ---\nPATTERN_NAMES = {\n    "line": "单段连续线",\n    "lost": "没有探测到线",\n    "wide": "连续图案过宽",\n    "multiple": "探测到多段图案",\n    "invalid": "数据无效",\n}\n\n# --- 第一部分：把五路数据分成专业、明确的观测结果 ---\ndef classify_pattern(sensor_states):\n    """检查五路状态，找出探测位置，再返回图案分类和循迹线偏差。"""\n    # 第一步：只有收到完整的五路数据，才能继续分类\n    if sensor_states is None or len(sensor_states) != 5:\n        return "invalid", None                              # 返回数据无效，偏差为空\n\n    # 第二步：把探测到循迹线的探头换成位置\n    detected_positions = []                                 # 新建空列表，准备保存探测位置\n    for index in range(5):                                  # index 依次取 0、1、2、3、4\n        if sensor_states[index]:                            # 取得相同编号的探头状态，True 时执行下一行\n            detected_positions.append(SENSOR_POSITIONS[index])  # 把这个探头的位置加入列表\n\n    detected_count = len(detected_positions)                # len() 得到探测位置的数量\n    if detected_count == 0:\n        return "lost", None                                 # 返回没有探测到线，偏差为空\n\n    # 第三步：先判断是否为多段图案，再判断连续图案是否过宽\n    first_position = detected_positions[0]                  # [0] 取得最左边的探测位置\n    last_position = detected_positions[-1]                  # [-1] 取得最右边的探测位置\n    continuous_count = last_position - first_position + 1   # 两端之间连续排列时应有的位置数量\n\n    if continuous_count != detected_count:                  # 数量不同表示中间存在未探测位置\n        return "multiple", None\n    if detected_count > MAX_LINE_SENSORS:                   # 连续触发数量超过正常线宽\n        return "wide", None\n\n    # 第四步：用平均值求线的中心位置（质心法），单位是一个探头间距\n    # 偏差为负表示线在左边，0 表示居中，正数表示线在右边；下一步用它计算 W\n    line_offset = sum(detected_positions) / detected_count  # sum() 求和，再除以数量得到中心位置\n    return "line", line_offset                              # 返回单段连续线和中心偏差\n\n# --- 第二部分：把分类结果转成 V 和 W ---\ndef line_tracker_to_vw(sensor_states, v, k):\n    """传入五路状态、基础 V 和增益 K，返回 V、W 和图案分类。"""\n    # 调用上面的分类函数，得到图案分类和循迹线偏差\n    pattern_type, line_offset = classify_pattern(sensor_states)  # sensor_states 是五路 True/False 状态\n    if pattern_type != "line":                              # 只有单段连续线能够确定转弯方向\n        return 0, 0, pattern_type                           # 其他图案返回 V=0、W=0\n\n    # 使用比例控制计算 W，循迹线偏得越多，机器人转得越快\n    w = k * (0 - line_offset)                               # 0 减偏差改变方向：负偏差得到正 W 左转\n    return v, w, pattern_type                               # 返回基础 V、计算后的 W 和图案分类\n\ndef main():\n    """获取五路循迹数据，在计算结果变化时打印分类、V 和 W。"""\n    last_observation = None                                 # 用来保存上一轮观测，第一次还没有内容\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            while True:\n                # max_age 同时要求数据不超过 1 秒，并允许本次获取最多等待 1 秒\n                tracker_line_data = robot.line_tracker(max_age=1.0)\n                # 传入真实五路状态、基础 V 和增益 K，得到计算后的 V、W 和分类\n                v, w, pattern_type = line_tracker_to_vw(tracker_line_data.is_detected, V, K)\n                # 把五路状态、分类、V 和 W 组成一轮完整观测，便于和上一轮比较\n                current_observation = (tracker_line_data.is_detected, pattern_type, v, w)\n\n                # 只减少重复打印；传感数据仍会更新，本例程没有发送电机指令\n                if current_observation != last_observation:\n                    print(\n                        f"五路: {tracker_line_data.is_detected}\\n"\n                        f"分类: {PATTERN_NAMES[pattern_type]}  "\n                        f"V: {v:>2} mm/s  W: {w:>5} °/s"\n                    )\n                    last_observation = current_observation  # 把本轮观测留到下一轮比较\n\n                time.sleep(0.35)                            # 每 0.35 秒观察一次计算结果\n\n    except KeyboardInterrupt:\n        print("Ctrl+C 结束观察")\n    except pm.lite.LiteError as exc:\n        print(f"出错: {type(exc).__name__}: {exc}")\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    五路: (True, True, True, False, False)
+    分类: 单段连续线  V: 80 mm/s  W: -25 °/s
+    ```
+
+    线偏右（质心为负）时 W 为负，车右转修正。把车向左推，`is_detected` 左侧变 True，W 变正。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 15_line_classification_and_motion.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `V` | int | 80 毫米/秒 | 基础前进速度，分类为 `line` 时才用 |
+| `K` | int | 25 | 转弯增益，每格偏差加 25 °/s，越大越灵敏越易摆 |
+| `MAX_LINE_SENSORS` | int | 3 | 连续触发超过视为宽线（十字路口会触发） |
+| `SENSOR_POSITIONS` | tuple | (-2,-1,0,1,2) | 五路探头位置，决定偏差刻度 |
+| `line_offset` | float | -2～2 | 负=线偏左，0=居中，正=偏右 |
+
+> 本页产出 `classify_pattern()` 和 `line_tracker_to_vw()` 两个纯函数，3.2 会 import 它们。

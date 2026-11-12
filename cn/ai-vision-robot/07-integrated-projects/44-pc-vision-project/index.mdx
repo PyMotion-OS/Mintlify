@@ -1,0 +1,71 @@
+---
+title: "7.2 PC 视觉综合项目"
+description: "循迹到站减速、离站停机识别、YOLO 检测、点头两次、空格确认继续"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [7.1 传感器决策](../43-sensor-decision/index)、[5.4 二维码站点](../05-visual-control/30-qr-station/index)、[6.8 人脸问候项目](../06-yolo-and-ai/38-face-greeting-project/index)
+- 把 `camera.py`、`differential_drive.py`、`line_control.py`、`obstacle_policy.py`、`qr_observation.py`、`servo_control.py`、`yolo_detection.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `task_state` | `normal` 循迹 / `slow` 减速 / `wait` 停机确认 三态 |
+| `check_qr_state(...)` | 5.5 产出，连续消失 1 秒判定离站 |
+| `run_station_task(...)` | 到站快照识别 + 点头两次 |
+| `get_project_motion(...)` | 合并站台阶段、图片时效与测距保护 |
+
+## 完整示例
+
+把循迹、二维码、YOLO、舵机串成一条状态机流程：正常循迹 → 看到站台减速 → 离站停机识别并点头 → 空格确认继续。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="pc_vision_project.py"
+      docs={[]}
+      folds={[
+        { label: "def observe_station(camera, task_state):", from: 21, to: 29 },
+        { label: "def run_station_task(model, image, commands, up_down_angle, left_right_angle, station_name):", from: 31, to: 39 },
+        { label: "def get_project_motion(tracker_event, ultrasonic_event, task_state, image):", from: 41, to: 57 },
+        { label: "def run(camera, data_queue, commands, up_down_angle, left_right_angle):", from: 59, to: 108 },
+        { label: "def main():", from: 110, to: 125, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport cv2\nimport pymotion as pm\n\nfrom camera import Camera, log_message     # 后台有效取图和日志，沿用26\nfrom obstacle_policy import decide_motion  # 合并循迹意图与测距保护，吸收43\nfrom differential_drive import vw_to_rpm   # 把V/W换成左右轮RPM，沿用11\nfrom line_control import line_tracker_to_vw  # 把五路状态换成循迹意图，沿用15/16\n# find_qr：二维码观测；check_qr_state：判定消失；draw_qr_marks：标记二维码，沿用30\nfrom qr_observation import check_qr_state, draw_qr_marks, find_qr\nfrom servo_control import nod_camera, reset_servos  # 复位返回双角度，再用37的当前姿态点头方法\n# load_yolo_resources：加载资源；detect_objects：检测；draw_detections：标记检测快照\nfrom yolo_detection import detect_objects, draw_detections, load_yolo_resources\n\n# --- 本例程可调整的参数 ---\nV = 80                                     # 正常前进速度，单位毫米/秒\nSLOW_V = 40                                # 看到站台后的减速速度，单位毫米/秒\nK = 25                                     # 每格五路偏差对应的转向速度，单位度/秒\n\ndef observe_station(camera, task_state):\n    """取得有效图片和二维码观测，非等待阶段显示实时标记。"""\n    image = camera.latest()                                 # 无图或过期时返回None，不能把断流当作二维码消失\n    qr_data = None\n    if image is not None:\n        qr_data = find_qr(image)                            # 沿用30，返回二维码文字、位置与偏差\n        if task_state != "wait":\n            cv2.imshow("AI route - Esc close, Space continue", draw_qr_marks(image, qr_data))\n    return image, qr_data                                   # wait阶段保留到站检测快照，不被实时图片覆盖\n\ndef run_station_task(model, image, commands, up_down_angle, left_right_angle, station_name):\n    """识别到站快照并点头两次，调用前须先停机。"""\n    detections, detection_time = detect_objects(model, image, 0.25)  # 沿用32，仅检测到站图片，置信度门槛0.25\n    cv2.imshow("AI route - Esc close, Space continue", draw_detections(image, detections, detection_time))\n    labels = []\n    for detection in detections:\n        labels.append(detection["label"])\n    log_message("INFO", "vision", f"站台: {station_name}  物体: {labels}")\n    nod_camera(commands, up_down_angle, left_right_angle)   # 沿用38，围绕实际双角度点头两次并回位\n\ndef get_project_motion(tracker_event, ultrasonic_event, task_state, image):\n    """结合站台阶段、图片和两种事件的时效，得到最终V/W与原因。"""\n    now = time.monotonic()                                  # 在识别与点头之后取时刻，耗时也计入数据存放时间\n    speed = V\n    if task_state == "slow":\n        speed = SLOW_V\n    line_motion = (0, 0, "line_waiting")\n    if tracker_event is not None and now - tracker_event.received_monotonic <= 0.3:\n        line_motion = line_tracker_to_vw(tracker_event.data.is_detected, speed, K)  # 沿用15/16，新鲜五路数据转换为循迹意图\n    ultrasonic_data = None\n    if ultrasonic_event is not None and now - ultrasonic_event.received_monotonic <= 0.3:\n        ultrasonic_data = ultrasonic_event.data             # 沿用43，只把新鲜测距交给保护策略\n    if task_state == "wait":\n        line_motion = (0, 0, "wait_confirm")\n    elif image is None:\n        line_motion = (0, 0, "image_waiting")\n    return decide_motion(line_motion, ultrasonic_data)      # 吸收43，停机意图优先，其次应用测距保护\n\ndef run(camera, data_queue, commands, up_down_angle, left_right_angle):\n    """循迹到站后静止识别、点头两次，等待空格确认再继续。"""\n    _, model = load_yolo_resources()                        # 加载一次YOLO模型和标签，不在每个站台重复加载\n    task_state = "normal"                                   # normal正常循迹、slow减速、wait停机等待确认\n    tracker_event, ultrasonic_event = None, None\n    next_send_at = time.monotonic()\n    last_motion = None\n\n    while True:\n        key = cv2.waitKey(1)\n        if key == 27:\n            return                                          # 结束run，外层with随后释放会话、控制权、连接和相机\n        if key == 32 and task_state == "wait":\n            task_state = "normal"                           # 空格恢复正常阶段，后面仍需检查当前图片与传感器时效\n\n        # 第一步：沿用43，分别保存完整事件；保留SDK的收到时刻，不能把出队当成新采样\n        sensor_data = data_queue.read(timeout=0.5)          # 有数据即返回；断流最多等0.5秒，旧命令先在0.35秒后失效\n        if sensor_data is not None and sensor_data.source == "line_tracker":\n            tracker_event = sensor_data\n        elif sensor_data is not None and sensor_data.source == "ultrasonic":\n            ultrasonic_event = sensor_data\n\n        # 第二步：沿用30判断站台阶段；图片相同也不跳过传感器处理与下发\n        image, qr_data = observe_station(camera, task_state)  # 取有效图片与二维码，等待时保留检测快照\n        if task_state == "normal" and qr_data is not None and (qr_data["text"] == "STATION_A" or qr_data["text"] == "STATION_B"):\n            station_name = qr_data["text"]\n            _, last_detected_time = check_qr_state(qr_data, station_name, None, 1)  # 记录当前站台最近出现的时刻\n            task_state = "slow"\n        elif task_state == "slow":\n            qr_state, last_detected_time = check_qr_state(qr_data, station_name, last_detected_time, 1)  # 连续消失1秒才确认离站，断流不算离站\n            if qr_state == "lost":\n                task_state = "wait"\n                # 第三步：进入wait立即停机，这次零速不受普通发送时刻限制\n                commands.motor_speeds.write({3: 0, 4: 0}, valid_for=0.35)  # M3左轮、M4右轮，先停机再进行耗时推理\n                next_send_at = time.monotonic() + 0.1       # 从本次停机重新计时，避免同一时刻重复普通下发\n                run_station_task(model, image, commands, up_down_angle, left_right_angle, station_name)  # 静止识别一次并点头两次\n\n        # 第四步：检查输入时效并合并站台阶段与测距保护\n        v, w, reason = get_project_motion(tracker_event, ultrasonic_event, task_state, image)\n        left_rpm, right_rpm = vw_to_rpm(v, w)               # 将最终意图换成左右轮RPM\n\n        # 第五步：正常运动只由最终目标出口发送，停机等待时也发送零速\n        now = time.monotonic()\n        if now >= next_send_at:\n            commands.motor_speeds.write({3: left_rpm, 4: right_rpm}, valid_for=0.35)  # 正常按0.1秒节拍续发，0.35秒未更新则旧命令失效\n            next_send_at = now + 0.1\n        motion = (task_state, reason, left_rpm, right_rpm)\n        if motion != last_motion:\n            log_message("INFO", "decision", f"阶段: {task_state}  原因: {reason}  左轮: {left_rpm} RPM  右轮: {right_rpm} RPM")\n            last_motion = motion\n\ndef main():\n    """连接相机与传感器，取得控制权后运行视觉站台任务。"""\n    try:\n        with Camera() as camera:\n            with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n                with robot.control():\n                    up_down_angle, left_right_angle = reset_servos(robot)  # 复位并取得实际双角度，不在主文件重复配置\n                    # 打开实时控制会话\n                    with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (3, 4), "pwm_position_servos": (4, 5)}, frequency="medium", data_queue_size=8) as session:\n                        run(camera, session.data, session.commands, up_down_angle, left_right_angle)\n    except KeyboardInterrupt:\n        log_message("INFO", "project", "Ctrl+C 主动停机")\n    except (OSError, ValueError, cv2.error, pm.lite.LiteError) as exc:\n        log_message("ERROR", "project", str(exc))\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    10:00:00.123 INFO    vision   站台: STATION_A  物体: ['person', 'chair']
+    10:00:01.000 INFO    decision 阶段: wait  原因: wait_confirm  左轮: 0 RPM  右轮: 0 RPM
+    10:00:03.500 INFO    decision 阶段: normal  原因: line  左轮: 40 RPM  右轮: 40 RPM
+    ```
+
+    到站减速、离站停机识别点头，空格确认后恢复正常循迹。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 44_pc_vision_project.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `V` | int | 80 mm/s | 正常前进速度 |
+| `SLOW_V` | int | 40 mm/s | 看到站台后的减速速度 |
+| `K` | int | 25 度/秒 | 循迹转向增益 |
+| `STATION_A/B` | str | — | 站台二维码文字 |
+
+> 本页是 PC 端综合项目收口，串起循迹、二维码、视觉识别与舵机动作。

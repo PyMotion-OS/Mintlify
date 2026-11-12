@@ -1,0 +1,85 @@
+---
+title: "6.6 人脸特征比对"
+description: "用 SFace 提取 128 个特征，比较两张脸是不是同一个人"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [6.5 人脸质量评估](../35-face-quality/index)
+- 把 `common/face_recognition_sface_2021dec.onnx` 和两张肖像 `face_sample.png`、`face_sample_2.png` 放到本页 data 目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `cv2.FaceRecognizerSF.create(...)` | OpenCV 自带 SFace 特征模型入口 |
+| `recognizer.alignCrop(image, raw_face)` | 按五个关键点摆正并裁剪人脸 |
+| `recognizer.feature(aligned_face)` | 提取一行 128 个特征数值 |
+| `recognizer.match(...)` | 余弦相似度比较两组特征 |
+
+## 完整示例
+
+SFace 把一张脸压缩成 128 个数值，相似度越大越像同一个人。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="face_feature_comparison.py">
+
+        <CodeFold
+      title="face_feature_comparison.py"
+      docs={[]}
+      folds={[
+        { label: "def create_face_recognizer():", from: 18, to: 26 },
+        { label: "def get_face_feature(detector, recognizer, image):", from: 28, to: 33 },
+        { label: "def compare_face_features(recognizer, reference_feature, query_feature):", from: 35, to: 39 },
+        { label: "def save_feature_file(names, features):", from: 41, to: 47 },
+        { label: "def main():", from: 49, to: 72, defaultOpen: true },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\nfrom face_tools import create_face_detector, get_quality_face, load_image  # 吸收例程 35 的检测与质量判断\n\n# --- 本例程可调整的参数 ---\nMATCH_THRESHOLD = 0.50                     # 余弦相似度达到此值时，判断为同一个人\nPERSON_NAME = "user01"                     # 人为设置的登记代号，匹配到这组特征后返回它，不是模型猜出的姓名\n\n# --- 共用配置（一般不用动）---\nCOMMON_DIR = Path(__file__).parents[1] / "common"\nRECOGNITION_MODEL = COMMON_DIR / "face_recognition_sface_2021dec.onnx"\nDATA_DIR = Path(__file__).with_name("data")\nFEATURE_FILE = DATA_DIR / "faces.npz"      # 本例程先在 data 生成，准备好后放入 common 供后续使用\n\ndef create_face_recognizer():\n    """读取本地 SFace 文件，并返回 OpenCV 人脸特征模型。"""\n    model_bytes = np.fromfile(RECOGNITION_MODEL, dtype=np.uint8)\n    # FaceRecognizerSF 是 OpenCV 自带的 SFace 使用入口；本例程调用成熟模型，不展开网络结构\n    return cv2.FaceRecognizerSF.create(\n        "onnx",                                             # 告诉 OpenCV 传入的是 ONNX 模型内容\n        model_bytes,                                        # 从本地文件读取的 SFace 模型内容\n        np.empty(0, np.uint8),                              # SFace 不需要单独的配置文件\n    )\n\ndef get_face_feature(detector, recognizer, image):\n    """检测一张质量合格的人脸，完成对齐，再返回 SFace 提取的 128 个特征。"""\n    raw_face = get_quality_face(detector, image)            # 吸收例程 35，返回 SFace 需要的 YuNet 原始数据\n    aligned_face = recognizer.alignCrop(image, raw_face)    # alignCrop() 根据五个关键点摆正并裁剪人脸\n    feature_row = recognizer.feature(aligned_face)          # feature() 把对齐图片转换成一行 128 个特征数值\n    return feature_row.reshape(-1)                          # reshape(-1) 把一行数组整理成一维数组，仍保留 128 个数\n\ndef compare_face_features(recognizer, reference_feature, query_feature):\n    """用 SFace 比较两组人脸特征，返回余弦相似度。"""\n    # match() 是 SFace 自带的特征比较能力；FR_COSINE 指定余弦相似度，越大表示越相似\n    score = recognizer.match(reference_feature, query_feature, cv2.FaceRecognizerSF_FR_COSINE)\n    return float(score)                                     # 相似度不是概率，0.75 不表示有 75% 的把握\n\ndef save_feature_file(names, features):\n    """把匿名代号和对应人脸特征保存为本地 NPZ 文件。"""\n    FEATURE_FILE.parent.mkdir(exist_ok=True)                # 第一次保存时创建特征文件所在文件夹\n    # NPZ 是保存多个 NumPy 数组的文件；每个代号对应一行 128 个特征数值\n    feature_rows = np.asarray(features, dtype=np.float32).reshape(-1, 128)\n    # names 保存文字数组，features 保存数值数组；文件不包含原始照片\n    np.savez(FEATURE_FILE, names=np.asarray(names, dtype=str), features=feature_rows)\n\ndef main():\n    """提取两张图片的特征并比较，再把登记图片的特征保存为 NPZ。"""\n    # 第一步：创建检测器和特征模型，分别负责找到人脸和提取特征\n    detector = create_face_detector()\n    recognizer = create_face_recognizer()\n\n    # 第二步：两张图片分别经过质量检查、关键点对齐和 128 个特征提取\n    reference_image, query_image = load_image()             # 两张图片的路径和读取步骤都在 face_tools.py\n    reference_feature = get_face_feature(detector, recognizer, reference_image)\n    query_feature = get_face_feature(detector, recognizer, query_image)\n\n    # 第三步：把两组特征交给 SFace 比较，再用阈值解释分数\n    score = compare_face_features(recognizer, reference_feature, query_feature)\n    print(f"特征数量: {reference_feature.size}")\n    print(f"余弦相似度: {score:.3f}")\n    if score >= MATCH_THRESHOLD:\n        print("匹配结果: 同一个人")\n    else:\n        print("匹配结果: 不匹配")\n\n    # 第四步：只登记 face_sample.png 的特征；face_sample_2.png 用来检验，不混入登记样本\n    save_feature_file([PERSON_NAME], [reference_feature])   # 两个列表的同一位置对应同一个人\n    print(f"登记代号: {PERSON_NAME}")\n    print(f"特征文件: {FEATURE_FILE}")\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="face_tools.py">
+
+        <CodeFold
+      title="face_tools.py"
+      docs={[]}
+      folds={[
+        { label: "def load_image():", from: 17, to: 23 },
+        { label: "def create_face_detector():", from: 25, to: 28 },
+        { label: "def check_face_quality(image, face):", from: 30, to: 59 },
+        { label: "def get_quality_face(detector, image):", from: 61, to: 76 },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\nMIN_FACE_SIZE = 80\nMIN_BRIGHTNESS = 45\nMAX_BRIGHTNESS = 210\nMIN_SHARPNESS = 100.0\n\nCOMMON_DIR = Path(__file__).parents[1] / "common"\nDETECTION_MODEL = COMMON_DIR / "face_detection_yunet_2023mar.onnx"\nDATA_DIR = Path(__file__).with_name("data")\nREFERENCE_PATH = DATA_DIR / "face_sample.png"\nQUERY_PATH = DATA_DIR / "face_sample_2.png"\n\ndef load_image():\n    """读取本例程的两张图片，返回登记图片和查询图片。"""\n    reference_bytes = np.fromfile(REFERENCE_PATH, dtype=np.uint8)\n    reference_image = cv2.imdecode(reference_bytes, cv2.IMREAD_COLOR)\n    query_bytes = np.fromfile(QUERY_PATH, dtype=np.uint8)\n    query_image = cv2.imdecode(query_bytes, cv2.IMREAD_COLOR)\n    return reference_image, query_image\n\ndef create_face_detector():\n    """读取本地 YuNet 文件，并返回 OpenCV 人脸检测器。"""\n    model_bytes = np.fromfile(DETECTION_MODEL, dtype=np.uint8)\n    return cv2.FaceDetectorYN.create("onnx", model_bytes, np.empty(0, np.uint8), (320, 320), 0.80)\n\ndef check_face_quality(image, face):\n    """依次检查人脸完整度、尺寸、亮度和清晰度，再返回是否合格和原因。"""\n    face_x, face_y, face_width, face_height = face["box"]\n    image_height, image_width = image.shape[0], image.shape[1]\n    if face_x < 0 or face_y < 0 or face_x + face_width > image_width or face_y + face_height > image_height:\n        return False, "人脸不完整"\n    if face_width < MIN_FACE_SIZE or face_height < MIN_FACE_SIZE:\n        return False, "人脸太小"\n\n    # 第一步：取出人脸框内的像素；图片切片不会改变原图\n    face_image = image[face_y:face_y + face_height, face_x:face_x + face_width]\n    # 第二步：resize() 返回一张 112×112 的新图片，让不同大小的人脸使用同一组质量阈值\n    standard_face = cv2.resize(face_image, (112, 112))\n    # 第三步：把 BGR 彩色图片转换成灰度图片，每个像素只保留一个 0～255 的亮度值\n    gray_face = cv2.cvtColor(standard_face, cv2.COLOR_BGR2GRAY)\n    brightness = float(gray_face.mean())\n    # 第四步：Laplacian() 找出相邻像素的亮度变化；CV_64F 保留计算中的小数和负数\n    edges = cv2.Laplacian(gray_face, cv2.CV_64F)\n    # 第五步：var() 计算边缘数值的变化程度；清晰图片的边缘变化通常更大\n    sharpness = float(edges.var())\n    reasons = []\n    if brightness < MIN_BRIGHTNESS:\n        reasons.append("人脸过暗")\n    if brightness > MAX_BRIGHTNESS:\n        reasons.append("人脸过亮")\n    if sharpness < MIN_SHARPNESS:\n        reasons.append("人脸模糊")\n    if reasons:\n        return False, "、".join(reasons)\n    return True, "人脸质量合格"\n\ndef get_quality_face(detector, image):\n    """吸收例程 34、34 的检测与质量判断，返回 SFace 需要的一行 YuNet 原始数据。"""\n    image_height, image_width = image.shape[0], image.shape[1]\n    detector.setInputSize((image_width, image_height))\n    detection_result = detector.detect(image)\n    raw_faces = detection_result[1]\n    if raw_faces is None or len(raw_faces) != 1:\n        raise ValueError("图片中必须恰好有一张人脸")\n\n    raw_face = raw_faces[0]                                 # 已确认只有一张人脸，第 0 项就是这张人脸\n    # 质量判断只读取 box；五个关键点仍保留在 raw_face 中，供 SFace 对齐使用\n    face = {"box": [round(raw_face[0]), round(raw_face[1]), round(raw_face[2]), round(raw_face[3])]}\n    is_good, reason = check_face_quality(image, face)\n    if not is_good:\n        raise ValueError(reason)\n    return raw_face'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    特征数量: 128
+    余弦相似度: 0.781
+    匹配结果: 同一个人
+    登记代号: user01
+    特征文件: ...\data\faces.npz
+    ```
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 36_face_feature_comparison.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `MATCH_THRESHOLD` | float | 0.50 | 达到此值判为同一个人 |
+| `PERSON_NAME` | str | `user01` | 人为设置的登记代号 |
+| 相似度 | float | 0~1 | 越大越像，但不是概率 |
+
+> 本页产出 `create_face_recognizer` / `get_face_feature` / `compare_face_features` / `save_feature_file`，6.7 吸收。

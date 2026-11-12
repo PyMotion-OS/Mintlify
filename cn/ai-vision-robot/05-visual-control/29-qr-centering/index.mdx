@@ -1,0 +1,81 @@
+---
+title: "5.3 二维码居中"
+description: "双轮横向对准二维码，S4 上下对准，双舵机+双轮协同"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [5.2 二维码基础](../28-qr-basics/index) 与 [5.1 颜色舵机跟踪](../27-color-servo-tracking/index)
+- 把 `camera.py`、`qr_observation.py`、`differential_drive.py`、`servo_control.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `check_qr_state(qr_data, target_text, last, lost_seconds)` | 连续检查二维码，区分 detected/missing/lost |
+| `vw_to_rpm(0, -error_x * W)` | 横向偏差转双轮原地转动 |
+| `error_to_angle(error_y, up, SERVO_K)` | 上下偏差只调 S4 |
+| `CENTER_ERROR` | 横向进入中心范围停止双轮 |
+
+## 完整示例
+
+横向用双轮、纵向用 S4，双舵机+双轮协同对准。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="qr_centering.py">
+
+        <CodeFold
+      title="qr_centering.py"
+      docs={[]}
+      folds={[
+        { label: "def check_qr_state(qr_data, target_text, last_detected_time, lost_seconds):", from: 17, to: 33 },
+        { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 35, to: 70 },
+        { label: "def main():", from: 72, to: 87, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport cv2\nimport pymotion as pm\n\nfrom camera import Camera, log_message     # 引用例程26的摄像头类和统一日志函数\nfrom differential_drive import vw_to_rpm   # 引用例程11的差速函数\nfrom qr_observation import draw_qr_marks, find_qr  # 吸收例程28的二维码观测和绘画函数\nfrom servo_control import CENTER_ERROR, error_to_angle, move_servos, reset_servos  # 引用舵机控制函数\n\n# --- 本例程可调整的参数 ---\nTARGET_TEXT = "GREETING"                   # 只对准文字与这里相同的二维码\nLOST_SECONDS = 0.5                         # 连续0.5秒未识别到目标，才确认识别中断\nW = 80                                     # 横向转动强度；左右轮转不动时增大这个值\nSERVO_K = 5                                # 纵向偏差为1时，上下舵机本轮调整5度\n\ndef check_qr_state(qr_data, target_text, last_detected_time, lost_seconds):\n    """连续检查指定二维码，返回识别状态和最近一次识别时刻。"""\n    if target_text is None:\n        return "waiting", None                              # 没有指定目标时保持等待\n\n    current_time = time.monotonic()                         # 取得当前时刻，用于计算消失了多久\n    if qr_data is not None and qr_data["text"] == target_text:\n        return "detected", current_time                     # 当前识别成功，保存这次识别时刻\n\n    if last_detected_time is None:\n        return "waiting", None                              # 目标从未出现，继续等待第一次识别\n\n    missing_seconds = current_time - last_detected_time     # 当前时刻减去上次时刻，得到消失秒数\n    if missing_seconds < lost_seconds:\n        return "missing", last_detected_time                # 消失时间较短，暂时不判定中断\n\n    return "lost", last_detected_time                       # 达到规定时间，确认识别已经中断\n\ndef run(camera, commands, up_down_angle, left_right_angle):\n    """横向用双轮对准二维码，纵向用S4对准二维码。"""\n    last_detected_time = None                               # 保存目标二维码最近一次识别成功的时刻\n    last_state = None                                       # 二维码状态变化时才打印新日志\n\n    while True:\n        image = camera.latest()                             # 返回0.5秒内的最新图片，否则返回None\n        qr_data = None\n        if image is not None:\n            qr_data = find_qr(image)                        # 把有效图片变成标准二维码观测\n        # 传入本轮观测和上次成功时刻，返回本轮状态和更新后的时刻\n        qr_state, last_detected_time = check_qr_state(qr_data, TARGET_TEXT, last_detected_time, LOST_SECONDS)\n\n        if qr_state != "detected":\n            left_rpm, right_rpm = 0, 0                      # 等待、短暂丢失或确认中断时停止双轮\n        else:\n            # 左右偏差由双轮处理：目标在左时W为正，机器人向左原地转动\n            if abs(qr_data["error_x"]) <= CENTER_ERROR:\n                left_rpm, right_rpm = 0, 0                  # 横向进入中心范围后停止双轮\n            else:\n                left_rpm, right_rpm = vw_to_rpm(0, -qr_data["error_x"] * W)\n            # 上下偏差只改变S4；S5保持居中，避免与双轮同时控制左右方向\n            up_down_angle = error_to_angle(qr_data["error_y"], up_down_angle, SERVO_K)\n            up_down_angle, left_right_angle = move_servos(commands, up_down_angle, left_right_angle)\n\n        if image is not None:\n            cv2.imshow("QR centering - Esc to close", draw_qr_marks(image, qr_data))\n\n        commands.motor_speeds.write({3: left_rpm, 4: right_rpm}, valid_for=0.3)  # M3左轮、M4右轮\n        if qr_state != last_state:\n            log_message("INFO", "qr", f"状态: {qr_state}  左轮: {left_rpm}  右轮: {right_rpm}")\n            last_state = qr_state\n\n        if cv2.waitKey(1) == 27:\n            break                                           # Esc结束循环，退出实时控制会话\n        time.sleep(0.1)                                     # 每0.1秒处理一次，命令频率约为10Hz\n\ndef main():\n    """复位双舵机，再用双轮和S4对准指定二维码。"""\n    try:\n        with Camera() as camera:\n            with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n                with robot.control():\n                    up_down_angle, left_right_angle = reset_servos(robot)\n                    # 打开实时控制会话；M3/M4控制双轮，S4/S5控制上下和左右舵机\n                    with robot.realtime.open(command_targets={"motor_speeds": (3, 4), "pwm_position_servos": (4, 5)}) as session:\n                        run(camera, session.commands, up_down_angle, left_right_angle)\n    except (ValueError, pm.lite.LiteError) as exc:\n        log_message("ERROR", "qr", f"{type(exc).__name__}: {exc}")\n    except KeyboardInterrupt:\n        log_message("INFO", "qr", "Ctrl+C主动结束")\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="qr_observation.py">
+
+        <CodeFold
+      title="qr_observation.py"
+      docs={[]}
+      folds={[
+        { label: "def find_qr(image):", from: 24, to: 51, defaultOpen: true },
+        { label: "def draw_qr_marks(image, qr_data):", from: 53, to: 68 },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\n# 吸收例程28的二维码生成能力和配置，本例程未调用时也保留\nQR_TEXT = "GREETING"                       # 这段文字会被写入二维码\nQR_SCALE = 32                              # 生成约900像素的大图，方便手机展示和摄像头识别\nOUTPUT_DIR = Path(__file__).parent / "cards"\nOUTPUT_PATH = OUTPUT_DIR / f"{QR_TEXT}.png" # /继续拼接二维码文件名\n\ndef create_qr(text):\n    """把文字生成二维码并保存为图片。"""\n    encoder = cv2.QRCodeEncoder_create()                    # 创建二维码生成对象\n    qr_image = encoder.encode(text)                         # 把文字编码成黑白二维码图片\n    # 四周补4像素白边，让识别器能够分清二维码的外边界\n    qr_image = cv2.copyMakeBorder(qr_image, 4, 4, 4, 4, cv2.BORDER_CONSTANT, value=255)\n    # 最近邻放大不会在黑白方块之间生成模糊的过渡颜色\n    qr_image = cv2.resize(qr_image, None, fx=QR_SCALE, fy=QR_SCALE, interpolation=cv2.INTER_NEAREST)\n\n    OUTPUT_DIR.mkdir(exist_ok=True)                         # cards已经存在时保持不变\n    cv2.imencode(".png", qr_image)[1].tofile(OUTPUT_PATH)   # 编码后写入文件，兼容中文路径\n\ndef find_qr(image):\n    """识别一个二维码，返回文字、四角、中心、面积比例和二维偏差。"""\n    # 创建二维码检测对象并直接识别，返回文字、四角坐标和拉正后的二维码\n    text, points, _ = cv2.QRCodeDetector().detectAndDecode(image)\n    if not text or points is None:\n        return {\n            "text": None,\n            "points": None,\n            "center": None,\n            "area_ratio": 0.0,\n            "error_x": None,\n            "error_y": None,\n        }\n\n    corners = points.reshape(4, 2)                         # (1,4,2)改成四行x/y坐标\n    center = corners.mean(axis=0)                          # 四个角点的平均位置就是二维码中心\n    center_x, center_y = round(center[0]), round(center[1])\n    height, width = image.shape[:2]\n    area_ratio = abs(cv2.contourArea(corners.astype(np.float32))) / (width * height)\n\n    return {\n        "text": text,\n        "points": corners,\n        "center": (center_x, center_y),\n        "area_ratio": area_ratio,                         # 二维码面积占整张图片的比例\n        "error_x": (center_x - width / 2) / (width / 2),  # 左边为负，右边为正\n        "error_y": (center_y - height / 2) / (height / 2), # 上边为负，下边为正\n    }\n\ndef draw_qr_marks(image, qr_data):\n    """复制原图，再标出二维码边框、中心和二维偏差。"""\n    marked_image = image.copy()\n    height, width = image.shape[:2]\n    image_center = (round(width / 2), round(height / 2))\n\n    if qr_data["points"] is not None:\n        corners = qr_data["points"].round().astype(int)\n        cv2.polylines(marked_image, [corners], True, (255, 200, 0), 4) # 连接四个角并闭合边框\n        cv2.circle(marked_image, qr_data["center"], 9, (0, 0, 255), -1)\n        cv2.arrowedLine(marked_image, image_center, qr_data["center"], (0, 176, 255), 3)\n\n    text = f"QR={qr_data[\'text\']}  X={qr_data[\'error_x\']}  Y={qr_data[\'error_y\']}"\n    cv2.rectangle(marked_image, (15, 15), (720, 70), (32, 32, 32), -1)\n    cv2.putText(marked_image, text, (30, 52), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 176, 255), 2)\n    return marked_image'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    10:00:00.123 INFO    qr      状态: detected  左轮: 0  右轮: 0
+    10:00:00.500 INFO    qr      状态: missing  左轮: 0  右轮: 0
+    ```
+
+    二维码偏左时双轮向左转，偏右时向右转；纵向由 S4 上下舵机对准。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 29_qr_centering.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `TARGET_TEXT` | str | `GREETING` | 只对准这个文字的二维码 |
+| `LOST_SECONDS` | float | 0.5 | 连续消失多久判定中断 |
+| `W` | int | 80 | 横向转动强度 |
+| `SERVO_K` | int | 5 | 纵向偏差增益 |
+
+> 本页把 `check_qr_state` 吸收进 `qr_observation.py`，5.5 复用。

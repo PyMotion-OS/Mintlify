@@ -1,0 +1,65 @@
+---
+title: "4.9 视觉观测"
+description: "用最终 Camera 稳定输出不过期的目标观测，只在新状态打印"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [4.8 摄像头延迟与重连](../25-camera-age-and-reconnect/index)
+- 把 `camera.py`、`target_observation.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `Camera()`（无参） | 地址已内嵌到类，`with Camera() as camera` 即可 |
+| `camera.latest()` | 返回 0.5 秒内有效图，无图返回 `None` |
+| `find_target(image)` | 默认找蓝色目标，返回状态和二维偏差 |
+| `last_state` 去重 | 状态不变不重复打印日志 |
+
+## 完整示例
+
+模块四的收口页——稳定的实时观测。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="visual_observation.py"
+      docs={[]}
+      folds={[
+        { label: "def main():", from: 6, to: 34, defaultOpen: true },
+      ]}
+      code={'import cv2\n\nfrom camera import Camera, log_message     # 引用最终摄像头类和统一日志函数\nfrom target_observation import draw_target_marks, find_target  # 引用稳定的目标观测和结果标记\n\ndef main():\n    """使用最终 Camera 连续输出不过期的视觉观测。"""\n    last_state = None                                       # 保存上一次状态，状态不变时不重复打印日志\n\n    try:\n        # 类已吸收例程 25 的连接和重连循环，进入 with 后由后台线程执行\n        with Camera() as camera:\n            while True:\n                if cv2.waitKey(20) == 27:                   # 每轮处理窗口消息，连接中断时仍能响应 Esc\n                    break                                   # Esc 结束循环，随后离开 with 并停止摄像头线程\n\n                image = camera.latest()                     # 返回 0.5 秒内的最新图片；没有图片或已经过期时返回 None\n                if image is None:\n                    if last_state != "waiting":\n                        log_message("WARNING", "vision", "state=waiting  image=None")\n                        last_state = "waiting"\n                    continue                                # 没有有效图片时不进入颜色识别，继续等待后台更新\n\n                target_data = find_target(image)            # 默认返回蓝色目标状态、中心、面积和二维偏差\n                if target_data["state"] != last_state:\n                    log_message("INFO", "vision", f"state={target_data[\'state\']}  error_x={target_data[\'error_x\']}  error_y={target_data[\'error_y\']}")\n                    last_state = target_data["state"]\n                cv2.imshow("Reliable visual observation - Esc to close", draw_target_marks(image, target_data))\n    except ValueError as exc:\n        log_message("ERROR", "camera", str(exc))\n    except KeyboardInterrupt:\n        log_message("INFO", "camera", "Ctrl+C 主动结束")\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    10:00:00.123 INFO    vision  state=target  error_x=-0.35  error_y=0.12
+    10:00:00.456 WARNING vision  state=waiting  image=None
+    ```
+
+    稳定输出目标状态和二维偏差，只在状态变化时打印。按 Esc 退出。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 26_visual_observation.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `camera.latest()` | 方法 | 0.5 秒有效期 | 返回有效图或 `None` |
+| `target_data["state"]` | str | target/lost | 目标状态 |
+| `error_x / error_y` | float | -1~+1 | 二维偏差 |
+
+> 本页是模块四的收口，`camera.py` + `target_observation.py` 成为模块五~八的视觉基础。

@@ -1,0 +1,77 @@
+---
+title: "6.2 YOLO 实时检测"
+description: "把摄像头最新图片持续交给 YOLO，逐帧画框显示"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [6.1 YOLO 图片检测](../31-yolo-image-detection/index)
+- 把 `camera.py`（模块四/五最终版）复制到本页目录，配置 `CAMERA_URL`
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `camera.latest()` | 返回 0.5 秒内的最新图片，过期或缺失返回 `None` |
+| `detect_objects(model, image, conf)` | 6.1 产出，返回检测字段和毫秒耗时 |
+| `draw_detections(...)` | 6.1 产出，画类别、置信度、检测框 |
+
+## 完整示例
+
+6.1 的三个 YOLO 函数吸收进 `yolo_detection.py`，主文件只剩取图循环。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="yolo_live_detection.py">
+
+        <CodeFold
+      title="yolo_live_detection.py"
+      docs={[]}
+      folds={[
+        { label: "def main():", from: 10, to: 29, defaultOpen: true },
+      ]}
+      code={'import cv2\n\nfrom camera import Camera, log_message     # 沿用模块四、五最终版的后台取图、年龄、重连和日志能力\n# yolo_detection.py 吸收例程 31 的三个 YOLO 函数\nfrom yolo_detection import detect_objects, draw_detections, load_yolo_resources\n\n# --- 本例程可调整的参数 ---\nCONFIDENCE = 0.25                          # 只保留置信度达到 0.25 的检测结果\n\ndef main():\n    """把 Camera 提供的最新有效图片持续交给例程 31 的 YOLO 函数。"""\n    _, model = load_yolo_resources()                        # 复用例程 31 的离线设置并得到模型对象\n    try:\n        with Camera() as camera:\n            while True:\n                if cv2.waitKey(1) == 27:\n                    break                                   # Esc 结束循环，随后停止摄像头线程\n                image = camera.latest()                     # 返回 0.5 秒内的最新图片；没有图片或已经过期时返回 None\n                if image is None:\n                    continue                                # 没有有效图片时不进入 YOLO，继续等待后台更新\n\n                detections, detection_time = detect_objects(model, image, CONFIDENCE)  # 返回检测字段和毫秒耗时\n                cv2.imshow("YOLO live detection - Esc to close", draw_detections(image, detections, detection_time))\n    except ValueError as exc:\n        log_message("ERROR", "yolo", str(exc))\n    except KeyboardInterrupt:\n        log_message("INFO", "yolo", "Ctrl+C 主动结束")\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="yolo_detection.py">
+
+        <CodeFold
+      title="yolo_detection.py"
+      docs={[]}
+      folds={[
+        { label: "def load_yolo_resources():", from: 14, to: 27 },
+        { label: "def detect_objects(model, image, confidence):", from: 29, to: 50 },
+        { label: "def draw_detections(image, detections, detection_time):", from: 52, to: 62 },
+      ]}
+      code={'from pathlib import Path\nimport json\nimport os\nimport time\n\nimport cv2\n\n# --- 共用配置（一般不用动）---\nCOMMON_DIR = Path(__file__).parents[1] / "common"\nLABELS_PATH = COMMON_DIR / "coco_labels.json"\nMODEL_PATH = COMMON_DIR / "yolo11n.pt"\nIMAGE_SIZE = 320                           # 输入越小通常检测越快、远处细节越少\n\ndef load_yolo_resources():\n    """读取 common 中的类别标签和本地模型，返回标签表与模型对象。"""\n    os.environ["YOLO_AUTOINSTALL"] = "false"                # 缺少依赖时直接报错，不在运行中自动安装\n    os.environ["YOLO_OFFLINE"] = "true"                     # 只使用本地模型，不连接网络下载资源\n    # ultralytics 第一次导入时读取上面两个设置，所以必须先设置再导入\n    from ultralytics import YOLO\n\n    label_items = json.loads(LABELS_PATH.read_text(encoding="utf-8"))\n    labels = {}\n    # label_items 是按顺序保存的类别列表；改成以 id 为键后，可以直接用 class_id 查中英文名\n    for item in label_items:\n        labels[item["id"]] = item                           # 类别编号同时对应稳定的中英文名称\n    model = YOLO(str(MODEL_PATH))                            # 读取本地模型并得到后续检测使用的对象\n    return labels, model\n\ndef detect_objects(model, image, confidence):\n    """把模型输出整理为稳定检测字段，并返回处理毫秒数。"""\n    start_time = time.monotonic()\n    yolo_results = model.predict(\n        image,                                              # 要检测的 OpenCV BGR 图片\n        conf=confidence,                                    # 丢弃低于这个置信度的检测结果\n        imgsz=IMAGE_SIZE,                                   # 使用上方固定输入尺寸处理图片\n        device="cpu",                                       # 明确使用 CPU，电脑和树莓派都能运行\n        verbose=False,                                      # 不打印 Ultralytics 自带的逐张检测日志\n    )\n    yolo_result = yolo_results[0]                           # 本次只有一张图片，取得它对应的 Results\n    detections = []\n    for box in yolo_result.boxes:\n        class_id = int(box.cls.item())\n        detections.append({\n            "class_id": class_id,                           # 稳定类别编号，界面语言切换时保持不变\n            "label": yolo_result.names[class_id],           # 模型内的英文规范名，供筛选逻辑使用\n            "confidence": float(box.conf.item()),           # 0 到 1 的置信度分数\n            "box": box.xyxy[0].cpu().tolist(),              # 左上角 x/y 和右下角 x/y\n        })\n    detection_time = (time.monotonic() - start_time) * 1000  # 秒乘 1000 得到本次检测耗时，单位毫秒\n    return detections, detection_time\n\ndef draw_detections(image, detections, detection_time):\n    """复制图片，再画出英文类别、置信度、检测框和处理耗时。"""\n    marked_image = image.copy()\n    for detection in detections:\n        x1, y1, x2, y2 = detection["box"]\n        x1, y1, x2, y2 = round(x1), round(y1), round(x2), round(y2)\n        cv2.rectangle(marked_image, (x1, y1), (x2, y2), (0, 140, 255), 3)\n        text = f"{detection[\'label\']} {detection[\'confidence\']:.2f}"\n        cv2.putText(marked_image, text, (x1, max(25, y1 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 140, 255), 2)\n    cv2.putText(marked_image, f"objects={len(detections)}  time={detection_time:.0f} ms", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)\n    return marked_image'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    画面左上角: objects=3  time=96 ms
+    ```
+
+    摄像头画面中实时画出每个目标的检测框、英文类别和置信度。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 32_yolo_live_detection.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `CONFIDENCE` | float | 0.25 | 检测置信度门槛 |
+| `IMAGE_SIZE` | int | 320 | 实时检测用更小输入换取速度 |
+| `camera.latest()` 的 `max_age` | float | 0.5 秒 | 图片有效期 |
+
+> 本页产出 `yolo_detection.py`，成为后续所有 YOLO 例程的共用工具模块。

@@ -1,0 +1,61 @@
+---
+title: "1.7 舵机移动"
+description: "上下、左右两路 PWM 舵机依次转到三个角度，结束时打印整套动作的耗时"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 已完成 [1.1 WIFI模式连接](../01-connect-wifi/index)
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `robot.pwm_servos.move_to({端口: 角度, ...})` | 批量发角度，PWM 舵机按角度定位 |
+| `time.monotonic()` | 只增不减的时钟，适合算耗时 |
+
+## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+    <CodeFold
+      title="servo_move.py"
+      docs={[
+        { label: "main", doc: "三个角度依次转过去\n间隔 0.2s / 0.5s\n最后打印总耗时" },
+        { label: "move_to", doc: "批量发目标角度\n舵机自己转过去\n不会汇报到位" },
+        { label: "time.monotonic", doc: "只增不减的时钟\n适合算一段动作耗时" },
+      ]}
+      code={'import time\n\nimport pymotion as pm\n\nPORT_UP_DOWN = 4                           # 上下舵机接 PWM 端口 4\nPORT_LEFT_RIGHT = 5                        # 左右舵机接 PWM 端口 5\n\n\ndef main():\n    """三个角度依次转过去，间隔 0.2s / 0.5s，最后打印总耗时。"""\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            with robot.control():                 # 舵机也是执行器，先拿控制权（1.6）\n                start = time.monotonic()          # 开始前记时间：只增不减，适合算耗时\n\n                robot.pwm_servos.move_to({PORT_UP_DOWN: 60, PORT_LEFT_RIGHT: 100})\n                print("移动: 上下 60°，左右 100°")\n                time.sleep(0.2)                   # 停 0.2 秒\n\n                robot.pwm_servos.move_to({PORT_UP_DOWN: 70, PORT_LEFT_RIGHT: 100})\n                print("移动: 上下 70°，左右 100°")\n                time.sleep(0.5)                   # 停 0.5 秒\n\n                robot.pwm_servos.move_to({PORT_UP_DOWN: 70, PORT_LEFT_RIGHT: 120})\n                print("复位: 上下 70°，左右 120°")\n\n                print(f"执行时间: {time.monotonic() - start:.2f} 秒")\n\n    except pm.lite.LiteError as exc:\n        print(f"连接失败（{exc}）")\n\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    移动: 上下 60°，左右 100°
+    移动: 上下 70°，左右 100°
+    复位: 上下 70°，左右 120°
+    执行时间: 0.73 秒
+    ```
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 07_servo_move.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `PORT_UP_DOWN` | int | 本例 4 | 上下舵机端口，角度范围 0～85°，70° 是水平 |
+| `PORT_LEFT_RIGHT` | int | 本例 5 | 左右舵机端口，角度范围 60～180°，120° 是居中 |
+| `time.monotonic()` | float | 秒 | 只增不减的时钟，两次相减得到耗时 |

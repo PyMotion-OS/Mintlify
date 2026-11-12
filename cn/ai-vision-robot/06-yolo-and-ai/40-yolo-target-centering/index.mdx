@@ -1,0 +1,65 @@
+---
+title: "6.10 YOLO 目标居中"
+description: "用双舵机把唯一人物对准画面中心"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [6.9 主目标选择](../39-lead-target-selection/index) 与 [5.1 颜色舵机跟踪](../05-visual-control/27-color-servo-tracking/index)
+- 把 `camera.py`、`yolo_detection.py`、`target_selection.py`、`servo_control.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `follow_target(commands, target_data, up, left)` | 偏差换双舵机角度并发送 |
+| `error_to_angle(error_y, up, K)` | 上下与纵向偏差同号 |
+| `error_to_angle(error_x, left, -K)` | 左右与横向偏差反号 |
+
+## 完整示例
+
+与 5.3 二维码居中同一套偏差算法，只是把检测源换成 YOLO 人物。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="yolo_target_centering.py"
+      docs={[]}
+      folds={[
+        { label: "def follow_target(commands, target_data, up_down_angle, left_right_angle):", from: 15, to: 21 },
+        { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 23, to: 44 },
+        { label: "def main():", from: 46, to: 61, defaultOpen: true },
+      ]}
+      code={'import cv2\nimport pymotion as pm\n\nfrom camera import Camera, log_message\n# reset_servos：复位并返回双角度；error_to_angle：偏差换角度；move_servos：限幅并发送角度\nfrom servo_control import error_to_angle, move_servos, reset_servos\nfrom target_selection import find_unique_target  # 唯一目标观测函数，吸收39\n# load_yolo_resources：加载模型和标签；detect_objects：检测；draw_servo_tracking：绘制目标和舵机角度\nfrom yolo_detection import detect_objects, draw_servo_tracking, load_yolo_resources\n\n# --- 本例程可调整的参数 ---\nCONFIDENCE = 0.25                          # 检测置信度门槛\nK = 5                                      # 偏差为1时每轮调整5°\n\ndef follow_target(commands, target_data, up_down_angle, left_right_angle):\n    """把目标偏差换成双舵机角度，下发后返回两个安全角度。"""\n    # target_data沿用39的error_x/error_y；当前角度来自复位或上一轮返回值，单位为度\n    up_down_angle = error_to_angle(target_data["error_y"], up_down_angle, K)  # 偏差换角度：上下与纵向偏差同号，沿用27/38\n    left_right_angle = error_to_angle(target_data["error_x"], left_right_angle, -K)  # 偏差换角度：左右与横向偏差反号\n    # 无目标时偏差为None，进入死区时偏差较小，上面的方法都会保留当前角度\n    return move_servos(commands, up_down_angle, left_right_angle)  # 限制并下发S4/S5角度，返回两个安全角度\n\ndef run(camera, commands, up_down_angle, left_right_angle):\n    """取图、检测唯一人物，再用双舵机追随并显示角度。"""\n    _, model = load_yolo_resources()                        # 加载YOLO模型和标签，沿用32\n    last_image = None\n    while True:\n        if cv2.waitKey(100) == 27:                          # 每轮等待0.1秒；控制间隔还包括推理耗时\n            return                                          # 结束run，外层with随后释放实时会话、控制权、连接和相机\n\n        # 第一步：只使用有效的新图片，不对同一张图片重复调角\n        image = camera.latest()                             # 取得未过期的图片；缺失或过期时返回None，沿用26\n        if image is None or image is last_image:\n            continue                                        # 等待新图，不重复累计角度\n        last_image = image\n\n        # 第二步：检测并选择唯一人物，沿用39的标准观测字段\n        detections, _ = detect_objects(model, image, CONFIDENCE)  # 检测物体，得到标准检测列表\n        target_data = find_unique_target(detections, image.shape, "person")  # 选择唯一人物，无人或多人时偏差为None\n\n        # 第三步：调用本文件的追随函数，复用26/37已讲的角度计算和执行\n        up_down_angle, left_right_angle = follow_target(commands, target_data, up_down_angle, left_right_angle)  # 调整并返回当前上下、左右角度\n        marked_image = draw_servo_tracking(image, target_data, up_down_angle, left_right_angle)  # 绘制目标、参考中心和双角度\n        cv2.imshow("YOLO servo centering - Esc to close", marked_image)\n\ndef main():\n    """连接相机、复位双舵机，取得会话后追随唯一人物。"""\n    try:\n        with Camera() as camera:\n            with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n                with robot.control():\n                    up_down_angle, left_right_angle = reset_servos(robot)  # 复位双舵机，取得实际起始角度，沿用27\n                    # 打开实时控制会话\n                    with robot.realtime.open(command_targets={"pwm_position_servos": (4, 5)}) as session:\n                        run(camera, session.commands, up_down_angle, left_right_angle)\n    except KeyboardInterrupt:\n        log_message("INFO", "servo", "Ctrl+C 主动结束")\n    except (OSError, ValueError, cv2.error, pm.lite.LiteError) as exc:\n        log_message("ERROR", "servo", str(exc))\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    画面左上角: S4=72.3 S5=115.8
+    ```
+
+    画面对准标记 + 唯一目标框，并显示双舵机实时角度；无目标时角度保持不变。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 40_yolo_target_centering.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `CONFIDENCE` | float | 0.25 | 检测置信度门槛 |
+| `K` | int | 5 | 偏差为 1 时每轮调整 5° |
+| `DEAD_ZONE` | float | 0.10 | 进入中心 10% 后保持角度 |
+
+> 本页把 6.9 的观测接上双舵机，实现人物居中。

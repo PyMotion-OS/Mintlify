@@ -1,0 +1,69 @@
+---
+title: "4.1 摄像头基础"
+description: "用 OpenCV 连 RTSP 摄像头，取一帧、存成文件、显示出来"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- `pip install opencv-python numpy`
+- 已知摄像头 RTSP 地址，例如 `rtsp://192.168.43.226:554/11`（手机 IP 摄像头 App 会给）
+- 手机/摄像头与电脑同一 Wi-Fi
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `class Camera` | 把连接、取图、释放封装成类，`with Camera(url) as camera` 进入连接、退出释放 |
+| `Camera.__enter__()` | `with` 进入时连接摄像头；`isOpened()` 检查是否真连上 |
+| `Camera.get_image()` | `read()` 取一帧，返回 BGR 图片 |
+| `log_message(level, source, message)` | 统一日志：时间、级别、来源、说明 |
+| `save_image(path, image)` | `imencode` 编码后写文件，中文路径兼容 |
+
+## 完整示例
+
+本页产出 `Camera` 类和 `log_message()`，后面所有视觉例程都靠它取图。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="camera_basics.py"
+      docs={[]}
+      folds={[
+        { label: "def log_message(level, source, message):", from: 15, to: 25 },
+        { label: "def save_image(path, image):", from: 27, to: 33 },
+        { label: "def main():", from: 74, to: 91, defaultOpen: true },
+      ]}
+      code={'from datetime import datetime              # 取得当前时间，用于统一日志格式\nfrom pathlib import Path                   # 导入用于组合文件夹和文件名的路径工具\n\nimport cv2                                 # 使用 OpenCV 连接摄像头和显示图片\n\n# --- 本例程可调整的参数 ---\nCAMERA_URL = "rtsp://192.168.43.226:554/11" # 填写 RTSP 摄像头地址\n\n# --- 共用配置（一般不用动）---\n# __file__ 保存当前程序文件的路径文字，Path() 把它转成路径对象，parent 取得所在文件夹\nBASE_DIR = Path(__file__).parent\n# / 把 output 文件夹和图片文件名接到当前文件夹路径后面\nOUTPUT_PATH = BASE_DIR / "output/camera_image.jpg"\n\ndef log_message(level, source, message):\n    """按照“时间、级别、来源、说明”的本项目统一格式打印一条日志。"""\n    # level 表示 INFO 或 ERROR 等级别，source 表示日志来源，message 表示具体说明\n    current_time = datetime.now()                           # now() 取得电脑当前的日期和时间\n\n    # strftime() 把时间转成文字；%Y、%m、%d、%H、%M、%S、%f 分别表示年、月、日、时、分、秒和微秒\n    time_text = current_time.strftime("%Y-%m-%d %H:%M:%S.%f")\n    time_text = time_text[:-3]                              # [:-3] 是切片：从开头取到倒数第 3 位之前，使时间保留到毫秒，即微秒/1000 = 毫秒\n\n    # <7 和 <8 表示左对齐并分别至少占 7 位和 8 位 ; 把排版完成的日志打印\n    print(f"{time_text} {level:<7} {source:<8} {message}")\n\ndef save_image(path, image):\n    """把 OpenCV 图片编码后保存到指定路径。"""\n    path.parent.mkdir(exist_ok=True)                        # 创建 output 文件夹，已经存在时不报错\n    is_encoded, image_bytes = cv2.imencode(path.suffix, image)  # 按 .jpg 后缀把 BGR 图片编码成文件字节\n    if not is_encoded:                                      # 编码失败时不继续写入文件\n        raise ValueError("摄像头图片编码失败")\n    path.write_bytes(image_bytes.tobytes())                 # 把编码后的字节写入 camera_image.jpg\n\nclass Camera:\n    """把摄像头的连接、取图和释放操作放在一个类里。\n\n    self 表示当前这个 Camera 对象，可以保存这个摄像头的地址和连接。\n    使用 with Camera(...) as camera 时，进入 with 会连接，离开 with 会自动释放。\n    """\n\n    def __init__(self, camera_url):\n        """创建 Camera 对象时保存地址，此时还没有连接摄像头。"""\n        self.camera_url = camera_url                        # 把传入的摄像头地址保存在当前对象中\n        self.capture = None                                 # 预留保存摄像头连接的位置\n\n    def __enter__(self):\n        """进入 with 时自动执行，连接摄像头并返回当前对象。"""\n        if not self.camera_url:\n            raise ValueError("请先填写 CAMERA_URL")\n\n        # VideoCapture() 创建视频获取对象，并尝试打开传入的 RTSP 摄像头地址\n        # 返回的对象保存在 self.capture，后面才能继续检查、取图和释放\n        self.capture = cv2.VideoCapture(self.camera_url)\n        if not self.capture.isOpened():                     # 检查连接是否真正打开\n            raise ValueError("摄像头连接失败，请检查地址和网络")\n        return self                                         # as camera 得到的就是当前 Camera 对象\n\n    def get_image(self):\n        """取得一张图片。"""\n        # read() 请求一帧画面，同时返回取图结果 is_received 和 BGR 图片 image\n        is_received, image = self.capture.read()\n        if not is_received:                                 # 没有得到图片时中断本次运行\n            raise ValueError("没有取得摄像头图片")\n        return image                                        # 把图片交给调用 get_image() 的代码\n\n    def __exit__(self, exc_type, exc_value, traceback):\n        """成功进入 with 后，结束或中途出错都会自动执行并释放摄像头。\n\n        exc_type、exc_value 和 traceback 是 Python 自动传入的出错信息，本例程不需要使用。\n        """\n        self.capture.release()                              # release() 关闭连接并释放摄像头资源\n\ndef main():\n    """取得、保存并显示一张摄像头图片。"""\n    try:\n        # 进入 with 会自动调用 __enter__()，离开 with 会自动调用 __exit__()\n        with Camera(CAMERA_URL) as camera:\n            log_message("INFO", "camera", "摄像头已连接")\n            image = camera.get_image()\n\n        # with 结束后摄像头已经释放，但取得的 image 仍然可以保存和显示\n        save_image(OUTPUT_PATH, image)\n        log_message("INFO", "camera", f"图片已保存: {OUTPUT_PATH}")\n\n        # imshow() 打开窗口显示图片；第一个参数是窗口标题，第二个参数是要显示的 image\n        cv2.imshow("Camera image - press any key to close", image)\n        cv2.waitKey(0)                                      # waitKey(0) 会一直等待，直到使用者按下任意键\n        cv2.destroyAllWindows()                             # 关闭 OpenCV 创建的所有图片窗口\n    except ValueError as exc:\n        log_message("ERROR", "camera", str(exc))            # str() 把出错对象 exc 转成可以作为日志消息显示的文字\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    2026-11-12 10:00:00.123 INFO    camera   摄像头已连接
+    2026-11-12 10:00:00.456 INFO    camera   图片已保存: .../output/camera_image.jpg
+    ```
+
+    弹出一个窗口显示摄像头画面，按任意键关闭。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 18_camera_basics.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `CAMERA_URL` | str | `rtsp://...` | RTSP 摄像头地址，改成你自己的 |
+| `OUTPUT_PATH` | Path | `output/camera_image.jpg` | 保存位置，自动建 `output` 目录 |
+| `__enter__` / `__exit__` | 方法 | — | `with` 进入连接、退出释放 |
+
+> 本页产出 `Camera` 类和 `log_message()`，是模块四后续所有页面的取图入口。

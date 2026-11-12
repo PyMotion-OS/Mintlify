@@ -1,0 +1,69 @@
+---
+title: "5.4 二维码站点"
+description: "循迹遇到站台减速，二维码离开后停机 8 秒再恢复循迹"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [5.3 二维码居中](../29-qr-centering/index) 与 [3.2 循迹控制](../03-line-following/16-line-following/index)
+- 把 `camera.py`、`qr_observation.py`、`differential_drive.py`、`line_control.py` 复制到本页目录
+- 赛道上贴 STATION_A / STATION_B 二维码
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `check_qr_state(...)` | 5.4 产出，判断站台二维码是否连续消失 |
+| `line_tracker_to_vw(...)` | 3.1 产出，五路循迹算 V/W |
+| `vw_to_rpm(...)` | 2.4 产出，V/W 转双轮转速 |
+| `SLOW_V` | 站台任务中的减速速度 |
+
+## 完整示例
+
+把循迹、二维码、减速停机串成一个完整任务。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="qr_station.py"
+      docs={[]}
+      folds={[
+        { label: "def run(camera, data_queue, commands):", from: 16, to: 62 },
+        { label: "def main():", from: 64, to: 78, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport cv2\nimport pymotion as pm\n\nfrom camera import Camera, log_message     # 引用例程26的摄像头类和统一日志函数\nfrom differential_drive import vw_to_rpm   # 引用例程11的差速函数\nfrom line_control import line_tracker_to_vw  # 引用例程15的五路分类和转向函数\nfrom qr_observation import check_qr_state, draw_qr_marks, find_qr  # 引用例程29的连续识别和绘画\n\n# --- 本例程可调整的参数 ---\nV = 100                                     # 默认循迹速度，单位毫米/秒\nSLOW_V = 60                                # 站台任务中的减速速度，单位毫米/秒\nK = 25                                     # 五路偏差每增加一格，W增加25度/秒\n\ndef run(camera, data_queue, commands):\n    """循迹遇到站台时减速，二维码离开后停机8秒，再恢复循迹。"""\n    state = "normal"                                        # normal正常循迹，slow减速\n\n    while True:\n        # 第一步：等待五路新数据，再取得最新图片\n        sensor_data = data_queue.read(timeout=0.2)          # 约0.1秒收到一条新数据，断流时最多等待0.2秒\n        image = camera.latest()                             # 调用例程26的类方法，无有效图片时返回None\n        qr_data = None\n        if image is not None:\n            qr_data = find_qr(image)                        # 调用例程28的二维码识别函数\n            cv2.imshow("QR station - Esc to close", draw_qr_marks(image, qr_data))\n\n        # 第二步：处理正常和减速两个阶段\n        if state == "normal" and qr_data is not None and (qr_data["text"] == "STATION_A" or qr_data["text"] == "STATION_B"):\n            station_name = qr_data["text"]\n            _, last_detected_time = check_qr_state(qr_data, station_name, None, 1)\n            state = "slow"                                  # 识别到站台，本轮开始减速\n            log_message("INFO", "station", f"站台: {station_name}  状态: slow")\n        elif state == "slow":\n            # 调用例程29演化出的函数，只检查当前站台是否连续消失\n            qr_state, last_detected_time = check_qr_state(qr_data, station_name, last_detected_time, 1)\n            if qr_state == "lost":\n                log_message("INFO", "station", f"站台: {station_name}  状态: stop")\n                time.sleep(8)                               # 停止下发，旧命令0.35秒后自动失效\n                state = "normal"\n                log_message("INFO", "station", f"站台: {station_name}  状态: normal")\n                continue                                    # 重新读取最新图片和五路数据后再恢复循迹\n\n        # 第三步：按当前阶段选择速度，再用五路数据计算双轮转速并下发\n        speed = SLOW_V if state == "slow" else V\n        if sensor_data is None:\n            v, w, line_state = 0, 0, "waiting"              # 五路超时时归零，不使用上一轮的数据\n        else:\n            v, w, line_state = line_tracker_to_vw(sensor_data.data.is_detected, speed, K)  # 复用例程15的循迹计算\n        if image is None:\n            v, w = 0, 0                                     # 无图时同时归零V/W，偏离线中心也不转动\n\n        left_rpm, right_rpm = vw_to_rpm(v, w)               # 调用例程11的差速函数，得到左右轮转速\n        # M3左轮、M4右轮；每轮只发送一次，0.35秒内未续发则旧命令自动失效\n        commands.motor_speeds.write({3: left_rpm, 4: right_rpm}, valid_for=0.35)\n\n        if line_state == "lost":\n            log_message("INFO", "line", "路线断开，停止并结束运行")\n            return                                          # 已发送零速度，结束run并依次退出外层with\n        if cv2.waitKey(1) == 27:\n            return                                          # Esc结束run，外层with随后停止实时控制并释放连接\n\ndef main():\n    """连接摄像头、五路和双轮，运行循迹站台演示。"""\n    try:\n        with Camera() as camera:\n            with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n                with robot.control():\n                    # 打开实时控制会话；M3左轮、M4右轮，frequency只决定五路约10Hz更新\n                    with robot.realtime.open(data_sources=("line_tracker",), command_targets={"motor_speeds": (3, 4)}, frequency="medium", data_queue_size=1) as session:\n                        run(camera, session.data, session.commands)\n    except (ValueError, pm.lite.LiteError) as exc:\n        log_message("ERROR", "station", f"{type(exc).__name__}: {exc}")\n    except KeyboardInterrupt:\n        log_message("INFO", "station", "Ctrl+C主动停机")\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    10:00:00.123 INFO    station 站台: STATION_A  状态: slow
+    10:00:02.500 INFO    station 站台: STATION_A  状态: stop
+    10:00:10.500 INFO    station 站台: STATION_A  状态: normal
+    ```
+
+    循迹遇到站台减速，二维码离开后停 8 秒，再恢复循迹。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 30_qr_station.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `V` | int | 100 毫米/秒 | 默认循迹速度 |
+| `SLOW_V` | int | 60 毫米/秒 | 站台任务减速速度 |
+| `K` | int | 25 | 五路偏差增益 |
+| `STATION_A/B` | str | — | 站台二维码文字 |
+
+> 本页是模块五的收口，串起循迹 + 二维码 + 减速停机。

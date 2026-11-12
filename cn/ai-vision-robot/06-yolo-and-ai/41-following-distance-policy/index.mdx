@@ -1,0 +1,70 @@
+---
+title: "6.11 跟随距离策略"
+description: "用画面占比估算远近，远了追、近了停，只显示不接底盘"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [6.9 主目标选择](../39-lead-target-selection/index)
+- 把 `camera.py`、`yolo_detection.py`、`target_selection.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `target_area_to_v(area_ratio)` | 占比分三档：前进 / 减速 / 停止 |
+| `choose_follow_motion(error_x, area_ratio, W)` | 先看远近，再原地对准，返回 V/W |
+| `error_x` 死区 | 偏差超出中心 10% 才原地转向 |
+
+## 完整示例
+
+框占比 `area_ratio` 是远近的近似，不是真实米数。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="following_distance_policy.py"
+      docs={[]}
+      folds={[
+        { label: "def target_area_to_v(area_ratio):", from: 12, to: 20 },
+        { label: "def choose_follow_motion(error_x, area_ratio, W=90):", from: 22, to: 34 },
+        { label: "def main():", from: 36, to: 67, defaultOpen: true },
+      ]}
+      code={'import cv2\n\nfrom camera import Camera, log_message\nfrom target_selection import find_unique_target  # 唯一目标观测函数，沿用39\n# load_yolo_resources：加载模型和标签；detect_objects：检测；draw_follow_motion：绘制跟随意图\nfrom yolo_detection import detect_objects, draw_follow_motion, load_yolo_resources\n\n# --- 本例程可调整的参数 ---\nCONFIDENCE = 0.25                          # 检测置信度门槛\nW = 90                                     # 原地对准时的转向速度，单位度/秒\n\ndef target_area_to_v(area_ratio):\n    """把目标框画面占比分成前进、减速和停止三档。"""\n    if area_ratio is None:\n        return 0, "lost"                                    # 没有有效目标时停止，不沿用上一次远近\n    if area_ratio >= 0.10:\n        return 0, "stop"                                    # 框占画面达到10%时停止前进\n    if area_ratio >= 0.04:\n        return 40, "slow"                                   # 框占画面达到4%时减速，V为40毫米/秒\n    return 70, "forward"                                    # 目标较远，V为70毫米/秒\n\ndef choose_follow_motion(error_x, area_ratio, W=90):\n    """先检查远近，再原地对准，最后返回前进速度、转向速度和状态。"""\n    # error_x左负右正，area_ratio是框占比；W是转向速度，默认90度/秒\n    if error_x is None or area_ratio is None:\n        return 0, 0, "lost"                                 # 无有效目标时返回零意图\n    v, state = target_area_to_v(area_ratio)                 # 远近分档函数，返回前进速度和状态\n    if state == "stop":\n        return 0, 0, state                                  # 太近时连原地转向也停止\n    if error_x < -0.10:\n        return 0, W, "left"                                 # 偏差超出中心10%，正W沿用29的原地左转\n    if error_x > 0.10:\n        return 0, -W, "right"                               # 偏差超出中心10%，负W表示原地右转\n    return v, 0, state                                      # 已对准才使用远近决定的V，W为0\n\ndef main():\n    """观察真实人物方向和远近对应的V/W，仅显示，不连接主动轮。"""\n    try:\n        _, model = load_yolo_resources()                    # 加载YOLO模型和标签，沿用32\n        last_state, last_image = None, None\n        with Camera() as camera:\n            while True:\n                if cv2.waitKey(100) == 27:                  # 每轮等待0.1秒，方便观察意图变化\n                    break                                   # 结束观察循环，随后释放相机并关闭窗口\n                # 第一步：取得有效新图，沿用39的唯一目标观测\n                image = camera.latest()                     # 取得未过期图片，缺失或过期时返回None\n                if image is None or image is last_image:\n                    continue                                # 无有效新图时跳过检测与意图计算\n                last_image = image\n                detections, _ = detect_objects(model, image, CONFIDENCE)  # 检测物体，得到标准检测列表\n                target_data = find_unique_target(detections, image.shape, "person")  # 选择唯一人物，取得偏差与画面占比\n\n                # 第二步：调用上方策略函数；框占比是远近提示，不是毫米距离\n                v, w, state = choose_follow_motion(target_data["error_x"], target_data["area_ratio"], W)  # 方向和远近换成V/W与状态\n                if state != last_state:\n                    log_message("INFO", "distance", f"跟随意图: {state}  V: {v} mm/s  W: {w} °/s")\n                    last_state = state\n\n                # 第三步：绘画交给YOLO工具，本例只显示，不下发电机命令\n                marked_image = draw_follow_motion(image, target_data, v, w, state)  # 绘制目标、占比、运动意图与状态\n                cv2.imshow("Following distance - Esc to close", marked_image)\n    except KeyboardInterrupt:\n        log_message("INFO", "distance", "Ctrl+C 主动结束")\n    except (OSError, ValueError, cv2.error) as exc:\n        log_message("ERROR", "distance", str(exc))\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    10:00:00.123 INFO    distance 跟随意图: forward  V: 70 mm/s  W: 0 °/s
+    10:00:01.000 INFO    distance 跟随意图: slow  V: 40 mm/s  W: 0 °/s
+    10:00:02.000 INFO    distance 跟随意图: stop  V: 0 mm/s  W: 0 °/s
+    10:00:03.000 INFO    distance 跟随意图: left  V: 0 mm/s  W: 90 °/s
+    ```
+
+    窗口显示目标、占比、运动意图 V/W 和当前状态。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 41_following_distance_policy.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `CONFIDENCE` | float | 0.25 | 检测置信度门槛 |
+| `W` | int | 90 度/秒 | 原地对准转向速度 |
+| 前进档 | int | 70 mm/s | `area < 0.04` |
+| 减速档 | int | 40 mm/s | `0.04 ≤ area < 0.10` |
+| 停止档 | int | 0 | `area ≥ 0.10` |
+
+> 本页产出 `target_area_to_v` / `choose_follow_motion`，6.12 吸收进 `target_selection.py`。

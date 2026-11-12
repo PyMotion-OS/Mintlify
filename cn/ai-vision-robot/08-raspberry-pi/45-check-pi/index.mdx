@@ -1,0 +1,69 @@
+---
+title: "8.1 树莓派环境检查"
+description: "逐项验证系统、Python、SDK、串口、温度、存储和图形会话"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 树莓派已刷系统、连上网络，能 SSH 或接显示器登录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `platform.system()` / `machine()` | 显示系统名和处理器架构 |
+| `sys.prefix == sys.base_prefix` | 判断是否加载了虚拟环境 |
+| `glob.glob("/dev/ttyACM*")` | 列出系统发现的 USB 串口 |
+| `shutil.disk_usage(...)` | 查询磁盘剩余空间 |
+
+## 完整示例
+
+上车前先"体检"：确认依赖装全、相机能开、串口能认，再跑后面的例程。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="check_pi.py"
+      docs={[]}
+      folds={[
+        { label: "def read_temperature():", from: 14, to: 20 },
+        { label: "def main():", from: 22, to: 65, defaultOpen: true },
+      ]}
+      code={'import glob\nimport os\nimport platform\nimport shutil\nimport sys\nfrom pathlib import Path\n\nimport pymotion as pm\n\n# --- 本例程可调整的参数 ---\nTEMP_WARN = 75.0                           # 温度达到 75℃ 时显示过热提醒\nMIN_FREE_GB = 2.0                          # 存储剩余不足 2GB 时显示空间不足\n\ndef read_temperature():\n    """读取树莓派处理器温度，读取不到时返回 None。"""\n    temperature_file = Path("/sys/class/thermal/thermal_zone0/temp")\n    try:\n        return int(temperature_file.read_text().strip()) / 1000  # 系统文件以千分之一摄氏度保存温度，除以 1000 得到 ℃\n    except (OSError, ValueError):\n        return None\n\ndef main():\n    """检查树莓派、Python、SDK、USB、温度、存储和图形会话。"""\n    # 第一步：查看实际系统和 Python 路径，确认使用的是准备好的运行环境\n    print(f"系统: {platform.system()} {platform.machine()}")  # 显示系统名称和处理器架构，不根据文件夹名称猜测设备\n    print(f"Python: {sys.version.split()[0]} ({sys.executable})")  # 显示真正运行此文件的解释器版本和路径\n    print(f"SDK: {pm.lite.__version__}")\n\n    if sys.prefix == sys.base_prefix:                       # 虚拟环境路径与基础解释器路径相同，表示没有加载虚拟环境\n        print("虚拟环境: 未加载")\n    else:\n        print(f"虚拟环境: {sys.prefix}")\n\n    # 第二步：只列出系统已经发现的串口，本例程不连接机器人\n    usb_devices = []\n    for pattern in ("/dev/ttyACM*", "/dev/ttyUSB*"):\n        usb_devices.extend(glob.glob(pattern))              # glob() 用 * 匹配串口文件，extend() 把找到的路径加入列表\n    if usb_devices:\n        print(f"Robot USB: {\', \'.join(sorted(usb_devices))}")\n    else:\n        print("Robot USB: 未发现")\n\n    # 第三步：温度与存储决定能否持续运行；没有温度文件时保持 None\n    temperature = read_temperature()\n    if temperature is None:\n        print("处理器温度: None")\n    elif temperature >= TEMP_WARN:\n        print(f"处理器温度: {temperature:.1f} ℃，过热")\n    else:\n        print(f"处理器温度: {temperature:.1f} ℃，正常")\n\n    free_gb = shutil.disk_usage(Path(__file__).parent).free / 1024 ** 3  # 查询例程所在磁盘，把剩余字节换算成 GB\n    if free_gb < MIN_FREE_GB:\n        print(f"存储剩余: {free_gb:.1f} GB，空间不足")\n    else:\n        print(f"存储剩余: {free_gb:.1f} GB")\n\n    # 第四步：查看当前终端是否连接桌面；只登录终端时，后面的 OpenCV 窗口可能无法打开\n    display = os.environ.get("WAYLAND_DISPLAY")             # 读取桌面会话的环境变量，没有设置时返回 None\n    if display is None:\n        display = os.environ.get("DISPLAY")                 # 兼容使用 X11 的桌面环境\n    if display is None:\n        print("图形会话: 未加载")\n    else:\n        print(f"图形会话: {display}")\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    系统: Linux aarch64
+    Python: 3.11.2 (/home/pi/venv/bin/python)
+    SDK: 1.2.0
+    虚拟环境: /home/pi/venv
+    Robot USB: /dev/ttyACM0
+    处理器温度: 52.3 ℃，正常
+    存储剩余: 12.4 GB
+    图形会话: wayland-0
+    ```
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 45_check_pi.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `TEMP_WARN` | float | 75.0 ℃ | 达到此温度显示过热提醒 |
+| `MIN_FREE_GB` | float | 2.0 GB | 剩余不足此值提示空间不足 |
+| 温度文件 | path | `/sys/class/thermal/thermal_zone0/temp` | 系统温度，千分之一℃ |
+
+> 本页不连接机器人，只做环境体检，为后续上车做准备。

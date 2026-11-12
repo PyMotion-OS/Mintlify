@@ -1,0 +1,66 @@
+---
+title: "5.1 颜色舵机跟踪"
+description: "双舵机根据颜色目标的二维偏差转动，让云台自动追目标"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [2.2 舵机位置与实时命令](../02-motion-and-sensors/09-servo-position/index) 与 [4.9 视觉观测](../04-opencv-and-camera/26-visual-observation/index)
+- 把 `camera.py`、`target_observation.py`、`servo_control.py` 复制到本页目录
+- 一个蓝色物体
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `error_to_angle(error, angle, K)` | 偏差乘 K 变角度调整，进入死区保持不动 |
+| `run(camera, commands, up, left)` | 循环：取图 → 算偏差 → 调角度 → 发命令 |
+| `find_target(image)` | 4.9 的目标观测，返回 error_x/error_y |
+| `move_servos` / `reset_servos` | 2.2 产出的舵机函数 |
+
+## 完整示例
+
+闭环第一次跑起来：偏差 → 角度 → 新画面 → 新偏差。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="color_servo_tracking.py"
+      docs={[]}
+      folds={[
+        { label: "def error_to_angle(error, angle, K):", from: 15, to: 19 },
+        { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 21, to: 43 },
+        { label: "def main():", from: 45, to: 60, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport cv2\nimport pymotion as pm\n\nfrom camera import Camera, log_message       # 引用例程26的摄像头类和统一日志函数\nfrom servo_control import move_servos, reset_servos # 引用舵机复位和安全执行函数\nfrom target_observation import draw_target_marks, find_target # 引用例程26的目标观测和结果标记\n\n# --- 本例程可调整的参数 ---\nTARGET_TYPE = "blue"                         # 跟随蓝色目标，也可改为gray、green或yellow\nDEAD_ZONE = 0.10                             # 二维偏差进入中心10%后保持当前角度\nK = 5                                      # 偏差为1时调整10°，数值越大跟随动作越强\n\ndef error_to_angle(error, angle, K):\n    """把一个方向的归一化偏差换成新的舵机角度。"""\n    if error is None or abs(error) <= DEAD_ZONE:\n        return angle                                         # 没有目标或进入中心范围时保持当前角度\n    return angle + error * K                                # 偏差乘K得到本轮需要调整的角度\n\ndef run(camera, commands, up_down_angle, left_right_angle):\n    """持续把颜色目标偏差换成舵机角度并发送实时命令。"""\n    last_angles = None                                      # 两个角度变化时才打印新日志\n\n    while True:\n        image = camera.latest()                             # 返回0.5秒内的最新图片，否则返回None\n        if image is not None:\n            target_data = find_target(image, TARGET_TYPE)   # 返回目标中心、面积和二维偏差\n\n            up_down_angle = error_to_angle(target_data["error_y"], up_down_angle, K) # 上下方向与偏差同号\n            left_right_angle = error_to_angle(target_data["error_x"], left_right_angle, -K) # 左右方向与偏差反号\n\n            up_down_angle, left_right_angle = move_servos(commands, up_down_angle, left_right_angle)\n            cv2.imshow("Color servo tracking - Esc to close", draw_target_marks(image, target_data))\n\n            angles = (up_down_angle, left_right_angle)\n            if angles != last_angles:\n                log_message("INFO", "servo", f"上下: {up_down_angle:.1f}°  左右: {left_right_angle:.1f}°")\n                last_angles = angles\n\n        if cv2.waitKey(1) == 27:\n            break                                           # Esc结束循环，退出实时会话并关闭双舵机输出\n        time.sleep(0.1)                                     # 每0.1秒执行一次，实时指令约为10 Hz\n\ndef main():\n    """启动时先复位，再让双舵机持续跟随颜色目标。"""\n    try:\n        with Camera() as camera:\n            with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n                with robot.control():\n                    up_down_angle, left_right_angle = reset_servos(robot) # 复位并返回两个起始角度\n                    # 打开实时控制会话；S4控制上下，S5控制左右\n                    with robot.realtime.open(command_targets={"pwm_position_servos": (4, 5)}) as session:\n                        run(camera, session.commands, up_down_angle, left_right_angle)\n    except (ValueError, pm.lite.LiteError) as exc:\n        log_message("ERROR", "servo", f"{type(exc).__name__}: {exc}")\n    except KeyboardInterrupt:\n        log_message("INFO", "servo", "Ctrl+C 主动结束")\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    10:00:00.123 INFO    servo   上下: 75.0°  左右: 115.0°
+    ```
+
+    云台自动把蓝色物体怼到画面中央，目标居中时保持不动。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 27_color_servo_tracking.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `TARGET_TYPE` | str | `blue` | 跟随的颜色目标 |
+| `DEAD_ZONE` | float | 0.10 | 偏差进入中心 10% 保持不动 |
+| `K` | int | 5 | 偏差为 1 时调 10°，越大越灵敏 |
+| `error_to_angle` | 函数 | — | 上下同号、左右反号 |

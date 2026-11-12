@@ -1,0 +1,68 @@
+---
+title: "7.1 传感器决策"
+description: "超声波与循迹同时输入，按优先级决定直行、转向还是停车"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [2.3 差速驱动](../02-motion-and-sensors/11-differential-drive/index)、[3.1 循迹控制](../03-line-following/15-line-classification-and-motion/index)、[2.6 避障停车](../02-motion-and-sensors/13-obstacle-stop/index)
+- 把 `differential_drive.py`、`line_control.py`、`obstacle_policy.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `decide_motion(line_motion, ultrasonic_data)` | 合并循迹意图和测距保护，返回唯一允许的 V/W |
+| `line_tracker_to_vw(...)` | 3.1 产出，五路状态转循迹意图 |
+| `ultrasonic_to_vw(...)` | 2.5 产出，按距离保持/减半/归零 V/W |
+| `received_monotonic` | 事件收到时刻，超 0.3 秒视为过期 |
+
+## 完整示例
+
+多源数据同时到达，先判断"该听谁的"再决定动作：循迹状态非 `line` 时直接停机，测距保护再叠加。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="sensor_decision.py"
+      docs={[]}
+      folds={[
+        { label: "def decide_motion(line_motion, ultrasonic_data):", from: 13, to: 20 },
+        { label: "def run(data_queue, commands):", from: 22, to: 55 },
+        { label: "def main():", from: 57, to: 68, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport pymotion as pm\n\nfrom differential_drive import vw_to_rpm   # 吸收例程 11 的差速函数\nfrom line_control import line_tracker_to_vw  # 吸收例程 15 的五路分类与转向\nfrom obstacle_policy import ultrasonic_to_vw  # 吸收例程 17 的超声波保护\n\n# --- 本例程可调整的参数 ---\nV = 60                                     # 循迹基础前进速度，单位毫米/秒\nK = 25                                     # 每格五路偏差对应的转向速度，单位度/秒\n\ndef decide_motion(line_motion, ultrasonic_data):\n    """先检查循迹意图和测距输入，再由超声波保持、减半或归零 V/W。"""\n    v, w, line_state = line_motion\n    if line_state != "line":\n        return 0, 0, line_state                             # 丢线、等待或任务暂停时，测距正常也不能放行\n    if ultrasonic_data is None:\n        return 0, 0, "distance_waiting"                     # 没收到测距或测距过期时停止\n    return ultrasonic_to_vw(ultrasonic_data, v, w)          # 复用 15 的 no_echo、无效、减速与停止规则\n\ndef run(data_queue, commands):\n    """独立更新两种事件，计算最终策略，并按0.1秒节拍下发双轮目标。"""\n    tracker_event, ultrasonic_event = None, None\n    next_send_at = time.monotonic()\n    last_motion = None\n    while True:\n        # 第一步：沿用例程 10，按来源保存完整事件；两种传感器分别更新\n        sensor_data = data_queue.read(timeout=0.5)          # 有数据即返回；断流最多等0.5秒，旧命令先在0.35秒后失效\n        if sensor_data is not None and sensor_data.source == "line_tracker":\n            tracker_event = sensor_data\n        elif sensor_data is not None and sensor_data.source == "ultrasonic":\n            ultrasonic_event = sensor_data\n\n        # 第二步：先检查事件存放时间，再调用已有算法生成循迹意图\n        now = time.monotonic()\n        line_motion = (0, 0, "line_waiting")\n        if tracker_event is not None and now - tracker_event.received_monotonic <= 0.3:\n            line_motion = line_tracker_to_vw(tracker_event.data.is_detected, V, K)\n        ultrasonic_data = None\n        if ultrasonic_event is not None and now - ultrasonic_event.received_monotonic <= 0.3:\n            ultrasonic_data = ultrasonic_event.data         # 过期事件不传给保护策略，不使用上一次有效距离\n\n        # 第三步：把两种输入交给上面的抽象函数，返回的就是唯一允许执行的 V/W\n        v, w, reason = decide_motion(line_motion, ultrasonic_data)\n        left_rpm, right_rpm = vw_to_rpm(v, w)\n\n        # 第四步：感知只更新目标；沿用 14 的 0.1 秒节拍，普通停止仍发送零速\n        if now >= next_send_at:\n            commands.motor_speeds.write({3: left_rpm, 4: right_rpm}, valid_for=0.35)  # M3左轮、M4右轮，刷新中断后旧命令自动失效\n            next_send_at = now + 0.1\n        motion = (reason, left_rpm, right_rpm)\n        if motion != last_motion:\n            print(f"策略: {reason}  V: {v} mm/s  W: {w} °/s  左轮: {left_rpm} RPM  右轮: {right_rpm} RPM")\n            last_motion = motion\n\ndef main():\n    """连接真实传感器，取得控制权后运行多源运动决策。"""\n    try:\n        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n            with robot.control():\n                # 打开实时控制会话\n                with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (3, 4)}, frequency="medium", data_queue_size=8) as session:\n                    run(session.data, session.commands)     # 接收并执行策略；medium约10Hz更新，run按0.1秒刷新目标\n    except KeyboardInterrupt:\n        print("结果: Ctrl+C 主动停机")\n    except (ValueError, pm.lite.LiteError) as exc:\n        print(f"出错: {exc}")\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    策略: line  V: 60 mm/s  W: 0 °/s  左轮: 30 RPM  右轮: 30 RPM
+    策略: slow  V: 30 mm/s  W: 0 °/s  左轮: 15 RPM  右轮: 15 RPM
+    策略: stop  V: 0 mm/s  W: 0 °/s  左轮: 0 RPM  右轮: 0 RPM
+    ```
+
+    靠近障碍时减速、过近时停机，丢线或测距过期也会归零。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 43_sensor_decision.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `V` | int | 60 mm/s | 循迹基础前进速度 |
+| `K` | int | 25 度/秒 | 每格五路偏差的转向增益 |
+| `valid_for` | float | 0.35 秒 | 命令有效期，断流后自动失效 |
+
+> 本页产出 `decide_motion`，7.2 吸收进 `obstacle_policy.py` 复用。

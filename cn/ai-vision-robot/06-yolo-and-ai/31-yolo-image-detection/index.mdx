@@ -1,0 +1,77 @@
+---
+title: "6.1 YOLO 图片检测"
+description: "用本地 YOLO 模型检测一张固定图片，认识统一检测字段和绘图流程"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成模块四的图片读取（`np.fromfile` + `cv2.imdecode` 中文路径写法）
+- 把 `common/yolo11n.pt`、`common/coco_labels.json`、`common/street.jpg` 放到本页能访问的 common 目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `os.environ["YOLO_OFFLINE"] = "true"` | 必须在 `import ultralytics` 之前设置，否则联网拉权重 |
+| `load_yolo_resources()` | 读标签表和本地模型，返回 `labels` 和 `model` |
+| `model.predict(...)` | 执行检测，返回 `Results`，张量需 `cpu().tolist()` |
+| `detect_objects(...)` | 把模型输出整理成 `class_id/label/confidence/box` 四个稳定字段 |
+
+## 完整示例
+
+先用一张固定图片 `street.jpg` 认识模型、检测字段和绘图，不接摄像头。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="yolo_image_detection.py"
+      docs={[]}
+      folds={[
+        { label: "def load_image():", from: 17, to: 20 },
+        { label: "def load_yolo_resources():", from: 22, to: 35 },
+        { label: "def detect_objects(model, image, confidence, image_size=320):", from: 37, to: 67 },
+        { label: "def draw_detections(image, detections, detection_time):", from: 69, to: 79 },
+        { label: "def main():", from: 81, to: 106, defaultOpen: true },
+      ]}
+      code={'from pathlib import Path\nimport json\nimport os\nimport time\n\nimport cv2\nimport numpy as np\n\n# --- 本例程可调整的参数 ---\n# 置信度是模型对当前结果的评分，不是物体类别一定正确的概率\nCONFIDENCE = 0.25                          # 只保留置信度达到 0.25 的检测结果\n\n# --- 共用配置（一般不用动）---\nCOMMON_DIR = Path(__file__).parents[1] / "common"\nIMAGE_PATH = COMMON_DIR / "street.jpg"     # 用于第一次检测的固定图片\n\ndef load_image():\n    """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""\n    image_bytes = np.fromfile(IMAGE_PATH, dtype=np.uint8)\n    return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)\n\ndef load_yolo_resources():\n    """读取 common 中的类别标签和本地模型，返回标签表与模型对象。"""\n    os.environ["YOLO_AUTOINSTALL"] = "false"                # 缺少依赖时直接报错，不在运行中自动安装\n    os.environ["YOLO_OFFLINE"] = "true"                     # 只使用本地模型，不连接网络下载资源\n    # ultralytics 第一次导入时读取上面两个设置，所以必须先设置再导入\n    from ultralytics import YOLO\n\n    label_items = json.loads((COMMON_DIR / "coco_labels.json").read_text(encoding="utf-8"))\n    labels = {}\n    # label_items 是按顺序保存的类别列表；改成以 id 为键后，可以直接用 class_id 查中英文名\n    for item in label_items:\n        labels[item["id"]] = item                           # 类别编号同时对应稳定的中英文名称\n    model = YOLO(str(COMMON_DIR / "yolo11n.pt"))            # 读取本地模型并得到后续检测使用的对象\n    return labels, model\n\ndef detect_objects(model, image, confidence, image_size=320):\n    """把模型输出整理为稳定检测字段，并返回处理毫秒数。"""\n    start_time = time.monotonic()                           # 单调时钟只向前走，适合计算一段代码的耗时\n    # predict() 返回每张输入图片的 Results，下面五个参数依次说明图片、最低分数、输入尺寸、设备和日志开关\n    yolo_results = model.predict(\n        image,                                              # 要检测的 OpenCV BGR 图片\n        conf=confidence,                                    # 丢弃低于这个置信度的检测结果\n        imgsz=image_size,                                   # 模型处理图片时使用的输入尺寸\n        device="cpu",                                       # 明确使用 CPU，电脑和树莓派都能运行\n        verbose=False,                                      # 不打印 Ultralytics 自带的逐张检测日志\n    )\n    yolo_result = yolo_results[0]                           # 本次只有一张图片，取得它对应的 Results\n\n    # cls、conf 和 xyxy 原本是张量；cpu().tolist() 把它们转成容易观察的 Python 列表\n    # 当前 Ultralytics 在 NMS 后按置信度从高到低排列，因此索引 0 是置信度最高的保留目标\n    # 三个列表的相同位置共同描述一个目标，例如索引 0 是第一个目标的类别、置信度和检测框\n    print(f"类别编号 cls: {yolo_result.boxes.cls.cpu().tolist()}")\n    print(f"置信度 conf: {yolo_result.boxes.conf.cpu().tolist()}")\n    print(f"检测框 xyxy（左上 x/y, 右下 x/y）: {yolo_result.boxes.xyxy.cpu().tolist()}")\n\n    detections = []\n    for box in yolo_result.boxes:\n        class_id = int(box.cls.item())\n        detections.append({\n            "class_id": class_id,                           # 稳定类别编号，界面语言切换时保持不变\n            "label": yolo_result.names[class_id],           # 模型内的英文规范名，供筛选逻辑使用\n            "confidence": float(box.conf.item()),           # 0 到 1 的置信度分数\n            "box": box.xyxy[0].cpu().tolist(),              # 左上角 x/y 和右下角 x/y\n        })\n    detection_time = (time.monotonic() - start_time) * 1000  # 秒乘 1000 得到本次检测耗时，单位毫秒\n    return detections, detection_time\n\ndef draw_detections(image, detections, detection_time):\n    """复制图片，再画出英文类别、置信度、检测框和处理耗时。"""\n    marked_image = image.copy()\n    for detection in detections:\n        x1, y1, x2, y2 = detection["box"]\n        x1, y1, x2, y2 = round(x1), round(y1), round(x2), round(y2)\n        cv2.rectangle(marked_image, (x1, y1), (x2, y2), (0, 140, 255), 3)\n        text = f"{detection[\'label\']} {detection[\'confidence\']:.2f}"\n        cv2.putText(marked_image, text, (x1, max(25, y1 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 140, 255), 2)\n    cv2.putText(marked_image, f"objects={len(detections)}  time={detection_time:.0f} ms", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)\n    return marked_image\n\ndef main():\n    """使用固定图片认识本地 YOLO 模型、检测字段和绘图流程。"""\n    image = load_image()                                    # 复用例程 22 的固定图片读取函数\n    labels, model = load_yolo_resources()                   # 得到中英文标签表和可调用的模型对象\n    detections, detection_time = detect_objects(model, image, CONFIDENCE, image_size=640)\n\n    print()\n    print("后续统一字段: class_id, label, confidence, box")\n    print(f"检测数量: {len(detections)}")\n    print(f"检测耗时: {detection_time:.0f} ms")\n\n    detection_number = 1\n    for detection in detections:\n        x1, y1, x2, y2 = detection["box"]\n        chinese_label = labels[detection["class_id"]]["zh"]\n        print(\n            f"目标 {detection_number}: ID: {detection[\'class_id\']:<2}  "\n            f"类别: {detection[\'label\']} / {chinese_label}  "\n            f"置信度: {detection[\'confidence\']:.2f}  "\n            f"检测框: ({x1:.0f}, {y1:.0f}) - ({x2:.0f}, {y2:.0f})"\n        )\n        detection_number += 1                               # 下一条检测结果使用下一个编号\n\n    cv2.imshow("YOLO image detection - press any key", draw_detections(image, detections, detection_time))\n    cv2.waitKey(0)\n    cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    类别编号 cls: [2, 2, 0, 0, 7, ...]
+    置信度 conf: [0.91, 0.85, 0.78, ...]
+    检测框 xyxy（左上 x/y, 右下 x/y）: [[...], ...]
+
+    后续统一字段: class_id, label, confidence, box
+    检测数量: 6
+    检测耗时: 180 ms
+
+    目标 1: ID: 2  类别: car / 汽车  置信度: 0.91  检测框: (...)
+    目标 2: ID: 0  类别: person / 人  置信度: 0.85  检测框: (...)
+    ```
+
+    窗口画出每个目标的英文类别、置信度和橙色检测框。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 31_yolo_image_detection.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `CONFIDENCE` | float | 0.25 | 只保留置信度达标的检测结果 |
+| `image_size` | int | 640 | 模型输入尺寸，越大细节越多、越慢 |
+| `device` | str | `"cpu"` | 电脑和树莓派都能运行的设备选择 |
+
+> 本页产出 `load_yolo_resources` / `detect_objects` / `draw_detections`，6.2 吸收进 `yolo_detection.py` 复用。

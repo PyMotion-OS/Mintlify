@@ -1,0 +1,76 @@
+---
+title: "4.7 实时颜色目标"
+description: "后台线程持续取图，主程序只识别没过期的新帧"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [4.6 颜色目标观测](../23-color-target-observation/index)
+- 把 `target_observation.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `class Camera`（线程版） | 后台线程 `update_image()` 持续取图，主程序拿 `latest_data()` |
+| `frame_data` 字典 | `image`/`frame_number`/`received_at` 一起更新 |
+| `time.monotonic()` | 单调时钟，算图片年龄不受校时影响 |
+| `MAX_AGE` 判断 | 图片超过 0.5 秒不识别；`frame_number` 去重 |
+| `find_target` / `draw_target_marks` | 吸收 4.6 的观测与标记 |
+
+## 完整示例
+
+本页把 4.6 的静态观测变成实时循环。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="live_color_target.py">
+
+        <CodeFold
+      title="live_color_target.py"
+      docs={[]}
+      folds={[
+        { label: "def main():", from: 73, to: 103, defaultOpen: true },
+      ]}
+      code={'from datetime import datetime\nimport threading                           # 使用后台线程执行 更新摄像头图片 的函数\nimport time                                # 使用单调时间计算图片收到后经过的秒数\n\nimport cv2\n\nfrom target_observation import draw_target_marks, find_target  # 吸收例程 23 的目标观测和结果标记函数\n\n# --- 本例程可调整的参数 ---\nCAMERA_URL = "rtsp://192.168.43.226:554/11" # 填写 RTSP 摄像头地址\nMAX_AGE = 0.5                              # 图片收到后超过 0.5 秒就不再用于识别，单位秒\n\ndef log_message(level, source, message):\n    """按照时间、级别、来源和说明打印一条规范化日志。"""\n    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]\n    print(f"{current_time} {level:<7} {source:<8} {message}")\n\nclass Camera:\n    """在例程 18 的基础上，使用后台线程持续更新最新图片。"""\n\n    def __init__(self, camera_url):\n        """保存摄像头地址，并准备最新图片、编号、接收时间和线程状态。"""\n        self.camera_url = camera_url\n        self.capture = None\n        self.frame_data = {\n            "image": None,                                  # 最新图片；还没有图片时为 None\n            "frame_number": 0,                              # 每取得一张新图片就加 1，用于判断是否重复\n            "received_at": None,                            # 图片进入本机时的单调时间，用于计算年龄\n        }\n        self.is_running = False                             # 更新图片的线程的运行标记\n        self.thread = None                                  # 保存后台线程对象，退出时需要等待它结束\n\n    def __enter__(self):\n        """进入 with 时连接摄像头，并启动后台取图线程。"""\n        self.capture = cv2.VideoCapture(self.camera_url)\n        if not self.capture.isOpened():\n            self.capture.release()                          # 进入 with 失败时也释放这次连接\n            raise ValueError("摄像头连接失败，请检查地址和网络")\n\n        log_message("INFO", "camera", "状态变为 connected")\n        self.is_running = True\n        # 创建后台线程，线程启动后执行当前对象的 update_image()\n        self.thread = threading.Thread(target=self.update_image, daemon=True)\n        self.thread.start()\n        return self\n\n    def update_image(self):\n        """在线程中持续取得图片，并替换当前 Camera 保存的最新图片。"""\n        while self.is_running:                              # True 时持续取图，退出 with 后__exit__（）使其变成 False\n            is_received, image = self.capture.read()        # 返回 是否取得图片，以及取得的图片\n            if not is_received:\n                log_message("WARNING", "camera", "状态变为 disconnected")\n                self.is_running = False                     # 改为 False 后，后台线程和主程序的 while 条件都不再成立\n                break                                       # break 立即结束当前 while，update_image() 随后返回\n\n            # 整体替换字典，让图片、编号和接收时间一起更新，主函数取得的是同一张图片的信息\n            self.frame_data = {\n                "image": image,                             # 保存本次取得的图片\n                "frame_number": self.frame_data["frame_number"] + 1,\n                "received_at": time.monotonic(),            # 取得只向前计时的秒数，不受电脑校时影响\n            }\n\n    def latest_data(self):\n        """返回后台线程最近一次取得的图片、编号和接收时间。"""\n        return self.frame_data.copy()                       # 复制字典；其中的图片仍是同一张图片，没有复制像素\n\n    def __exit__(self, exc_type, exc_value, traceback):\n        """离开 with 时停止并等待后台线程，再释放摄像头。"""\n        self.is_running = False                             # 把 update_image() 的 while 条件改为 False\n        self.thread.join(timeout=2.0)                       # 最多等待 2 秒，让 update_image() 运行结束\n        self.capture.release()                              # 关闭 self.capture 保存的视频流\n\ndef main():\n    """后台更新图片，主程序只识别有效期内、没有处理过的图片。"""\n    last_frame_number = 0                                   # 保存主程序已经处理过的最新图片编号\n\n    try:\n        with Camera(CAMERA_URL) as camera:\n            while camera.is_running:                        # is_running 为 True 时重复执行，变成 False 后结束循环\n                if cv2.waitKey(20) == 27:                   # 等待约 20 毫秒并处理窗口消息，Esc 的按键值是 27\n                    break                                   # 结束 main() 的 while，随后离开 with 并调用 __exit__()\n\n                frame_data = camera.latest_data()           # 取得同一张图片及其编号、接收时间\n                if frame_data["image"] is None:\n                    continue                                # 还没有图片，跳过本轮识别，重新等待后台更新\n\n                # 当前单调时间减去收到时刻，得到图片进入本机后经过的秒数；不包含 RTSP 原有延迟\n                age = time.monotonic() - frame_data["received_at"]\n                if age > MAX_AGE:                           # 超过允许的存放时间，这张图片已经过期\n                    continue                                # 跳过旧画面的识别，重新检查是否收到有效图片\n\n                if frame_data["frame_number"] == last_frame_number:\n                    continue                                # 编号相同表示已经处理过，不再重复识别\n\n                last_frame_number = frame_data["frame_number"]  # 保存本次编号，下一轮用它判断图片是否更新\n                target_data = find_target(frame_data["image"])  # 引用观测函数，返回蓝色目标的中心和二维偏差\n                cv2.imshow("Live color target - Esc to close", draw_target_marks(frame_data["image"], target_data))  # 引用标记函数绘制当前观测结果\n    except ValueError as exc:                               # 如果 Camera.__enter__() 抛出的连接错误，在这里捕获\n        log_message("ERROR", "camera", str(exc))\n    except KeyboardInterrupt:\n        log_message("INFO", "camera", "Ctrl+C 主动结束")\n    finally:\n        cv2.destroyAllWindows()                             # 正常结束或中断后都关闭图片窗口\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="target_observation.py">
+
+        <CodeFold
+      title="target_observation.py"
+      docs={[]}
+      folds={[
+        { label: "def find_target_contours(image, target_type='blue'):", from: 34, to: 62 },
+        { label: "def find_target(image, target_type='blue'):", from: 73, to: 112, defaultOpen: true },
+        { label: "def draw_target_marks(image, target_data):", from: 114, to: 132 },
+      ]}
+      code={'import cv2\nimport numpy as np\n\n# --- 目标观测参数 ---\nROI_LEFT, ROI_RIGHT = 0.15, 0.85           # 只在画面中间 70% 的宽度内寻找目标\nROI_TOP, ROI_BOTTOM = 0.15, 0.85           # 只在画面中间 70% 的高度内寻找目标\nGRAY_LIMIT = 130                           # gray 选中灰度不高于 130 的暗色区域\nKERNEL_SIZE = 3                            # 形态学核边长，单位像素\nMIN_AREA = 1500                            # 小于 1500 平方像素的轮廓作为干扰忽略\nCENTER_X = 0.50                            # 目标对齐位置在画面宽度 50%\nCENTER_Y = 0.50                            # 目标对齐位置在画面高度 50%\n\n# HSV 依次保存颜色、浓淡和明暗，每种颜色分别给出下限和上限\nCOLOR_RANGES = {\n    "blue": ((95, 80, 60), (135, 255, 255)),\n    "green": ((35, 80, 60), (85, 255, 255)),\n    "yellow": ((20, 80, 60), (35, 255, 255)),\n}\n\ndef make_gray_mask(image, left, top, right, bottom):\n    """吸收例程 20：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜。"""\n    roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI\n    gray_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY) # 把 BGR 颜色值合成一个亮度值\n    _, gray_mask = cv2.threshold(gray_image, GRAY_LIMIT, 255, cv2.THRESH_BINARY_INV)\n    return gray_mask\n\ndef make_color_mask(image, left, top, right, bottom, target_color):\n    """吸收例程 21：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜。"""\n    roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI\n    hsv_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2HSV)   # 把 BGR 转成颜色、浓淡和明暗分开的 HSV\n    color_low, color_high = COLOR_RANGES[target_color]      # 根据名称取出这种颜色的 HSV 上下限\n    return cv2.inRange(hsv_image, color_low, color_high)     # 颜色范围内变白，其余变黑\n\ndef find_target_contours(image, target_type="blue"):\n    """按目标类型生成掩膜，完成开闭运算，再返回清理后掩膜、有效轮廓和 ROI。"""\n    if target_type not in ("gray", "blue", "green", "yellow"):\n        raise ValueError("目标类型只能是 gray、blue、green 或 yellow")\n\n    height, width = image.shape[:2]\n    left, right = round(width * ROI_LEFT), round(width * ROI_RIGHT)\n    top, bottom = round(height * ROI_TOP), round(height * ROI_BOTTOM)\n    if target_type == "gray":\n        target_mask = make_gray_mask(image, left, top, right, bottom)\n    else:\n        target_mask = make_color_mask(image, left, top, right, bottom, target_type)\n\n    # 第一步：np.ones() 创建 KERNEL_SIZE × KERNEL_SIZE 的全 1 数组，np.uint8 表示每个值是 0—255 的整数\n    # 这个数组作为形态学核，决定开闭运算每次检查周围多大的像素范围\n    kernel = np.ones((KERNEL_SIZE, KERNEL_SIZE), np.uint8)\n\n    # 第二步：开运算先腐蚀白色区域：核内只要有黑色像素，中心就记为黑色；再恢复保留下来的白色区域\n    opened_mask = cv2.morphologyEx(target_mask, cv2.MORPH_OPEN, kernel)\n    # 闭运算先扩大白色区域：核内只要有白色像素，中心就记为白色；再恢复轮廓并留下填好的小缺口\n    closed_mask = cv2.morphologyEx(opened_mask, cv2.MORPH_CLOSE, kernel)\n\n    # 第三步：findContours() 取得每块相连白色区域的轮廓\n    contours, _ = cv2.findContours(closed_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)\n    valid_contours = []                                     # 新建列表，准备保存面积足够大的轮廓\n    for contour in contours:                                # 依次取得每个轮廓\n        if cv2.contourArea(contour) >= MIN_AREA:            # contourArea() 返回轮廓围住的像素面积\n            valid_contours.append(contour)                  # 把达到面积下限的轮廓加入列表\n    return closed_mask, valid_contours, (left, top, right, bottom)\n\ndef center_to_error(center, image_shape):\n    """吸收例程 23：计算目标中心相对画面指定位置的横向和纵向偏差。"""\n    height, width = image_shape[:2]                         # image.shape 前两项依次是高度和宽度\n    reference_x = round(width * CENTER_X)                   # 宽度乘比例，得到横向参考位置\n    reference_y = round(height * CENTER_Y)                  # 高度乘比例，得到纵向参考位置\n    error_x = (center[0] - reference_x) / (width / 2)       # 目标在左为负，在右为正\n    error_y = (center[1] - reference_y) / (height / 2)      # 目标在上为负，在下为正\n    return error_x, error_y\n\ndef find_target(image, target_type="blue"):\n    """选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差。"""\n    # 第一步：引用例程 22，得到清理后的黑白掩膜、有效轮廓和 ROI\n    target_mask, valid_contours, roi = find_target_contours(image, target_type)\n    left, top, right, bottom = roi\n\n    # 第二步：没有有效轮廓时返回 lost，并保持数据包字段不变\n    if not valid_contours:\n        return {\n            "state": "lost",                                # 后续先检查是否找到目标\n            "center": None,                                 # 后续绘图和居中控制使用的原图坐标\n            "area": 0,                                      # 后续距离判断使用的目标像素面积\n            "error_x": None,                                # 后续左右居中控制使用的归一化偏差\n            "error_y": None,                                # 后续上下居中控制使用的归一化偏差\n            "mask": target_mask,                            # 后续显示使用的清理后黑白掩膜\n            "contour": None,                                # 后续绘图使用的 ROI 内目标轮廓\n            "roi": roi,                                    # 后续绘图使用的处理区域像素坐标\n        }\n\n    # 第三步：选择面积最大的有效轮廓，用轮廓矩计算这片区域的质心\n    # max() 返回面积最大的轮廓\n    target_contour = max(valid_contours, key=cv2.contourArea)\n    moments = cv2.moments(target_contour)                   # m00 是面积，m10/m01 是横向/纵向坐标累计值\n    # 横向累计值除以面积得到质心 x，再加 ROI 左边坐标\n    center_x = left + round(moments["m10"] / moments["m00"])\n    # 纵向累计值除以面积得到质心 y，再加 ROI 顶部坐标\n    center_y = top + round(moments["m01"] / moments["m00"])\n\n    # 第四步：把质心交给居中函数，得到约 -1 到 +1 的横向和纵向偏差\n    error_x, error_y = center_to_error((center_x, center_y), image.shape)\n    return {\n        "state": "target",                                  # 后续先检查是否找到目标\n        "center": (center_x, center_y),                     # 后续绘图和居中控制使用的原图坐标\n        "area": round(moments["m00"]),                      # 后续距离判断使用的目标像素面积\n        "error_x": error_x,                                 # 后续左右居中控制使用的归一化偏差\n        "error_y": error_y,                                 # 后续上下居中控制使用的归一化偏差\n        "mask": target_mask,                                # 后续显示使用的清理后黑白掩膜\n        "contour": target_contour,                          # 后续绘图使用的 ROI 内目标轮廓\n        "roi": roi,                                        # 后续绘图使用的处理区域像素坐标\n    }\n\ndef draw_target_marks(image, target_data):\n    """复制原图，再用基础图形标出处理区域、参考中心和目标位置。"""\n    marked_image = image.copy()                             # copy() 复制出新图片，后续绘制不会修改 image\n    reference_x = round(image.shape[1] * CENTER_X)\n    reference_y = round(image.shape[0] * CENTER_Y)\n    left, top, right, bottom = target_data["roi"]\n\n    # 青蓝色矩形表示处理区域，两条白线交点表示横向和纵向偏差都为 0\n    cv2.rectangle(marked_image, (left, top), (right - 1, bottom - 1), (217, 199, 0), 4)\n    cv2.line(marked_image, (reference_x, top), (reference_x, bottom - 1), (255, 255, 255), 3)\n    cv2.line(marked_image, (left, reference_y), (right - 1, reference_y), (255, 255, 255), 3)\n    if target_data["state"] == "target":\n        # offset 把 ROI 内的橘黄色轮廓平移到原图位置\n        cv2.drawContours(marked_image, [target_data["contour"]], -1, (0, 140, 255), 4, offset=(left, top))\n        # 红点表示目标中心\n        cv2.circle(marked_image, target_data["center"], 10, (0, 0, 255), -1)\n        # 琥珀色箭头从参考中心指向目标中心，同时表示左右和上下偏差\n        cv2.arrowedLine(marked_image, (reference_x, reference_y), target_data["center"], (0, 176, 255), 4)\n    return marked_image'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    实时窗口持续显示目标标记，随摄像头画面更新；按 Esc 退出。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 24_live_color_target.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `CAMERA_URL` | str | `rtsp://...` | RTSP 地址 |
+| `MAX_AGE` | float | 0.5 秒 | 图片超龄不识别 |
+| `frame_number` | int | 只增 | 判断是否重复处理 |
+| `received_at` | float | 单调时间 | 算年龄 |
+
+> 本页产出 `target_observation.py`（实时目标观测），4.8/4.9 及模块五都复用。

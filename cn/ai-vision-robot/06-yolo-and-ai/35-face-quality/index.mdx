@@ -1,0 +1,85 @@
+---
+title: "6.5 人脸质量评估"
+description: "判断人脸完整度、尺寸、亮度和清晰度是否适合后续使用"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [6.4 人脸检测](../34-face-detection/index)
+- 把 `face_tools.py` 复制到本页目录（吸收 6.4 的检测与绘制）
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `cv2.resize(face, (112, 112))` | 统一尺寸，让不同大小人脸用同一组阈值 |
+| `cv2.cvtColor(..., COLOR_BGR2GRAY)` | 转灰度，每像素只留亮度值 |
+| `cv2.Laplacian(..., CV_64F)` + `.var()` | 拉普拉斯方差衡量清晰度 |
+| `check_face_quality(image, face)` | 依次查完整度、尺寸、亮度、清晰度 |
+
+## 完整示例
+
+后续特征提取只能对应一个人，先保证这张脸能用。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="face_quality.py">
+
+        <CodeFold
+      title="face_quality.py"
+      docs={[]}
+      folds={[
+        { label: "def check_face_quality(image, face):", from: 12, to: 47 },
+        { label: "def main():", from: 49, to: 88, defaultOpen: true },
+      ]}
+      code={'import cv2\n\n# face_tools.py 吸收例程 34 已经学过的人脸检测和绘制，本文件只展开质量判断\nfrom face_tools import create_face_detector, draw_faces, load_image, observe_faces\n\n# --- 本例程可调整的参数 ---\nMIN_FACE_SIZE = 80                         # 人脸框的宽和高都至少为 80 像素\nMIN_BRIGHTNESS = 45                        # 平均亮度低于 45 时认为人脸区域过暗\nMAX_BRIGHTNESS = 210                       # 平均亮度高于 210 时认为人脸区域过亮\nMIN_SHARPNESS = 100.0                      # 清晰度低于 100 时认为人脸区域模糊\n\ndef check_face_quality(image, face):\n    """依次检查人脸完整度、尺寸、亮度和清晰度，再返回检查数据和原因。"""\n    face_x, face_y, face_width, face_height = face["box"]\n    image_height, image_width = image.shape[0], image.shape[1]\n    # 人脸框左上角不能出界，右下角也不能超过图片的宽和高\n    \n    if face_x < 0 or face_y < 0 or face_x + face_width > image_width or face_y + face_height > image_height:\n        # 后两个 None 表示亮度和清晰度还没有检查\n        return False, None, None, "人脸不完整，请让整张脸进入图片"\n    if face_width < MIN_FACE_SIZE or face_height < MIN_FACE_SIZE:\n        # 尺寸不合格时不再计算亮度和清晰度\n        return False, None, None, "人脸太小，请靠近摄像头"\n\n    # 第一步：取出人脸框内的像素；图片切片不会改变原图\n    face_image = image[face_y:face_y + face_height, face_x:face_x + face_width]\n    # 第二步：resize() 返回一张 112×112 的新图片，让不同大小的人脸使用同一组质量阈值\n    standard_face = cv2.resize(face_image, (112, 112))\n    # 第三步：把 BGR 彩色图片转换成灰度图片，每个像素只保留一个 0～255 的亮度值\n    gray_face = cv2.cvtColor(standard_face, cv2.COLOR_BGR2GRAY)\n    brightness = float(gray_face.mean())                    # mean() 计算全部像素的平均亮度\n    # 第四步：Laplacian() 找出相邻像素的亮度变化；CV_64F 保留计算中的小数和负数\n    edges = cv2.Laplacian(gray_face, cv2.CV_64F)\n    # 第五步：var() 计算边缘数值的变化程度；清晰图片的边缘变化通常更大\n    sharpness = float(edges.var())\n\n    reasons = []                                            # 同一张人脸可能同时过暗和模糊\n    if brightness < MIN_BRIGHTNESS:\n        reasons.append("人脸过暗")\n    if brightness > MAX_BRIGHTNESS:\n        reasons.append("人脸过亮")\n    if sharpness < MIN_SHARPNESS:\n        reasons.append("人脸模糊")\n    if reasons:\n        reason = "、".join(reasons)                         # join() 用顿号连接全部不合格原因\n        return False, brightness, sharpness, f"{reason}，请重新拍摄"\n    return True, brightness, sharpness, "人脸质量合格，可以进入后续特征提取"\n\ndef main():\n    """检测图片中的人脸，再判断数量、完整度、尺寸、亮度和清晰度是否适合后续使用。"""\n    image = load_image()                                    # 图片路径随例程 34 的读取函数放在 face_tools.py\n    detector = create_face_detector()\n    faces = observe_faces(detector, image)                  # 引用例程 34 的三个稳定字段\n    marked_image = draw_faces(image, faces)\n\n    # 后续人脸特征只能对应一个人，因此图片中必须恰好检测到一张人脸\n    if len(faces) != 1:\n        print(f"质量判断: 不合格，人脸数量应为 1，当前为 {len(faces)}")\n        cv2.imshow("Face quality - press any key", marked_image)\n        cv2.waitKey(0)\n        cv2.destroyAllWindows()\n        return                                              # 结束 main，不再检查后面的质量条件\n\n    face = faces[0]                                         # 已确认只有一张人脸，第 0 项就是这张人脸\n    # check_face_quality() 依次返回是否合格、平均亮度、清晰度和原因\n    is_good, brightness, sharpness, reason = check_face_quality(image, face)\n    face_width = face["box"][2]                             # box 第 2 项是人脸框宽度\n    face_height = face["box"][3]                            # box 第 3 项是人脸框高度\n    print(f"检测置信度: {face[\'confidence\']:.3f}")\n    print(f"人脸尺寸: {face_width} x {face_height}")\n    if brightness is None:\n        print("平均亮度: 未检查")\n        print("清晰度: 未检查")\n    else:\n        print(f"平均亮度: {brightness:.1f}")\n        print(f"清晰度: {sharpness:.1f}")\n    print(f"质量判断: {reason}")\n\n    if is_good:\n        color = (0, 200, 0)\n        quality_text = "quality: pass"\n    else:\n        color = (0, 0, 255)\n        quality_text = "quality: retry"\n    cv2.putText(marked_image, quality_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)\n    cv2.imshow("Face quality - press any key", marked_image)\n    cv2.waitKey(0)\n    cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="face_tools.py">
+
+        <CodeFold
+      title="face_tools.py"
+      docs={[]}
+      folds={[
+        { label: "def load_image():", from: 10, to: 13 },
+        { label: "def create_face_detector():", from: 15, to: 24 },
+        { label: "def observe_faces(detector, image):", from: 26, to: 55 },
+        { label: "def draw_faces(image, faces):", from: 57, to: 67 },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\nCOMMON_DIR = Path(__file__).parents[1] / "common"\nMODEL_PATH = COMMON_DIR / "face_detection_yunet_2023mar.onnx"\nIMAGE_PATH = Path(__file__).with_name("face_sample.png")\n\ndef load_image():\n    """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""\n    image_bytes = np.fromfile(IMAGE_PATH, dtype=np.uint8)\n    return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)\n\ndef create_face_detector():\n    """读取本地 YuNet 文件，并返回 OpenCV 人脸检测器。"""\n    model_bytes = np.fromfile(MODEL_PATH, dtype=np.uint8)   # 模型字节写法支持 Windows 中文路径\n    return cv2.FaceDetectorYN.create(\n        "onnx",\n        model_bytes,\n        np.empty(0, np.uint8),\n        (320, 320),\n        0.85,                                               # 只保留置信度达到 0.85 的人脸\n    )\n\ndef observe_faces(detector, image):\n    """检测人脸，再把原始数组整理成人脸框、landmarks（五个人脸关键点坐标）和置信度。"""\n    # 创建检测器时的 320×320 只是初始值；检测前必须换成当前图片的真实尺寸\n    image_height, image_width = image.shape[0], image.shape[1]\n    detector.setInputSize((image_width, image_height))      # 匹配真实图片避免报错，返回坐标也直接对应原图像素\n    detection_result = detector.detect(image)               # 调用例程 34 的 YuNet 检测入口\n    raw_faces = detection_result[1]                         # 第 1 项是后面需要的人脸数组\n    if raw_faces is None:\n        return []                                           # 没有检测到人脸时返回空列表\n\n    faces = []\n    # 每次取一张人脸，再把固定的 15 个数整理成三个稳定字段\n    for raw_face in raw_faces:\n        face_x = round(raw_face[0])\n        face_y = round(raw_face[1])\n        face_width = round(raw_face[2])\n        face_height = round(raw_face[3])\n        right_eye = [float(raw_face[4]), float(raw_face[5])]\n        left_eye = [float(raw_face[6]), float(raw_face[7])]\n        nose_tip = [float(raw_face[8]), float(raw_face[9])]\n        right_mouth = [float(raw_face[10]), float(raw_face[11])]\n        left_mouth = [float(raw_face[12]), float(raw_face[13])]\n        landmarks = [right_eye, left_eye, nose_tip, right_mouth, left_mouth]\n        confidence = float(raw_face[14])\n        faces.append({\n            "box": [face_x, face_y, face_width, face_height],\n            "landmarks": landmarks,\n            "confidence": confidence,\n        })\n    return faces\n\ndef draw_faces(image, faces):\n    """给每张人脸画出检测框、五个关键点和置信度。"""\n    marked_image = image.copy()\n    for face in faces:\n        face_x, face_y, face_width, face_height = face["box"]\n        cv2.rectangle(marked_image, (face_x, face_y), (face_x + face_width, face_y + face_height), (0, 200, 0), 3)\n        for point in face["landmarks"]:\n            cv2.circle(marked_image, (round(point[0]), round(point[1])), 4, (0, 176, 255), -1)\n        text = f"face {face[\'confidence\']:.2f}"\n        cv2.putText(marked_image, text, (face_x, max(25, face_y - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 200, 0), 2)\n    return marked_image'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    检测置信度: 0.923
+    人脸尺寸: 150 x 180
+    平均亮度: 128.5
+    清晰度: 342.1
+    质量判断: 人脸质量合格，可以进入后续特征提取
+    ```
+
+    不合格时窗口左下角显示 `quality: retry`（红字），合格显示 `quality: pass`（绿字）。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 35_face_quality.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `MIN_FACE_SIZE` | int | 80 | 人脸框宽高最小像素 |
+| `MIN_BRIGHTNESS` | int | 45 | 平均亮度下限 |
+| `MAX_BRIGHTNESS` | int | 210 | 平均亮度上限 |
+| `MIN_SHARPNESS` | float | 100.0 | 清晰度下限 |
+
+> 本页产出 `check_face_quality`，6.6 吸收进 `face_tools.py` 并扩展 `get_quality_face`。

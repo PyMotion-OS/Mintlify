@@ -1,0 +1,67 @@
+---
+title: "6.4 人脸检测"
+description: "用 YuNet 检测人脸，提取框、五个关键点和置信度"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成模块四的图片读取
+- 把 `common/face_detection_yunet_2023mar.onnx` 和授权肖像 `face_sample.png` 放到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `cv2.FaceDetectorYN.create(...)` | OpenCV 自带 YuNet 检测器入口 |
+| `detector.setInputSize(...)` | 检测前必须换成图片真实尺寸 |
+| `observe_faces(...)` | 把 15 个数整理成 `box` / `landmarks` / `confidence` 三个字段 |
+
+## 完整示例
+
+YuNet 是比通用 YOLO 更轻的人脸专用检测器，先跑通人脸链路。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="face_detection.py"
+      docs={[]}
+      folds={[
+        { label: "def load_image():", from: 15, to: 18 },
+        { label: "def create_face_detector():", from: 20, to: 30 },
+        { label: "def observe_faces(detector, image):", from: 32, to: 67 },
+        { label: "def draw_faces(image, faces):", from: 69, to: 80 },
+        { label: "def main():", from: 82, to: 90, defaultOpen: true },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\n# --- 本例程可调整的参数 ---\nMIN_CONFIDENCE = 0.85                      # YuNet 只保留置信度达到 0.85 的人脸\n\n# --- 共用配置（一般不用动）---\nCOMMON_DIR = Path(__file__).parents[1] / "common"\n# YuNet 是 OpenCV Zoo 提供的现成人脸检测模型；模型和 MIT 许可证都放在 common\nMODEL_PATH = COMMON_DIR / "face_detection_yunet_2023mar.onnx"\nIMAGE_PATH = Path(__file__).with_name("face_sample.png")  # 例程 18 拍摄并放入本文件夹的授权肖像\n\ndef load_image():\n    """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""\n    image_bytes = np.fromfile(IMAGE_PATH, dtype=np.uint8)\n    return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)\n\ndef create_face_detector():\n    """读取本地 YuNet 文件，并返回 OpenCV 人脸检测器。"""\n    model_bytes = np.fromfile(MODEL_PATH, dtype=np.uint8)   # 模型字节写法支持 Windows 中文路径\n    # FaceDetectorYN 是 OpenCV 自带的 YuNet 使用入口；本例程调用成熟模型，不展开网络结构\n    return cv2.FaceDetectorYN.create(\n        "onnx",                                             # 告诉 OpenCV 传入的是 ONNX 模型内容\n        model_bytes,                                        # 从上方本地文件读取的模型内容\n        np.empty(0, np.uint8),                              # YuNet 不需要单独的配置文件\n        (320, 320),                                         # 创建检测器时必须先给出一个初始输入尺寸\n        MIN_CONFIDENCE,                                     # 丢弃低于这个置信度的人脸结果\n    )\n\ndef observe_faces(detector, image):\n    """检测人脸，再把原始数组整理成人脸框、landmarks（五个人脸关键点坐标）和置信度。"""\n    # 创建检测器时的 320×320 只是初始值；检测前必须换成当前图片的真实尺寸\n    image_height, image_width = image.shape[0], image.shape[1]\n    detector.setInputSize((image_width, image_height))      # 匹配真实图片避免报错，返回坐标也直接对应原图像素\n\n    # detect() 是 FaceDetectorYN 检测器自带的推理入口，内部使用已经加载的 YuNet 模型\n    detection_result = detector.detect(image)               # 返回两个结果：执行状态和原始人脸数组\n    raw_faces = detection_result[1]                         # 第 1 项才是后面需要的人脸数组\n    if raw_faces is None:\n        return []                                           # 没有检测到人脸时返回空列表\n\n    faces = []\n    # raw_faces 是“多张人脸组成的数组”；for 每次只取一张人脸的框、五个关键点坐标和置信度\n    # landmarks 是人脸识别领域的专业名称，这里就是五个人脸关键点坐标\n    for raw_face in raw_faces:\n        face_x = round(raw_face[0])                         # 第 0 个数：人脸框左上角 x\n        face_y = round(raw_face[1])                         # 第 1 个数：人脸框左上角 y\n        face_width = round(raw_face[2])                     # 第 2 个数：人脸框宽度\n        face_height = round(raw_face[3])                    # 第 3 个数：人脸框高度\n\n        right_eye = [float(raw_face[4]), float(raw_face[5])]  # 第 4、5 个数：右眼 x/y\n        left_eye = [float(raw_face[6]), float(raw_face[7])]  # 第 6、7 个数：左眼 x/y\n        nose_tip = [float(raw_face[8]), float(raw_face[9])]  # 第 8、9 个数：鼻尖 x/y\n        right_mouth = [float(raw_face[10]), float(raw_face[11])]  # 第 10、11 个数：右嘴角 x/y\n        left_mouth = [float(raw_face[12]), float(raw_face[13])]  # 第 12、13 个数：左嘴角 x/y\n        landmarks = [right_eye, left_eye, nose_tip, right_mouth, left_mouth]\n        confidence = float(raw_face[14])                    # 第 14 个数：人脸置信度\n\n        # 把模型难读的 15 个数整理成三个有名称的字段，后面的绘制函数可以直接使用\n        faces.append({\n            "box": [face_x, face_y, face_width, face_height],  # 左上角 x/y 和人脸框宽/高\n            "landmarks": landmarks,                         # 专业字段名，保存上面五个关键点坐标\n            "confidence": confidence,                       # YuNet 给出的人脸置信度\n        })\n    return faces\n\ndef draw_faces(image, faces):\n    """给每张人脸画出检测框、五个关键点和置信度。"""\n    marked_image = image.copy()\n    for face in faces:                                      # 给每一个检测到的人脸画框和关键点\n        face_x, face_y, face_width, face_height = face["box"]\n        cv2.rectangle(marked_image, (face_x, face_y), (face_x + face_width, face_y + face_height), (0, 200, 0), 3)\n\n        for point in face["landmarks"]:\n            cv2.circle(marked_image, (round(point[0]), round(point[1])), 4, (0, 176, 255), -1)\n        text = f"face {face[\'confidence\']:.2f}"\n        cv2.putText(marked_image, text, (face_x, max(25, face_y - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 200, 0), 2)\n    return marked_image\n\ndef main():\n    """调用 YuNet 检测授权肖像，并显示人脸位置、关键点和置信度。"""\n    image = load_image()\n    detector = create_face_detector()\n    faces = observe_faces(detector, image)\n    print(f"人脸数量: {len(faces)}")\n    cv2.imshow("Face detection - press any key", draw_faces(image, faces))\n    cv2.waitKey(0)\n    cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    人脸数量: 1
+    ```
+
+    窗口画出绿色人脸框、五个关键点（双眉/鼻尖/嘴角）和置信度。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 34_face_detection.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `MIN_CONFIDENCE` | float | 0.85 | 只保留置信度达标的人脸 |
+| `landmarks` | list | 5 个 `[x, y]` | 右眼/左眼/鼻尖/右嘴角/左嘴角 |
+| `confidence` | float | 0~1 | 人脸置信度 |
+
+> 本页产出 `load_image` / `create_face_detector` / `observe_faces` / `draw_faces`，6.5 吸收进 `face_tools.py`。

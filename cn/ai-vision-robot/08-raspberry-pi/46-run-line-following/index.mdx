@@ -1,0 +1,67 @@
+---
+title: "8.2 树莓派跑循迹"
+description: "在树莓派通过 USB 运行安全循迹，丢线时停机"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [8.1 树莓派环境检查](../45-check-pi/index) 与 [3.1 循迹控制](../03-line-following/15-line-classification-and-motion/index)
+- 把 `differential_drive.py`、`line_control.py`、`obstacle_policy.py` 复制到本页目录，树莓派用 USB 连接机器人
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `receive_sensors(data_queue)` | 0.3 秒内收齐五路和超声波两种读数 |
+| `line_tracker_to_vw(...)` | 3.1 产出，五路状态转循迹意图 |
+| `ultrasonic_to_vw(...)` | 2.5 产出，测距保护 |
+| `valid_for` | 0.35 秒，断流旧命令自动失效 |
+
+## 完整示例
+
+循迹不依赖视觉，是树莓派上最快能跑起来的完整动作。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="run_line_following.py"
+      docs={[]}
+      folds={[
+        { label: "def receive_sensors(data_queue):", from: 13, to: 31 },
+        { label: "def run(data_queue, commands):", from: 33, to: 68 },
+        { label: "def main():", from: 70, to: 81, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport pymotion as pm\n\nfrom differential_drive import vw_to_rpm   # 吸收例程 11，V/W 换成左右轮 RPM\nfrom line_control import PATTERN_NAMES, line_tracker_to_vw  # 吸收例程 17 的五路分类、转向和名称\nfrom obstacle_policy import OBSTACLE_NAMES, ultrasonic_to_vw  # 吸收例程 17 的超声波保护\n\n# --- 本例程可调整的参数 ---\nV = 60                                     # 基础前进速度，毫米/秒\nK = 25                                     # 转弯增益，每一格偏差增加 25 度/秒的 W\n\ndef receive_sensors(data_queue):\n    """在 0.3 秒内收齐两种未过期事件，再返回五路和超声波读数。"""\n    tracker_event, ultrasonic_event = None, None\n    end_time = time.monotonic() + 0.3                       # 演化例程 17：一种数据持续到达时，也不能无限等待另一种\n    while tracker_event is None or ultrasonic_event is None:\n        remaining_time = end_time - time.monotonic()\n        if remaining_time <= 0:\n            return None, None\n        sensor_data = data_queue.read(timeout=remaining_time)  # 最多等到本轮收集截止，不改变 medium 的刷新频率\n        if sensor_data is None:\n            return None, None                               # 缺一种数据，本轮不产生运动\n        if sensor_data.source == "line_tracker":\n            tracker_event = sensor_data\n        elif sensor_data.source == "ultrasonic":\n            ultrasonic_event = sensor_data\n    # 沿用例程 10 的 received_monotonic；较早收到的事件超过 0.3 秒，两种读数都不用于本轮运动\n    if time.monotonic() - min(tracker_event.received_monotonic, ultrasonic_event.received_monotonic) > 0.3:\n        return None, None\n    return tracker_event.data, ultrasonic_event.data\n\ndef run(data_queue, commands):\n    """依次进行循迹、避障和差速计算，丢线时发送双轮 0 并结束。"""\n    last_motion = None\n\n    while True:                                             # 条件一直为真，所以持续进行安全循迹\n        # 第一步：沿用例程 17 收集两种读数，本例程再检查收集截止和事件存放时间\n        tracker_line_data, ultrasonic_data = receive_sensors(data_queue)\n        if tracker_line_data is None or ultrasonic_data is None:\n            v, w, pattern_type, obstacle_state = 0, 0, "waiting", "waiting"\n            distance_text = "未收到"\n        else:\n            # 第二步：调用例程 15 的函数，把五路状态换成 V、W 和图案分类\n            v, w, pattern_type = line_tracker_to_vw(tracker_line_data.is_detected, V, K)\n            # 调用例程 17 的函数，根据距离保持、减半或归零 V/W；距离阈值在 obstacle_policy.py\n            v, w, obstacle_state = ultrasonic_to_vw(ultrasonic_data, v, w)\n            distance_text = "无回波"\n            if ultrasonic_data.distance is not None:        # 有具体距离时显示数值和毫米单位\n                distance_text = f"{ultrasonic_data.distance} mm"\n\n        # 第三步：最终 V/W 换成双轮 RPM；正常停止发送零速，退出时由实时会话停止输出\n        left_rpm, right_rpm = vw_to_rpm(v, w)               # 调用例程 11 的函数，得到左右主动轮转速\n        # medium 约 0.1 秒更新一次；0.35 秒留有余量，断流时旧命令会先自动失效\n        commands.motor_speeds.write({3: left_rpm, 4: right_rpm}, valid_for=0.35)  # M3 左轮、M4 右轮\n\n        current_motion = (pattern_type, obstacle_state, left_rpm, right_rpm)\n        if current_motion != last_motion:                   # 状态或双轮转速变化时才打印\n            print(\n                f"分类: {PATTERN_NAMES[pattern_type]}  "\n                f"避障: {OBSTACLE_NAMES[obstacle_state]}  距离: {distance_text}\\n"\n                f"左主动轮: {left_rpm} RPM  右主动轮: {right_rpm} RPM"\n            )\n            last_motion = current_motion\n\n        if pattern_type == "lost":                          # 已经发送双轮 0，return 结束 run() 并依次退出三个 with\n            print("结果: 丢失循迹线，程序结束")\n            return\n\ndef main():\n    """在树莓派通过 USB 运行例程 17 的安全循迹任务。"""\n    try:\n        with pm.lite.connect(transport="usb", timeout=15.0) as robot:\n            with robot.control():                           # 发送主动轮目标前取得控制权\n                # 打开实时控制会话\n                with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (3, 4)}, frequency="medium", data_queue_size=8) as session:\n                    run(session.data, session.commands)\n    except KeyboardInterrupt:\n        print("结果: Ctrl+C 主动停机")\n    except pm.lite.LiteError as exc:\n        print(f"出错: {type(exc).__name__}: {exc}")\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    分类: 直行  避障: 距离正常  距离: 250 mm
+    左主动轮: 30 RPM  右主动轮: 30 RPM
+
+    结果: 丢失循迹线，程序结束
+    ```
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 46_run_line_following.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `V` | int | 60 mm/s | 基础前进速度 |
+| `K` | int | 25 度/秒 | 转弯增益 |
+| 传输 | str | `usb` | 树莓派用 USB 连接模式 |
+
+> 本页验证树莓派"能动"，先不碰视觉，排除算力干扰。

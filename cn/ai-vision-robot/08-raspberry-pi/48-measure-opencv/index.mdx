@@ -1,0 +1,66 @@
+---
+title: "8.4 OpenCV 性能实测"
+description: "测每帧 OpenCV 处理耗时，比较缩图前后的性能"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [8.3 机器人与摄像头演示](../47-show-robot-and-camera/index)
+- 把 `camera.py`、`target_observation.py`（模块四颜色观测）复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `resize_image(image)` | 按处理宽度等比例缩小图片 |
+| `find_target(image)` | 模块四产出，颜色目标观测 |
+| `time.monotonic()` | 计时，算整轮处理毫秒数 |
+| `PROCESS_WIDTH` | 处理宽度，越小越快、细节越少 |
+
+## 完整示例
+
+先测基线再调参，缩图是性能最大的杠杆之一。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="measure_opencv.py"
+      docs={[]}
+      folds={[
+        { label: "def resize_image(image):", from: 11, to: 17 },
+        { label: "def run(camera):", from: 19, to: 48 },
+        { label: "def main():", from: 50, to: 60, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport cv2\n\nfrom camera import Camera, log_message     # 沿用26的有效取图、后台重连与日志\nfrom target_observation import draw_target_marks, find_target  # 原样吸收例程 26 的颜色观测与二维标记\n\n# --- 本例程可调整的参数 ---\nPROCESS_WIDTH = 640                        # 处理宽度越小，通常处理越快、细节越少\n\ndef resize_image(image):\n    """按处理宽度等比例缩小图片，并返回缩小后的图片。"""\n    if image.shape[1] <= PROCESS_WIDTH:                     # 图片宽度已经不超过目标宽度\n        return image\n    scale = PROCESS_WIDTH / image.shape[1]                  # 计算宽度需要缩小的比例\n    image_height = round(image.shape[0] * scale)            # 高度使用同一比例，避免图片变形\n    return cv2.resize(image, (PROCESS_WIDTH, image_height))\n\ndef run(camera):\n    """显示颜色目标，并测量每张有效新图片的处理耗时。"""\n    last_image = None                                       # 沿用38，以图片对象判断后台是否收到新图\n    last_state = None                                       # 只在目标状态变化时打印日志\n\n    while True:                                             # 条件一直为真，所以持续测量 OpenCV 处理耗时\n        if cv2.waitKey(20) == 27:\n            return                                          # 结束run，外层with随后停止摄像头线程\n\n        image = camera.latest()                             # 有效性判断交给相机，主文件只接收图片或None\n        if image is None or image is last_image:\n            continue                                        # 无图或仍是上一张图片时，跳过本轮处理\n\n        last_image = image\n        # 第一步：把新画面等比例缩小；固定像素面积的过滤规则也会随缩图影响可见目标\n        start_time = time.monotonic()\n        image = resize_image(image)\n        # 第二步：复用例程 26 的完整算法，计时包含缩图、观测和结果标记\n        target_data = find_target(image)\n        marked_image = draw_target_marks(image, target_data)\n        processing_time = (time.monotonic() - start_time) * 1000  # 秒乘 1000，得到本轮处理毫秒数\n\n        # 第三步：只显示处理尺寸和本轮处理耗时，便于比较缩图的效果\n        text = f"SIZE {image.shape[1]}x{image.shape[0]}  PROCESS {processing_time:.0f} ms"\n        cv2.putText(marked_image, text, (20, marked_image.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 176, 255), 2)\n        cv2.imshow("OpenCV performance - Esc to close", marked_image)\n\n        if target_data["state"] != last_state:\n            log_message("INFO", "opencv", f"状态: {target_data[\'state\']}  处理耗时: {processing_time:.0f} ms")\n            last_state = target_data["state"]\n\ndef main():\n    """打开相机，运行OpenCV性能观察。"""\n    try:\n        with Camera() as camera:\n            run(camera)\n    except KeyboardInterrupt:\n        print("结果: Ctrl+C 主动结束")\n    except (OSError, ValueError, cv2.error) as exc:\n        log_message("ERROR", "camera", str(exc))\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    窗口左下角: SIZE 640x360  PROCESS 12 ms
+    10:00:00.123 INFO    opencv  状态: target  处理耗时: 12 ms
+    ```
+
+    缩图后处理耗时明显下降，画面显示处理尺寸和本轮耗时。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 48_measure_opencv.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `PROCESS_WIDTH` | int | 640 | 处理宽度，越小越快 |
+| `target_type` | str | `blue`（默认） | 颜色目标类型 |
+
+> 本页先测 OpenCV 基线，8.5 用同样思路测 YOLO。

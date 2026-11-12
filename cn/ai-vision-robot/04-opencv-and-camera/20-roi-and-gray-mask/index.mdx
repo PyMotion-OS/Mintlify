@@ -1,0 +1,62 @@
+---
+title: "4.3 ROI 与灰度掩膜"
+description: "裁剪出感兴趣区域，转灰度，再用阈值生成黑白掩膜"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [4.2 图像像素与绘制](../19-image-pixels-and-drawing/index)
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `image[top:bottom, left:right]` | 裁剪 ROI，新图左上角重新成为 (0,0) |
+| `cv2.cvtColor(..., COLOR_BGR2GRAY)` | BGR 三通道合成一个亮度值 |
+| `cv2.threshold(..., THRESH_BINARY_INV)` | 不高于阈值变白，其余变黑（反二值） |
+| `cv2.findContours` | 每块相连白色区域变成一条轮廓 |
+| `draw_roi` / `show_image` | 画 ROI、缩放显示 |
+
+## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="roi_and_gray_mask.py"
+      docs={[]}
+      folds={[
+        { label: "def draw_roi(image, left, top, right, bottom):", from: 20, to: 24 },
+        { label: "def make_gray_mask(image, left, top, right, bottom, gray_limit):", from: 26, to: 36 },
+        { label: "def main():", from: 45, to: 71, defaultOpen: true },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\n# --- 本例程可调整的参数 ---\nROI_LEFT, ROI_RIGHT = 0.15, 0.85            # ROI 使用原图中间 70% 的宽度\nROI_TOP, ROI_BOTTOM = 0.15, 0.85            # ROI 使用原图中间 70% 的高度\nGRAY_LIMIT = 130                            # 灰度不高于 130 的像素在掩膜中变成白色\n\n# --- 共用配置（一般不用动）---\nBASE_DIR = Path(__file__).parent\nIMAGE_PATH = BASE_DIR / "camera_frame.jpg"\n\ndef load_image(path):\n    """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""\n    image_bytes = np.fromfile(path, dtype=np.uint8)\n    return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)\n\ndef draw_roi(image, left, top, right, bottom):\n    """复制原图，在副本上画出 ROI 并返回。"""\n    marked_image = image.copy()                             # 复制后绘制，不修改后续处理的 image\n    cv2.rectangle(marked_image, (left, top), (right - 1, bottom - 1), (217, 199, 0), 4)\n    return marked_image\n\ndef make_gray_mask(image, left, top, right, bottom, gray_limit):\n    """依次裁剪 ROI、转成灰度图，再得到按亮暗筛选的黑白掩膜。"""\n    # 第一步：数组按 [上:下, 左:右] 裁剪，新图左上角重新成为 (0, 0)\n    roi_image = image[top:bottom, left:right]\n\n    # 第二步：COLOR_BGR2GRAY 把每个像素的三个 BGR 颜色值合成一个亮度值\n    gray_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY)\n\n    # 第三步：THRESH_BINARY_INV 把不高于阈值的像素设为 255 白色，其余设为 0 黑色\n    _, gray_mask = cv2.threshold(gray_image, gray_limit, 255, cv2.THRESH_BINARY_INV)\n    return roi_image, gray_image, gray_mask                  # 按处理顺序返回三张中间图片\n\ndef show_image(title, image, x, y, scale):\n    """缩放图片副本，再在屏幕指定位置显示。"""\n    # resize() 只缩放用于显示的副本，fx 和 fy 是宽度与高度的缩放比例\n    display_image = cv2.resize(image, None, fx=scale, fy=scale)\n    cv2.imshow(title, display_image)\n    cv2.moveWindow(title, x, y)                             # 把窗口左上角移到屏幕像素坐标 (x, y)\n\ndef main():\n    """依次显示 ROI、裁剪图、灰度图、黑白掩膜和轮廓。"""\n    image = load_image(IMAGE_PATH)\n    height, width = image.shape[:2]                         # image.shape 前两项依次是图片高度和宽度\n\n    # 第一步：把 ROI 比例换成原图中的像素坐标，并使用draw_roi画出区域\n    left, right = round(width * ROI_LEFT), round(width * ROI_RIGHT)\n    top, bottom = round(height * ROI_TOP), round(height * ROI_BOTTOM)\n    marked_image = draw_roi(image, left, top, right, bottom)\n\n    # 第二步：依次得到裁剪图、灰度图和黑白掩膜\n    roi_image, gray_image, gray_mask = make_gray_mask(image, left, top, right, bottom, GRAY_LIMIT)\n\n    # 第三步：黑白掩膜中每块相连的白色区域，都可以变成一条轮廓\n    contours, _ = cv2.findContours(gray_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)\n    contour_image = cv2.cvtColor(gray_mask, cv2.COLOR_GRAY2BGR)  # 转成 BGR 三通道后才能画橘色轮廓\n    # drawContours() 把 contours 画到 contour_image；-1 表示全部轮廓，后两个参数是 BGR 颜色和线宽\n    cv2.drawContours(contour_image, contours, -1, (0, 140, 255), 4) # 给所有的轮廓画上颜色\n\n    # 自制函数show_image() 的参数依次是窗口标题、图片、窗口坐标 x/y 和显示比例\n    show_image("1 - Original Image with ROI", marked_image, 20, 20, 0.45)\n    show_image("2 - Cropped ROI", roi_image, 920, 20, 0.40)\n    show_image("3 - ROI Gray Image", gray_image, 920, 320, 0.40)\n    show_image("4 - ROI Gray Mask", gray_mask, 920, 620, 0.40)\n    show_image("5 - Gray Mask Contours", contour_image, 20, 620, 0.40)\n    cv2.waitKey(0)\n    cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    依次弹出 5 个窗口：原图+ROI → 裁剪图 → 灰度图 → 黑白掩膜 → 轮廓。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 20_roi_and_gray_mask.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `ROI_LEFT/RIGHT/TOP/BOTTOM` | float | 0.15 / 0.85 | 中间 70% 宽高 |
+| `GRAY_LIMIT` | int | 130 | 灰度不高于此值变白（暗色目标） |
+| `gray_mask` | 数组 | 0/255 | 黑白掩膜，白色=选中 |
+
+> 本页产出 `make_gray_mask()`，4.6 会把它吸收进统一掩膜函数。

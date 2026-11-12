@@ -1,0 +1,84 @@
+---
+title: "4.8 摄像头延迟与重连"
+description: "把连接、取图、断流重连收进最终 Camera，只关心拿到没拿过期的图"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [4.7 实时颜色目标](../24-live-color-target/index)
+- 把 `camera.py`、`target_observation.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `connect(camera)` | 用 FFmpeg 打开视频流，带超时参数，成功返回 True |
+| `set_disconnected(camera)` | 标记断开并清空旧图 |
+| `Camera.latest(max_age=0.5)` | 吸收年龄判断，返回有效图或 `None` |
+| `update_image()` | 连续失败 5 次结束当前会话 |
+| `RECONNECT_SECONDS` | 断流后等 1 秒再重连 |
+
+## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="camera_age_and_reconnect.py">
+
+        <CodeFold
+      title="camera_age_and_reconnect.py"
+      docs={[]}
+      folds={[
+        { label: "def connect(camera):", from: 12, to: 33 },
+        { label: "def set_disconnected(camera):", from: 35, to: 45 },
+        { label: "def main():", from: 47, to: 83, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport cv2\n\nfrom camera import Camera, log_message     # 提取例程 24 的摄像头类和日志；latest() 吸收图片有效性判断\nfrom target_observation import draw_target_marks, find_target  # 引用例程 24 的目标观测和结果标记\n\n# --- 本例程可调整的参数 ---\nMAX_AGE = 0.5                              # 图片收到超过 0.5 秒就不再用于当前处理\nRECONNECT_SECONDS = 1.0                    # 断流后等待 1 秒再建立下一次连接\n\ndef connect(camera):\n    """打开一次视频连接，清空上次图片，成功返回 True，失败返回 False。"""\n    # FFmpeg 连接超时和取图超时在打开视频流时传入；3000、1000 的单位是毫秒\n    capture = cv2.VideoCapture(\n        camera.camera_url,\n        cv2.CAP_FFMPEG,                                     # 使用 FFmpeg 打开 RTSP 视频流\n        [cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 3000, cv2.CAP_PROP_READ_TIMEOUT_MSEC, 1000],\n    )\n    if not capture.isOpened():                              # 没有打开视频流，本次连接失败\n        capture.release()                                   # 释放本次连接占用的资源\n        return False                                        # main() 随后等待，再调用本函数重试\n\n    camera.capture = capture                                # 把已打开的连接交给 Camera 的取图线程\n    old_data = camera.frame_data\n    camera.frame_data = {\n        "state": "connected",                               # 新增连接状态，供日志和后续任务判断\n        "image": None,                                      # 清空上次图片，等待本次连接的首张图片\n        "frame_number": old_data["frame_number"],           # 没有取得新图片，累计编号暂时不变\n        "received_at": None,                                # 还没有新图片，也没有新的接收时间\n    }\n    log_message("INFO", "camera", "状态变为 connected")\n    return True                                             # main() 随后进入 with，启动当前连接的取图线程\n\ndef set_disconnected(camera):\n    """把状态改为 disconnected，并清空不能继续使用的旧图片。"""\n    old_data = camera.frame_data\n    if old_data["state"] != "disconnected":                 # 连续连接失败时只记录一次断开，避免刷屏\n        log_message("WARNING", "camera", "状态变为 disconnected")\n    camera.frame_data = {\n        "state": "disconnected",                            # 当前没有可用连接\n        "image": None,                                      # 清空旧图，避免断流后继续识别停住的画面\n        "frame_number": old_data["frame_number"],           # 没有新图片，累计编号保持不变\n        "received_at": None,                                # 没有有效图片，图片年龄也不存在\n    }\n\ndef main():\n    """建立连接、识别有效图片；断流后释放旧连接，等待并重新连接。"""\n    camera = Camera()                                      # 创建对象并使用类内默认地址，此时还没有连接\n\n    try:\n        # 外层循环负责重连；内层循环只处理当前连接，结束后释放旧连接再重新尝试\n        while True:\n            if cv2.waitKey(20) == 27:\n                break                                       # 结束外层重连循环，随后执行 finally 关闭窗口\n\n            # 本例程在主线程连接，最多等待 3 秒，期间窗口消息会暂停处理\n            if not connect(camera):                         # 调用上面的普通函数，False 表示本次连接失败\n                set_disconnected(camera)                    # 调用上面的普通函数，记录断开并清空旧图片\n                time.sleep(RECONNECT_SECONDS)               # 等待 1 秒，避免连接失败时快速反复重试\n                continue                                    # 回到外层循环，再次执行 connect(camera)\n\n            # 连接已由 connect(camera) 建立；with 只启动取图线程，并在离开时停止和释放\n            with camera:\n                while camera.is_running:\n                    if cv2.waitKey(20) == 27:\n                        return                              # 结束 main()；先退出 with，再执行 finally 关闭窗口\n\n                    image = camera.latest(MAX_AGE)          # 取得有效图片；无图片或收到后超过 0.5 秒返回 None\n                    if image is None:\n                        continue                            # 跳过本次识别，重新等待后台更新图片\n\n                    target_data = find_target(image)        # 引用 target_observation.py，得到蓝色目标中心和二维偏差\n                    cv2.imshow("Camera age and reconnect - Esc to close", draw_target_marks(image, target_data))\n\n            set_disconnected(camera)                        # with 已停止线程、释放旧连接，再清空图片信息\n            time.sleep(RECONNECT_SECONDS)                   # 等待后回到外层循环，再次调用 connect(camera)\n    except (ValueError, cv2.error) as exc:\n        log_message("ERROR", "camera", str(exc))\n    except KeyboardInterrupt:\n        log_message("INFO", "camera", "Ctrl+C 主动结束")\n    finally:\n        cv2.destroyAllWindows()                             # 正常结束、中断或报错后都关闭图片窗口\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="camera.py">
+
+        <CodeFold
+      title="camera.py"
+      docs={[]}
+      folds={[
+        { label: "def update_image(self):", from: 37, to: 58 },
+        { label: "def latest_data(self):", from: 60, to: 68 },
+        { label: "def latest(self, max_age=0.5):", from: 70, to: 78, defaultOpen: true },
+      ]}
+      code={'from datetime import datetime\nimport threading\nimport time\n\nimport cv2\n\ndef log_message(level, source, message):\n    """按照时间、级别、来源和说明打印一条规范化日志。"""\n    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]\n    print(f"{current_time} {level:<7} {source:<8} {message}")\n\nclass Camera:\n    """管理一次摄像头连接，并在后台持续更新最新图片。"""\n\n    CAMERA_URL = "rtsp://192.168.43.226:554/11"             # 从例程25开始由Camera保存默认地址\n\n    def __init__(self):\n        self.camera_url = self.CAMERA_URL                   # 主文件的connect(camera)使用这个地址连接\n        self.frame_data = {\n            "state": "waiting",                             # waiting、connected 或 disconnected\n            "image": None,                                  # 当前最新图片，还未取得时为 None\n            "frame_number": 0,                              # 每取得一张新图片就加 1\n            "received_at": None,                            # 收到最新图片的单调时间\n        }\n        self.is_running = False                             # True 让后台线程继续取图，False 让线程结束\n        self.capture = None                                 # 保存当前 VideoCapture，退出时需要释放\n        self.thread = None                                  # 保存后台线程，退出时需要等待它结束\n\n    def __enter__(self):\n        """进入 with 时启动后台线程，为当前连接持续取图。"""\n        # 连接已由主文件的 connect(camera) 建立，这里只启动例程 24 已经展示的取图线程\n        self.is_running = True                              # 后台线程启动后可以进入取图循环\n        self.thread = threading.Thread(target=self.update_image, daemon=True)\n        self.thread.start()                                 # 开始执行 update_image()，主函数继续向下运行\n        return self                                         # with ... as camera 得到当前 Camera 对象\n\n    def update_image(self):\n        """持续更新图片；连续五次失败后结束当前连接会话。"""\n        failures = 0                                        # 成功取得图片后会重新从 0 计算\n        while self.is_running and failures < 5:\n            try:\n                is_received, image = self.capture.read()    # 返回是否成功，以及本次取得的图片\n            except cv2.error:                               # 视频流报错时也算本次取图失败，让主函数能够重连\n                is_received, image = False, None\n            if not is_received:\n                failures += 1                               # 连续达到五次后，while 条件结束当前会话\n                continue                                    # 本次没有新图片，不覆盖上一份图片数据\n\n            failures = 0                                    # 本次成功，前面的偶发失败不再累计\n            self.frame_data = {\n                "state": "connected",                       # 当前连接仍能正常提供图片\n                "image": image,                             # 保存刚取得的最新图片\n                # 编号加 1 表示出现新图片，需要去重的任务仍可通过 latest_data() 取得编号\n                "frame_number": self.frame_data["frame_number"] + 1,\n                "received_at": time.monotonic(),            # 沿用例程 24，记录图片进入本机的时刻\n            }\n\n        self.is_running = False                             # 通知主函数：当前连接已经不能继续取图\n\n    def latest_data(self):\n        """返回当前连接状态、最新图片、帧编号和图片年龄。"""\n        frame_data = self.frame_data.copy()                 # 复制后再加入 age，不修改后台线程的数据\n        if frame_data["received_at"] is None:               # 没有有效图片时，图片年龄也不存在\n            frame_data["age"] = None\n        else:\n            # 吸收例程 24 主程序的年龄计算：当前时间减去收到时刻，得到本机存放秒数\n            frame_data["age"] = time.monotonic() - frame_data["received_at"]\n        return frame_data                                   # 返回状态、图片、编号、接收时间和年龄，供 latest() 或主程序使用\n\n    def latest(self, max_age=0.5):\n        """返回最新且没有过期的图片，默认有效期为 0.5 秒。"""\n        # 吸收例程 24 主程序中“没有图片”和“图片过期”的判断，调用方只接收图片或 None\n        frame_data = self.latest_data()                     # 先取得同一张图片及其年龄，再判断是否可以使用\n        if frame_data["image"] is None:                     # 还没取得首张图片，或断流时已经清空旧图片\n            return None\n        if frame_data["age"] > max_age:                     # 图片存放时间超过允许值，不再交给后续识别\n            return None\n        return frame_data["image"]                          # 仍有效的图片可以重复取得，编号去重另用 latest_data()\n\n    def __exit__(self, exc_type, exc_value, traceback):\n        """离开 with 时停止后台线程，并释放本次视频连接。"""\n        self.is_running = False                             # 让 update_image() 的 while 条件变成 False\n        self.thread.join(timeout=2.0)                       # 最多等待 2 秒，让后台取图函数运行结束\n        if self.capture is not None:\n            self.capture.release()                          # 关闭本次视频流，主函数随后可建立新连接\n            self.capture = None'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    10:00:00.123 INFO    camera   状态变为 connected
+    10:00:03.456 WARNING camera   状态变为 disconnected
+    10:00:04.500 INFO    camera   状态变为 connected
+    ```
+
+    断流后自动清空旧图、等待 1 秒、重连。按 Esc 退出。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 25_camera_age_and_reconnect.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `MAX_AGE` | float | 0.5 秒 | 图片超龄不识别 |
+| `RECONNECT_SECONDS` | float | 1.0 秒 | 断流后重连间隔 |
+| `CAP_PROP_OPEN_TIMEOUT_MSEC` | int | 3000 | 打开超时毫秒 |
+| `CAP_PROP_READ_TIMEOUT_MSEC` | int | 1000 | 取图超时毫秒 |
+
+> 本页产出 `camera.py`（最终版 Camera），4.9 及后续模块复用。

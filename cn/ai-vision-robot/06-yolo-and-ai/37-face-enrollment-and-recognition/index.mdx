@@ -1,0 +1,80 @@
+---
+title: "6.7 人脸录入与识别"
+description: "读取登记特征库，在视频中实时识别并显示匹配代号"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [6.6 人脸特征比对](../36-face-feature-comparison/index)，已生成 `common/faces.npz`
+- 把 `camera.py`、`face_tools.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `np.load(..., allow_pickle=False)` | 只读文字和数字数组，安全读 NPZ |
+| `load_feature_file()` | 读取登记代号和特征，不存在时返回空列表 |
+| `identify_face(...)` | 1:N 比较，返回最高分代号和相似度 |
+
+## 完整示例
+
+6.6 只是比对两张图，6.7 把登记库放进实时视频做 1:N 识别。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="face_enrollment_and_recognition.py">
+
+        <CodeFold
+      title="face_enrollment_and_recognition.py"
+      docs={[]}
+      folds={[
+        { label: "def load_feature_file():", from: 15, to: 23 },
+        { label: "def identify_face(recognizer, query_feature, names, features, threshold):", from: 25, to: 36 },
+        { label: "def main():", from: 38, to: 77, defaultOpen: true },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\nfrom camera import Camera, log_message\nfrom face_tools import compare_face_features, create_face_detector, create_face_recognizer, draw_faces, get_face_feature  # 吸收例程 36 的特征能力，显示结果交给 draw_faces\n\n# --- 本例程可调整的参数 ---\nMATCH_THRESHOLD = 0.50                     # 最佳相似度不足此值时显示 unknown\n\n# --- 共用配置（一般不用动）---\nFEATURE_FILE = Path(__file__).parents[1] / "common" / "faces.npz"\n\ndef load_feature_file():\n    """读取本地 NPZ 中的匿名代号和人脸特征；文件不存在时返回空列表。"""\n    if not FEATURE_FILE.exists():\n        return [], []                                       # 没有登记内容时，交给主函数提示准备特征文件\n    # NPZ 是装有多个 NumPy 数组的文件；allow_pickle=False 只读取文字和数字数组\n    with np.load(FEATURE_FILE, allow_pickle=False) as feature_file:\n        names = feature_file["names"].tolist()              # names 第 i 项对应 features 第 i 行\n        features = list(feature_file["features"])           # 每一行保存同一人的 128 个特征\n    return names, features\n\ndef identify_face(recognizer, query_feature, names, features, threshold):\n    """逐一比较查询特征与已登记特征，返回最高分代号和相似度。"""\n    if not names:\n        return "unknown", 0.0                               # 空库没有可比较特征，等待登记\n    best_name, best_score = "unknown", -1.0\n    for index in range(len(names)):                         # 1:N 表示一组查询特征与 N 组登记特征分别比较\n        score = compare_face_features(recognizer, features[index], query_feature)\n        if score > best_score:\n            best_name, best_score = names[index], score     # 每次只保留目前最高分及其对应代号\n    if best_score < threshold:\n        return "unknown", best_score                        # 分数不足时拒绝匹配，仍返回真实分数供观察\n    return best_name, best_score\n\ndef main():\n    """读取登记文件，在视频中识别人脸，显示并打印匹配到的代号。"""\n    try:\n        # 第一步：复用 35 的模型与特征函数，再读取已登记的代号和对应特征\n        detector = create_face_detector()\n        recognizer = create_face_recognizer()\n        names, features = load_feature_file()\n        if not names:\n            print("登记内容: 为空，请先用例程 36 准备 common/faces.npz")\n            return                                          # 结束 main，随后执行 finally 关闭窗口\n\n        last_name = None\n        with Camera() as camera:\n            while True:\n                if cv2.waitKey(20) == 27:\n                    break                                   # 结束视频循环，随后停止相机线程并关闭窗口\n                image = camera.latest()                     # 第二步：沿用 32，只取得最新有效图片\n                if image is None:\n                    continue                                # 没有有效图片时跳过识别，继续等待\n\n                # 第三步：提取当前人脸特征，匹配后取回 35 保存的代号；不是重新设置 PERSON_NAME\n                query_feature = get_face_feature(detector, recognizer, image)\n                if query_feature is None:\n                    person_name, score = "no valid face", None\n                    message = "人脸状态: 请让一张清晰完整的人脸进入画面"\n                else:\n                    person_name, score = identify_face(recognizer, query_feature, names, features, MATCH_THRESHOLD)\n                    message = f"识别代号: {person_name}  相似度: {score:.3f}"\n                if person_name != last_name:\n                    print(message)                          # 第一次和代号变化时打印，不逐帧刷屏\n                    last_name = person_name\n\n                # 第四步：在水印下方显示识别结果；本例程只读共用特征文件\n                cv2.imshow("Face recognition - Esc to close", draw_faces(image, person_name, score))\n    except KeyboardInterrupt:\n        log_message("INFO", "face", "Ctrl+C 主动结束")\n    except (OSError, ValueError, KeyError, cv2.error) as exc:\n        log_message("ERROR", "face", str(exc))\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="face_tools.py">
+
+        <CodeFold
+      title="face_tools.py"
+      docs={[]}
+      folds={[
+        { label: "def create_face_detector():", from: 16, to: 19 },
+        { label: "def get_face_feature(detector, recognizer, image):", from: 79, to: 86 },
+        { label: "def draw_faces(image, person_name, score):", from: 94, to: 102 },
+        { label: "def save_feature_file(names, features):", from: 104, to: 110 },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\nMIN_FACE_SIZE = 80\nMIN_BRIGHTNESS = 45\nMAX_BRIGHTNESS = 210\nMIN_SHARPNESS = 100.0\n\nCOMMON_DIR = Path(__file__).parents[1] / "common"\nDETECTION_MODEL = COMMON_DIR / "face_detection_yunet_2023mar.onnx"\nRECOGNITION_MODEL = COMMON_DIR / "face_recognition_sface_2021dec.onnx"\nFEATURE_FILE = COMMON_DIR / "faces.npz"    # 吸收 36 的保存接口；36 的视频识别主流程只读此文件\n\ndef create_face_detector():\n    """读取本地 YuNet 文件，并返回 OpenCV 人脸检测器。"""\n    model_bytes = np.fromfile(DETECTION_MODEL, dtype=np.uint8)\n    return cv2.FaceDetectorYN.create("onnx", model_bytes, np.empty(0, np.uint8), (320, 320), 0.80)\n\ndef check_face_quality(image, face):\n    """依次检查人脸完整度、尺寸、亮度和清晰度，再返回是否合格和原因。"""\n    face_x, face_y, face_width, face_height = face["box"]\n    image_height, image_width = image.shape[0], image.shape[1]\n    if face_x < 0 or face_y < 0 or face_x + face_width > image_width or face_y + face_height > image_height:\n        return False, "人脸不完整"\n    if face_width < MIN_FACE_SIZE or face_height < MIN_FACE_SIZE:\n        return False, "人脸太小"\n\n    # 第一步：取出人脸框内的像素；图片切片不会改变原图\n    face_image = image[face_y:face_y + face_height, face_x:face_x + face_width]\n    # 第二步：resize() 返回一张 112×112 的新图片，让不同大小的人脸使用同一组质量阈值\n    standard_face = cv2.resize(face_image, (112, 112))\n    # 第三步：把 BGR 彩色图片转换成灰度图片，每个像素只保留一个 0～255 的亮度值\n    gray_face = cv2.cvtColor(standard_face, cv2.COLOR_BGR2GRAY)\n    brightness = float(gray_face.mean())\n    # 第四步：Laplacian() 找出相邻像素的亮度变化；CV_64F 保留计算中的小数和负数\n    edges = cv2.Laplacian(gray_face, cv2.CV_64F)\n    # 第五步：var() 计算边缘数值的变化程度；清晰图片的边缘变化通常更大\n    sharpness = float(edges.var())\n    reasons = []\n    if brightness < MIN_BRIGHTNESS:\n        reasons.append("人脸过暗")\n    if brightness > MAX_BRIGHTNESS:\n        reasons.append("人脸过亮")\n    if sharpness < MIN_SHARPNESS:\n        reasons.append("人脸模糊")\n    if reasons:\n        return False, "、".join(reasons)\n    return True, "人脸质量合格"\n\ndef get_quality_face(detector, image):\n    """返回合格人脸的 YuNet 原始数据；实时画面不合格时返回 None。"""\n    image_height, image_width = image.shape[0], image.shape[1]\n    detector.setInputSize((image_width, image_height))\n    detection_result = detector.detect(image)\n    raw_faces = detection_result[1]\n    if raw_faces is None or len(raw_faces) != 1:\n        return None                                         # 实时画面中无脸或多人时，主循环继续等待\n\n    raw_face = raw_faces[0]                                 # 已确认只有一张人脸，第 0 项就是这张人脸\n    # 质量判断只读取 box；五个关键点仍保留在 raw_face 中，供 SFace 对齐使用\n    face = {"box": [round(raw_face[0]), round(raw_face[1]), round(raw_face[2]), round(raw_face[3])]}\n    is_good, _ = check_face_quality(image, face)\n    if not is_good:\n        return None                                         # 尺寸、亮度或清晰度不合格，不进入特征提取\n    return raw_face\n\ndef create_face_recognizer():\n    """读取本地 SFace 文件，并返回 OpenCV 人脸特征模型。"""\n    model_bytes = np.fromfile(RECOGNITION_MODEL, dtype=np.uint8)\n    # FaceRecognizerSF 是 OpenCV 自带的 SFace 使用入口；本例程调用成熟模型，不展开网络结构\n    return cv2.FaceRecognizerSF.create(\n        "onnx",                                             # 告诉 OpenCV 传入的是 ONNX 模型内容\n        model_bytes,                                        # 从本地文件读取的 SFace 模型内容\n        np.empty(0, np.uint8),                              # SFace 不需要单独的配置文件\n    )\n\ndef get_face_feature(detector, recognizer, image):\n    """提取合格人脸的 128 个特征；没有合格人脸时返回 None。"""\n    raw_face = get_quality_face(detector, image)            # 吸收例程 35，返回 SFace 需要的 YuNet 原始数据\n    if raw_face is None:\n        return None                                         # 36 起实时识别用返回值跳过普通无效画面\n    aligned_face = recognizer.alignCrop(image, raw_face)    # alignCrop() 根据五个关键点摆正并裁剪人脸\n    feature_row = recognizer.feature(aligned_face)          # feature() 把对齐图片转换成一行 128 个特征数值\n    return feature_row.reshape(-1)                          # reshape(-1) 把一行数组整理成一维数组，仍保留 128 个数\n\ndef compare_face_features(recognizer, reference_feature, query_feature):\n    """用 SFace 比较两组人脸特征，返回余弦相似度。"""\n    # match() 是 SFace 自带的特征比较能力；FR_COSINE 指定余弦相似度，越大表示越相似\n    score = recognizer.match(reference_feature, query_feature, cv2.FaceRecognizerSF_FR_COSINE)\n    return float(score)                                     # 相似度不是概率，0.75 不表示有 75% 的把握\n\ndef draw_faces(image, person_name, score):\n    """复制图片，在水印下方显示识别代号和相似度。"""\n    marked_image = image.copy()                             # 只在副本上绘制，保留原始图片供后续识别\n    text = person_name\n    if score is not None:\n        text += f"  score={score:.3f}"                       # 没有合格人脸时 score 为 None，只显示人脸状态\n    cv2.rectangle(marked_image, (10, 65), (650, 120), (32, 32, 32), -1)\n    cv2.putText(marked_image, text, (20, 105), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)\n    return marked_image\n\ndef save_feature_file(names, features):\n    """把匿名代号和对应人脸特征保存为本地 NPZ 文件。"""\n    FEATURE_FILE.parent.mkdir(exist_ok=True)                # 第一次保存时创建特征文件所在文件夹\n    # NPZ 是保存多个 NumPy 数组的文件；每个代号对应一行 128 个特征数值\n    feature_rows = np.asarray(features, dtype=np.float32).reshape(-1, 128)\n    # names 保存文字数组，features 保存数值数组；文件不包含原始照片\n    np.savez(FEATURE_FILE, names=np.asarray(names, dtype=str), features=feature_rows)'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    识别代号: user01  相似度: 0.781
+    识别代号: unknown  相似度: 0.312
+    ```
+
+    窗口在水印下方显示识别代号和相似度；没有合格人脸时显示提示语。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 37_face_enrollment_and_recognition.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `MATCH_THRESHOLD` | float | 0.50 | 不足此值显示 `unknown` |
+| `allow_pickle` | bool | `False` | 只读文字和数字数组 |
+
+> 本页产出 `load_feature_file` / `identify_face`，6.8 吸收并加舵机打招呼。

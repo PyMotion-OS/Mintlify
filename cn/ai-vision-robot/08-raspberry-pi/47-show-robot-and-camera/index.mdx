@@ -1,0 +1,65 @@
+---
+title: "8.3 机器人与摄像头演示"
+description: "控制器和摄像头同时工作，联合显示测距与五路读数"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [8.2 树莓派跑循迹](../46-run-line-following/index)
+- 把 `camera.py` 复制到本页目录，树莓派接好 USB 机器人和摄像头
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `data_queue.read(timeout=0.5)` | 按来源更新超声波和五路读数 |
+| `camera.latest()` | 检查图片是否存在、是否过期 |
+| `draw_status(...)` | 无图时用黑底继续显示传感器读数 |
+
+## 完整示例
+
+检查供电与带宽是否够控制器和摄像头同时工作，只显示不动。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="show_robot_and_camera.py"
+      docs={[]}
+      folds={[
+        { label: "def draw_status(image, ultrasonic_data, tracker_line_data):", from: 7, to: 27 },
+        { label: "def run(camera, data_queue):", from: 29, to: 51 },
+        { label: "def main():", from: 53, to: 66, defaultOpen: true },
+      ]}
+      code={'import cv2\nimport numpy as np\nimport pymotion as pm\n\nfrom camera import Camera, log_message     # 沿用26的有效取图、后台重连与日志\n\ndef draw_status(image, ultrasonic_data, tracker_line_data):\n    """复制图片，标出距离和五路读数，未收到或无效时显示对应状态。"""\n    marked_image = image.copy()\n    distance_text = "waiting"\n    if ultrasonic_data is not None:\n        if ultrasonic_data.distance is not None and ultrasonic_data.valid:\n            distance_text = f"{ultrasonic_data.distance:.0f} mm"\n        else:\n            distance_text = ultrasonic_data.state           # no_echo等状态照实显示，不用0冒充距离\n\n    line_text = "waiting"\n    if tracker_line_data is not None:\n        if tracker_line_data.valid:\n            line_text = str(tracker_line_data.is_detected)\n        else:\n            line_text = tracker_line_data.state\n\n    cv2.rectangle(marked_image, (15, 15), (620, 110), (32, 32, 32), -1)\n    cv2.putText(marked_image, f"DISTANCE: {distance_text}", (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 176, 255), 2)\n    cv2.putText(marked_image, f"LINE: {line_text}", (30, 95), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 176, 255), 2)\n    return marked_image\n\ndef run(camera, data_queue):\n    """把最新五路与超声波读数标在相机画面上。"""\n    ultrasonic_data, tracker_line_data = None, None\n    while True:\n        if cv2.waitKey(1) == 27:\n            return                                          # 结束run，外层with随后释放相机、会话和连接\n\n        # 第一步：沿用10，按来源更新两类读数，不要求两种事件同时到达\n        sensor_data = data_queue.read(timeout=0.5)          # 有数据即返回，无数据最多等0.5秒，不另加sleep\n        if sensor_data is not None:\n            if sensor_data.source == "ultrasonic":\n                ultrasonic_data = sensor_data.data\n            elif sensor_data.source == "line_tracker":\n                tracker_line_data = sensor_data.data\n\n        # 第二步：沿用26，由latest负责检查图片是否存在、是否过期\n        image = camera.latest()\n        if image is None:\n            image = np.zeros((360, 800, 3), dtype=np.uint8)  # 无图时用黑底继续显示传感器读数\n\n        # 第三步：即使图片相同也刷新读数；本例不进行运动控制\n        marked_image = draw_status(image, ultrasonic_data, tracker_line_data)\n        cv2.imshow("Robot and camera - Esc to close", marked_image)\n\ndef main():\n    """连接USB传感器与相机，打开数据会话后联合显示。"""\n    try:\n        with pm.lite.connect(transport="usb", timeout=15.0) as robot:\n            # 打开实时数据会话\n            with robot.realtime.open(data_sources=("ultrasonic", "line_tracker"), frequency="medium", data_queue_size=8) as session:\n                with Camera() as camera:\n                    run(camera, session.data)\n    except KeyboardInterrupt:\n        log_message("INFO", "display", "Ctrl+C 主动结束")\n    except (OSError, pm.lite.LiteError, ValueError, cv2.error) as exc:\n        log_message("ERROR", "display", str(exc))\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    窗口左上角: DISTANCE: 250 mm  LINE: [True, True, False, True, True]
+    ```
+
+    无图时黑底显示传感器读数，五路状态用 `is_detected` 列表表示。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 47_show_robot_and_camera.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| 数据源 | str | `ultrasonic` + `line_tracker` | 联合显示的两种读数 |
+| `frequency` | str | `medium` | 约 10Hz 数据刷新 |
+| 无图回退 | — | 800x360 黑底 | 断流时继续显示读数 |
+
+> 本页验证控制器 + 摄像头协同，是后续性能实测的输入基础。

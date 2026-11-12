@@ -1,0 +1,79 @@
+---
+title: "4.5 形态学与轮廓"
+description: "用开闭运算清理掩膜噪点，再筛出面积够大的有效轮廓"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [4.4 灰度与颜色掩膜](../21-gray-and-color-masks/index)
+- 把 `target_mask.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `make_target_mask(image, target_type)` | 吸收 4.3/4.4，按类型返回灰度或 HSV 掩膜 |
+| `cv2.morphologyEx(..., MORPH_OPEN)` | 开运算：先腐蚀去噪点 |
+| `cv2.morphologyEx(..., MORPH_CLOSE)` | 闭运算：填小缺口 |
+| `cv2.contourArea(contour)` | 轮廓面积，小于 `MIN_AREA` 的忽略 |
+
+## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="morphology_and_contours.py">
+
+        <CodeFold
+      title="morphology_and_contours.py"
+      docs={[]}
+      folds={[
+        { label: "def main():", from: 30, to: 64, defaultOpen: true },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\nfrom target_mask import make_target_mask    # 吸收例程 20/19，按选择返回灰度或 HSV 黑白掩膜\n\n# --- 本例程可调整的参数 ---\nTARGET_TYPE = "blue"                       # 可选 gray、blue、green 或 yellow\n\n# 形态学核是在掩膜上逐块移动的小方格；边长越大，每次参与运算的周围像素越多，清理效果越强\nKERNEL_SIZE = 3                             # 形态学核边长，单位像素\nMIN_AREA = 500                              # 有效轮廓最小面积，小于它的轮廓会被忽略\n\n# --- 共用配置（一般不用动）---\nBASE_DIR = Path(__file__).parent\nIMAGE_PATH = BASE_DIR / "camera_frame.jpg"\n\ndef load_image():\n    """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""\n    image_bytes = np.fromfile(IMAGE_PATH, dtype=np.uint8)\n    return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)\n\ndef show_image(title, image, x, y, scale):\n    """缩放图片副本，再在屏幕指定位置显示。"""\n    display_image = cv2.resize(image, None, fx=scale, fy=scale)\n    cv2.imshow(title, display_image)\n    cv2.moveWindow(title, x, y)\n\ndef main():\n    """选择灰度或 HSV 掩膜，再显示开闭运算和有效轮廓。"""\n    image = load_image()                                    # 例程固定读取上面的 IMAGE_PATH\n    target_mask = make_target_mask(image, TARGET_TYPE)      # 按选择得到灰度或 HSV 黑白掩膜\n\n    # 第一步：np.ones() 创建 KERNEL_SIZE × KERNEL_SIZE 的全 1 数组，np.uint8 表示每个值是 0—255 的整数\n    # 这个数组作为形态学核，决定开闭运算每次检查周围多大的像素范围\n    kernel = np.ones((KERNEL_SIZE, KERNEL_SIZE), np.uint8)\n\n    # 第二步：开运算先腐蚀白色区域：核内只要有黑色像素，中心就记为黑色；再恢复保留下来的白色区域\n    opened_mask = cv2.morphologyEx(target_mask, cv2.MORPH_OPEN, kernel)\n    # 闭运算先扩大白色区域：核内只要有白色像素，中心就记为白色；再恢复轮廓并留下填好的小缺口\n    closed_mask = cv2.morphologyEx(opened_mask, cv2.MORPH_CLOSE, kernel)\n\n    # 第三步：findContours() 取得每块相连白色区域的轮廓\n    contours, _ = cv2.findContours(closed_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)\n    valid_contours = []                                     # 新建列表，准备保存面积足够大的轮廓\n    for contour in contours:                                # 依次取得每个轮廓\n        if cv2.contourArea(contour) >= MIN_AREA:            # contourArea() 返回轮廓围住的像素面积\n            valid_contours.append(contour)                  # 把达到面积下限的轮廓加入列表\n\n    # closed_mask 是单通道黑白图，转成 BGR 三通道后才能在上面画橘色轮廓\n    contour_image = cv2.cvtColor(closed_mask, cv2.COLOR_GRAY2BGR)\n\n    # 参数 -1 表示画出列表中的全部轮廓，(0, 140, 255) 是 BGR 橘黄色，4 是线宽\n    cv2.drawContours(contour_image, valid_contours, -1, (0, 140, 255), 4)\n    print(f"全部轮廓: {len(contours)}")\n    print(f"有效轮廓: {len(valid_contours)}")\n\n    show_image("1 - Target Mask", target_mask, 20, 20, 0.45)\n    show_image("2 - After Opening", opened_mask, 620, 20, 0.45)\n    show_image("3 - After Closing", closed_mask, 20, 380, 0.45)\n    show_image("4 - Valid Contours", contour_image, 620, 380, 0.45)\n    cv2.waitKey(0)\n    cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="target_mask.py">
+
+        <CodeFold
+      title="target_mask.py"
+      docs={[]}
+      folds={[
+        { label: "def make_gray_mask(image, left, top, right, bottom):", from: 15, to: 20 },
+        { label: "def make_color_mask(image, left, top, right, bottom, target_color):", from: 22, to: 27 },
+        { label: "def make_target_mask(image, target_type='blue'):", from: 29, to: 39, defaultOpen: true },
+      ]}
+      code={'import cv2\n\n# --- 掩膜参数 ---\nROI_LEFT, ROI_RIGHT = 0.15, 0.85           # 与例程 20/19 使用相同 ROI\nROI_TOP, ROI_BOTTOM = 0.15, 0.85           # 上下各忽略原图高度的 15%\nGRAY_LIMIT = 130                           # gray 选中灰度不高于 130 的暗色区域\n\n# HSV 依次保存颜色、浓淡和明暗，每种颜色分别给出下限和上限\nCOLOR_RANGES = {\n    "blue": ((95, 80, 60), (135, 255, 255)),\n    "green": ((35, 80, 60), (85, 255, 255)),\n    "yellow": ((20, 80, 60), (35, 255, 255)),\n}\n\ndef make_gray_mask(image, left, top, right, bottom):\n    """吸收例程 20：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜。"""\n    roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI\n    gray_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY) # 把 BGR 颜色值合成一个亮度值\n    _, gray_mask = cv2.threshold(gray_image, GRAY_LIMIT, 255, cv2.THRESH_BINARY_INV)\n    return gray_mask\n\ndef make_color_mask(image, left, top, right, bottom, target_color):\n    """吸收例程 21：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜。"""\n    roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI\n    hsv_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2HSV)   # 把 BGR 转成颜色、浓淡和明暗分开的 HSV\n    color_low, color_high = COLOR_RANGES[target_color]      # 根据名称取出这种颜色的 HSV 上下限\n    return cv2.inRange(hsv_image, color_low, color_high)     # 颜色范围内变白，其余变黑\n\ndef make_target_mask(image, target_type="blue"):\n    """按目标类型返回灰度或 HSV 方式得到的黑白掩膜。"""\n    if target_type not in ("gray", "blue", "green", "yellow"):\n        raise ValueError("目标类型只能是 gray、blue、green 或 yellow")\n\n    height, width = image.shape[:2]\n    left, right = round(width * ROI_LEFT), round(width * ROI_RIGHT)\n    top, bottom = round(height * ROI_TOP), round(height * ROI_BOTTOM)\n    if target_type == "gray":\n        return make_gray_mask(image, left, top, right, bottom)\n    return make_color_mask(image, left, top, right, bottom, target_type)'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    全部轮廓: 12
+    有效轮廓: 3
+    ```
+
+    4 个窗口：目标掩膜 → 开运算 → 闭运算 → 有效轮廓（橘色）。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 22_morphology_and_contours.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `TARGET_TYPE` | str | `blue` | 可选 gray/blue/green/yellow |
+| `KERNEL_SIZE` | int | 3 | 形态学核边长，越大清理越强 |
+| `MIN_AREA` | int | 500 | 有效轮廓最小面积 |
+
+> 本页产出 `target_mask.py`（统一掩膜函数），4.6 会把它进一步吸收。

@@ -1,0 +1,69 @@
+---
+title: "5.2 二维码基础"
+description: "生成一个二维码，再识别它的文字、位置和二维偏差"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [4.9 视觉观测](../04-opencv-and-camera/26-visual-observation/index)
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `cv2.QRCodeEncoder_create()` | 创建二维码生成器 |
+| `create_qr(text)` | 编码文字 + 补白边 + 放大，保存 PNG |
+| `cv2.QRCodeDetector().detectAndDecode()` | 识别二维码，返回文字和四角 |
+| `find_qr(image)` | 返回 text/points/center/area_ratio/error_x/error_y |
+
+## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="qr_basics.py"
+      docs={[]}
+      folds={[
+        { label: "def create_qr(text):", from: 17, to: 27 },
+        { label: "def find_qr(image):", from: 34, to: 61 },
+        { label: "def draw_qr_marks(image, qr_data):", from: 63, to: 78 },
+        { label: "def main():", from: 80, to: 92, defaultOpen: true },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\n# --- 本例程可调整的参数 ---\nQR_TEXT = "GREETING"                       # 这段文字会被写入二维码\nQR_SCALE = 32                              # 生成约900像素的大图，方便手机展示和摄像头识别\nTEST_IMAGE_NAME = "01_GREETING_LEFT_TOP.png" # 选择一张偏移图片，方便观察二维偏差\n\n# --- 共用配置（一般不用动）---\n# Path把当前文件夹与cards组合成输出文件夹，不需要手写路径分隔符\nOUTPUT_DIR = Path(__file__).parent / "cards"\nOUTPUT_PATH = OUTPUT_DIR / f"{QR_TEXT}.png" # /继续拼接二维码文件名\nTEST_IMAGE_PATH = OUTPUT_DIR / TEST_IMAGE_NAME # 组合本次测试图片的完整路径\n\ndef create_qr(text):\n    """把文字生成二维码并保存为图片。"""\n    encoder = cv2.QRCodeEncoder_create()                    # 创建二维码生成对象\n    qr_image = encoder.encode(text)                         # 把文字编码成黑白二维码图片\n    # 四周补4像素白边，让识别器能够分清二维码的外边界\n    qr_image = cv2.copyMakeBorder(qr_image, 4, 4, 4, 4, cv2.BORDER_CONSTANT, value=255)\n    # 最近邻放大不会在黑白方块之间生成模糊的过渡颜色\n    qr_image = cv2.resize(qr_image, None, fx=QR_SCALE, fy=QR_SCALE, interpolation=cv2.INTER_NEAREST)\n\n    OUTPUT_DIR.mkdir(exist_ok=True)                         # cards已经存在时保持不变\n    cv2.imencode(".png", qr_image)[1].tofile(OUTPUT_PATH)   # 编码后写入文件，兼容中文路径\n\ndef load_image(path):\n    """读取图片文件，返回OpenCV使用的BGR图片。"""\n    image_bytes = np.fromfile(path, dtype=np.uint8)         # 沿用模块四的中文路径读取方式\n    return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)\n\ndef find_qr(image):\n    """识别一个二维码，返回文字、四角、中心、面积比例和二维偏差。"""\n    # 创建二维码检测对象并直接识别，返回文字、四角坐标和拉正后的二维码\n    text, points, _ = cv2.QRCodeDetector().detectAndDecode(image)\n    if not text or points is None:\n        return {\n            "text": None,\n            "points": None,\n            "center": None,\n            "area_ratio": 0.0,\n            "error_x": None,\n            "error_y": None,\n        }\n\n    corners = points.reshape(4, 2)                         # (1,4,2)改成四行x/y坐标\n    center = corners.mean(axis=0)                          # 四个角点的平均位置就是二维码中心\n    center_x, center_y = round(center[0]), round(center[1])\n    height, width = image.shape[:2]\n    area_ratio = abs(cv2.contourArea(corners.astype(np.float32))) / (width * height)\n\n    return {\n        "text": text,\n        "points": corners,\n        "center": (center_x, center_y),\n        "area_ratio": area_ratio,                         # 二维码面积占整张图片的比例\n        "error_x": (center_x - width / 2) / (width / 2),  # 左边为负，右边为正\n        "error_y": (center_y - height / 2) / (height / 2), # 上边为负，下边为正\n    }\n\ndef draw_qr_marks(image, qr_data):\n    """复制原图，再标出二维码边框、中心和二维偏差。"""\n    marked_image = image.copy()\n    height, width = image.shape[:2]\n    image_center = (round(width / 2), round(height / 2))\n\n    if qr_data["points"] is not None:\n        corners = qr_data["points"].round().astype(int)\n        cv2.polylines(marked_image, [corners], True, (255, 200, 0), 4) # 连接四个角并闭合边框\n        cv2.circle(marked_image, qr_data["center"], 9, (0, 0, 255), -1)\n        cv2.arrowedLine(marked_image, image_center, qr_data["center"], (0, 176, 255), 3)\n\n    text = f"QR={qr_data[\'text\']}  X={qr_data[\'error_x\']}  Y={qr_data[\'error_y\']}"\n    cv2.rectangle(marked_image, (15, 15), (720, 70), (32, 32, 32), -1)\n    cv2.putText(marked_image, text, (30, 52), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 176, 255), 2)\n    return marked_image\n\ndef main():\n    """生成一张二维码，再用偏移图片观察识别与标记结果。"""\n    create_qr(QR_TEXT)                                     # 调用本例程函数，生成可打印的二维码图片\n    test_image = load_image(TEST_IMAGE_PATH)               # 调用本例程函数，读取选择的偏移测试图片\n    qr_data = find_qr(test_image)                          # 调用本例程函数，返回文字、位置和二维偏差\n\n    print(f"识别文字: {qr_data[\'text\']}")\n    print(f"中心坐标: {qr_data[\'center\']}")\n    print(f"二维偏差: X={qr_data[\'error_x\']:.3f}, Y={qr_data[\'error_y\']:.3f}")\n    marked_image = draw_qr_marks(test_image, qr_data)      # 调用本例程函数，返回画好边框和偏差的图片\n    cv2.imshow("QR basics - press any key to close", marked_image)\n    cv2.waitKey(0)                                         # 等待任意按键，再继续关闭窗口\n    cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    识别文字: GREETING
+    中心坐标: (620, 410)
+    二维偏差: X=-0.350, Y=0.120
+    ```
+
+    窗口标出二维码边框、中心红点、从画面中心指向目标的箭头。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 28_qr_basics.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `QR_TEXT` | str | `GREETING` | 写入二维码的文字 |
+| `QR_SCALE` | int | 32 | 放大倍数，约 900 像素 |
+| `area_ratio` | float | 0~1 | 二维码面积占比 |
+| `error_x / error_y` | float | -1~+1 | 二维偏差 |
+
+> 本页产出 `find_qr`/`draw_qr_marks`，5.4 吸收进 `qr_observation.py`。

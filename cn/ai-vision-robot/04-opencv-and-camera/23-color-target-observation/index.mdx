@@ -1,0 +1,84 @@
+---
+title: "4.6 颜色目标观测"
+description: "找出最大颜色目标的中心、面积和二维偏差，并标出来"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [4.5 形态学与轮廓](../22-morphology-and-contours/index)
+- 把 `target_contours.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `find_target_contours(image, target_type)` | 吸收 4.5，返回清理掩膜、有效轮廓、ROI |
+| `cv2.moments(contour)` | 图像矩，`m00` 面积、`m10`/`m01` 坐标累计 |
+| `center_to_error(center, shape)` | 中心相对画面中心的归一化偏差（约 -1~+1） |
+| `find_target(image)` | 返回 state/center/area/error_x/error_y 数据包 |
+
+## 完整示例
+
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="color_target_observation.py">
+
+        <CodeFold
+      title="color_target_observation.py"
+      docs={[]}
+      folds={[
+        { label: "def center_to_error(center, image_shape):", from: 22, to: 29 },
+        { label: "def find_target(image, target_type='blue'):", from: 31, to: 70 },
+        { label: "def draw_target_marks(image, target_data):", from: 72, to: 90 },
+        { label: "def main():", from: 97, to: 110, defaultOpen: true },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\nimport numpy as np\n\nfrom target_contours import find_target_contours  # 吸收例程 22，返回清理后掩膜、有效轮廓和 ROI\n\n# --- 本例程可调整的参数 ---\nTARGET_TYPE = "blue"                       # 可选 gray、blue、green 或 yellow\nCENTER_X = 0.50                            # 目标对齐位置在画面宽度 50%\nCENTER_Y = 0.50                            # 目标对齐位置在画面高度 50%\n\n# --- 共用配置（一般不用动）---\nBASE_DIR = Path(__file__).parent\nIMAGE_PATH = BASE_DIR / "camera_frame.jpg"\n\ndef load_image(path):\n    """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""\n    image_bytes = np.fromfile(path, dtype=np.uint8)\n    return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)\n\ndef center_to_error(center, image_shape):\n    """计算目标中心相对画面指定位置的横向和纵向偏差。"""\n    height, width = image_shape[:2]                         # image.shape 前两项依次是高度和宽度\n    reference_x = round(width * CENTER_X)                   # 宽度乘比例，得到横向参考位置\n    reference_y = round(height * CENTER_Y)                  # 高度乘比例，得到纵向参考位置\n    error_x = (center[0] - reference_x) / (width / 2)       # 目标在左为负，在右为正\n    error_y = (center[1] - reference_y) / (height / 2)      # 目标在上为负，在下为正\n    return error_x, error_y\n\ndef find_target(image, target_type="blue"):\n    """选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差。"""\n    # 第一步：引用例程 22，得到清理后的黑白掩膜、有效轮廓和 ROI\n    target_mask, valid_contours, roi = find_target_contours(image, target_type)\n    left, top, right, bottom = roi\n\n    # 第二步：没有有效轮廓时返回 lost，并保持数据包字段不变\n    if not valid_contours:\n        return {\n            "state": "lost",                                # 后续先检查是否找到目标\n            "center": None,                                 # 后续绘图和居中控制使用的原图坐标\n            "area": 0,                                      # 后续距离判断使用的目标像素面积\n            "error_x": None,                                # 后续左右居中控制使用的归一化偏差\n            "error_y": None,                                # 后续上下居中控制使用的归一化偏差\n            "mask": target_mask,                            # 后续显示使用的清理后黑白掩膜\n            "contour": None,                                # 后续绘图使用的 ROI 内目标轮廓\n            "roi": roi,                                    # 后续绘图使用的处理区域像素坐标\n        }\n\n    # 第三步：选择面积最大的有效轮廓，用轮廓矩计算这片区域的质心\n    # max() 返回面积最大的轮廓\n    target_contour = max(valid_contours, key=cv2.contourArea)\n    moments = cv2.moments(target_contour)                   # m00 是面积，m10/m01 是横向/纵向坐标累计值\n    # 横向累计值除以面积得到质心 x，再加 ROI 左边坐标\n    center_x = left + round(moments["m10"] / moments["m00"])\n    # 纵向累计值除以面积得到质心 y，再加 ROI 顶部坐标\n    center_y = top + round(moments["m01"] / moments["m00"])\n\n    # 第四步：把质心交给居中函数，得到约 -1 到 +1 的横向和纵向偏差\n    error_x, error_y = center_to_error((center_x, center_y), image.shape)\n    return {\n        "state": "target",                                  # 后续先检查是否找到目标\n        "center": (center_x, center_y),                     # 后续绘图和居中控制使用的原图坐标\n        "area": round(moments["m00"]),                      # 后续距离判断使用的目标像素面积\n        "error_x": error_x,                                 # 后续左右居中控制使用的归一化偏差\n        "error_y": error_y,                                 # 后续上下居中控制使用的归一化偏差\n        "mask": target_mask,                                # 后续显示使用的清理后黑白掩膜\n        "contour": target_contour,                          # 后续绘图使用的 ROI 内目标轮廓\n        "roi": roi,                                        # 后续绘图使用的处理区域像素坐标\n    }\n\ndef draw_target_marks(image, target_data):\n    """复制原图，再用基础图形标出处理区域、参考中心和目标位置。"""\n    marked_image = image.copy()                             # copy() 复制出新图片，后续绘制不会修改 image\n    reference_x = round(image.shape[1] * CENTER_X)\n    reference_y = round(image.shape[0] * CENTER_Y)\n    left, top, right, bottom = target_data["roi"]\n\n    # 青蓝色矩形表示处理区域，两条白线交点表示横向和纵向偏差都为 0\n    cv2.rectangle(marked_image, (left, top), (right - 1, bottom - 1), (217, 199, 0), 4)\n    cv2.line(marked_image, (reference_x, top), (reference_x, bottom - 1), (255, 255, 255), 3)\n    cv2.line(marked_image, (left, reference_y), (right - 1, reference_y), (255, 255, 255), 3)\n    if target_data["state"] == "target":\n        # offset 把 ROI 内的橘黄色轮廓平移到原图位置\n        cv2.drawContours(marked_image, [target_data["contour"]], -1, (0, 140, 255), 4, offset=(left, top))\n        # 红点表示目标中心\n        cv2.circle(marked_image, target_data["center"], 10, (0, 0, 255), -1)\n        # 琥珀色箭头从参考中心指向目标中心，同时表示左右和上下偏差\n        cv2.arrowedLine(marked_image, (reference_x, reference_y), target_data["center"], (0, 176, 255), 4)\n    return marked_image\n\ndef show_image(title, image, x, y, scale):\n    """缩放图片副本，再在屏幕指定位置显示。"""\n    cv2.imshow(title, cv2.resize(image, None, fx=scale, fy=scale))\n    cv2.moveWindow(title, x, y)\n\ndef main():\n    """选择灰度或 HSV 方式找到最大目标，并标出二维偏差。"""\n    image = load_image(IMAGE_PATH)\n    target_data = find_target(image, TARGET_TYPE)           # 返回目标状态、中心、面积和二维偏差\n    marked_image = draw_target_marks(image, target_data)    # 返回画有基础观测标记的原图副本\n\n    print(f"目标状态: {target_data[\'state\']}")\n    print(f"目标中心: {target_data[\'center\']}")\n    print(f"目标面积: {target_data[\'area\']}")\n    print(f"横向偏差: {target_data[\'error_x\']}")\n    print(f"纵向偏差: {target_data[\'error_y\']}")\n    show_image("Target Observation", marked_image, 20, 20, 0.45)\n    cv2.waitKey(0)\n    cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="target_contours.py">
+
+        <CodeFold
+      title="target_contours.py"
+      docs={[]}
+      folds={[
+        { label: "def find_target_contours(image, target_type='blue'):", from: 32, to: 60, defaultOpen: true },
+      ]}
+      code={'import cv2\nimport numpy as np\n\n# --- 目标轮廓参数 ---\nROI_LEFT, ROI_RIGHT = 0.15, 0.85           # 只在画面中间 70% 的宽度内寻找目标\nROI_TOP, ROI_BOTTOM = 0.15, 0.85           # 只在画面中间 70% 的高度内寻找目标\nGRAY_LIMIT = 130                           # gray 选中灰度不高于 130 的暗色区域\nKERNEL_SIZE = 3                            # 形态学核边长，单位像素\nMIN_AREA = 1500                            # 小于 1500 平方像素的轮廓作为干扰忽略\n\n# HSV 依次保存颜色、浓淡和明暗，每种颜色分别给出下限和上限\nCOLOR_RANGES = {\n    "blue": ((95, 80, 60), (135, 255, 255)),\n    "green": ((35, 80, 60), (85, 255, 255)),\n    "yellow": ((20, 80, 60), (35, 255, 255)),\n}\n\ndef make_gray_mask(image, left, top, right, bottom):\n    """吸收例程 20：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜。"""\n    roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI\n    gray_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY) # 把 BGR 颜色值合成一个亮度值\n    _, gray_mask = cv2.threshold(gray_image, GRAY_LIMIT, 255, cv2.THRESH_BINARY_INV)\n    return gray_mask\n\ndef make_color_mask(image, left, top, right, bottom, target_color):\n    """吸收例程 21：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜。"""\n    roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI\n    hsv_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2HSV)   # 把 BGR 转成颜色、浓淡和明暗分开的 HSV\n    color_low, color_high = COLOR_RANGES[target_color]      # 根据名称取出这种颜色的 HSV 上下限\n    return cv2.inRange(hsv_image, color_low, color_high)     # 颜色范围内变白，其余变黑\n\ndef find_target_contours(image, target_type="blue"):\n    """按目标类型生成掩膜，完成开闭运算，再返回清理后掩膜、有效轮廓和 ROI。"""\n    if target_type not in ("gray", "blue", "green", "yellow"):\n        raise ValueError("目标类型只能是 gray、blue、green 或 yellow")\n\n    height, width = image.shape[:2]\n    left, right = round(width * ROI_LEFT), round(width * ROI_RIGHT)\n    top, bottom = round(height * ROI_TOP), round(height * ROI_BOTTOM)\n    if target_type == "gray":\n        target_mask = make_gray_mask(image, left, top, right, bottom)\n    else:\n        target_mask = make_color_mask(image, left, top, right, bottom, target_type)\n\n    # 第一步：np.ones() 创建 KERNEL_SIZE × KERNEL_SIZE 的全 1 数组，np.uint8 表示每个值是 0—255 的整数\n    # 这个数组作为形态学核，决定开闭运算每次检查周围多大的像素范围\n    kernel = np.ones((KERNEL_SIZE, KERNEL_SIZE), np.uint8)\n\n    # 第二步：开运算先腐蚀白色区域：核内只要有黑色像素，中心就记为黑色；再恢复保留下来的白色区域\n    opened_mask = cv2.morphologyEx(target_mask, cv2.MORPH_OPEN, kernel)\n    # 闭运算先扩大白色区域：核内只要有白色像素，中心就记为白色；再恢复轮廓并留下填好的小缺口\n    closed_mask = cv2.morphologyEx(opened_mask, cv2.MORPH_CLOSE, kernel)\n\n    # 第三步：findContours() 取得每块相连白色区域的轮廓\n    contours, _ = cv2.findContours(closed_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)\n    valid_contours = []                                     # 新建列表，准备保存面积足够大的轮廓\n    for contour in contours:                                # 依次取得每个轮廓\n        if cv2.contourArea(contour) >= MIN_AREA:            # contourArea() 返回轮廓围住的像素面积\n            valid_contours.append(contour)                  # 把达到面积下限的轮廓加入列表\n    return closed_mask, valid_contours, (left, top, right, bottom)'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    目标状态: target
+    目标中心: (620, 410)
+    目标面积: 12345
+    横向偏差: -0.35
+    纵向偏差: 0.12
+    ```
+
+    窗口标出：处理区矩形、参考十字线、目标轮廓、红点中心、琥珀色偏差箭头。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 23_color_target_observation.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `CENTER_X / CENTER_Y` | float | 0.50 | 参考中心在画面 50% 位置 |
+| `MIN_AREA` | int | 1500 | 小于此面积的轮廓当干扰 |
+| `error_x / error_y` | float | -1~+1 | 归一化偏差，左/上为负 |
+| `target_data` | dict | 8 个字段 | state/center/area/error_x/error_y/mask/contour/roi |
+
+> 本页产出 `target_contours.py`，4.7 会把它吸收进 `target_observation.py`。

@@ -1,0 +1,66 @@
+---
+title: "6.8 人脸问候项目"
+description: "认出登记人脸后舵机跟随，累计识别满 20 张点头打招呼"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [6.7 人脸录入与识别](../37-face-enrollment-and-recognition/index) 与 [5.1 颜色舵机跟踪](../05-visual-control/27-color-servo-tracking/index)
+- 把 `camera.py`、`face_tools.py`、`servo_control.py` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `track_face(...)` | 把已登记人脸的位置换成双舵机角度并发送 |
+| `error_to_angle(error, angle, K)` | 5.2 产出，偏差换角度 |
+| `nod_camera(...)` | 围绕当前角度点头两次再回位 |
+| `get_face_feature(..., raw_face=raw_face)` | 复用已检测结果，不重复检测 |
+
+## 完整示例
+
+把前面五步（检测→质量→特征→录入→识别）合成一个可演示项目。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="face_greeting_project.py"
+      docs={[]}
+      folds={[
+        { label: "def track_face(commands, raw_face, image_shape, person_name, up_down_angle, left_right_angle):", from: 22, to: 34 },
+        { label: "def nod_camera(commands, up_down_angle, left_right_angle):", from: 36, to: 48 },
+        { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 50, to: 90 },
+        { label: "def main():", from: 92, to: 107, defaultOpen: true },
+      ]}
+      code={'import time\n\nimport cv2\nimport pymotion as pm\n\nfrom camera import Camera, log_message\n# 引用的人脸方法：\n# create_face_detector：初始化人脸检测器\n# create_face_recognizer：初始化人脸特征识别器\n# get_quality_face：检测并筛选唯一合格的人脸\n# get_face_feature：提取人脸的128个特征数值\n# load_feature_file：读取登记代号和对应特征\n# identify_face：比较特征，返回匹配代号和相似度\n# draw_face_tracking：显示识别结果、人脸框和对准标记\nfrom face_tools import create_face_detector, create_face_recognizer, draw_face_tracking, get_face_feature, get_quality_face, identify_face, load_feature_file\nfrom servo_control import error_to_angle, move_servos, reset_servos  # 复用26的偏差调角、角度限制和舵机执行\n\n# --- 本例程可调整的参数 ---\nK = 5                                      # 偏差为1时每轮调整5°，数值越大跟随动作越强\nREQUIRED_MATCHES = 20                      # 累计识别到user01满20张新图片后点头并结束\n\ndef track_face(commands, raw_face, image_shape, person_name, up_down_angle, left_right_angle):\n    """把已登记人脸的位置换成双舵机角度，发送后返回两个安全角度。"""\n    # raw_face是YuNet人脸数组，image_shape是图片尺寸；两个angle参数是当前舵机角度，单位为度\n    if person_name == "unknown":\n        return up_down_angle, left_right_angle              # 未登记的人不带动镜头，返回原角度\n    face_x, face_y, face_width, face_height = raw_face[:4]  # [:4]取前四项：左上角x、y，以及框的宽、高\n    image_height, image_width = image_shape[:2]\n    center = (round(face_x + face_width / 2), round(face_y + face_height / 2))\n    error_x = (center[0] - image_width / 2) / (image_width / 2)  # 横向距离除以半幅宽度，左负右正\n    error_y = (center[1] - image_height / 2) / (image_height / 2)  # 纵向距离除以半幅高度，上负下正\n    up_down_angle = error_to_angle(error_y, up_down_angle, K)  # 偏差换成角度：上下与纵向偏差同号，沿用27\n    left_right_angle = error_to_angle(error_x, left_right_angle, -K)  # 偏差换成角度：左右与横向偏差反号，沿用27\n    return move_servos(commands, up_down_angle, left_right_angle)  # 限制并发送双舵机角度，返回两个安全角度\n\ndef nod_camera(commands, up_down_angle, left_right_angle):\n    """围绕当前上下角度点头两次，保持左右角度，最后回到当前姿态。"""\n    # 两个角度来自track_face的返回值；每次偏移10°，超出范围时由move_servos限制\n    move_servos(commands, up_down_angle - 10, left_right_angle)  # 第一次抬头，左右保持当前角度\n    time.sleep(0.2)                                         # 等待动作完成，0.2秒小于命令的0.3秒有效期\n    move_servos(commands, up_down_angle + 10, left_right_angle)  # 第一次低头\n    time.sleep(0.2)\n    move_servos(commands, up_down_angle - 10, left_right_angle)  # 第二次抬头\n    time.sleep(0.2)\n    move_servos(commands, up_down_angle + 10, left_right_angle)  # 第二次低头\n    time.sleep(0.2)\n    move_servos(commands, up_down_angle, left_right_angle)  # 回到点头前瞄准人脸的姿态\n    time.sleep(0.2)                                         # 留出回位时间，再让外层退出会话并关闭输出\n\ndef run(camera, commands, up_down_angle, left_right_angle):\n    """持续对准已登记人脸，累计识别到user01达到次数后点头并结束。"""\n    detector = create_face_detector()                       # 初始化人脸检测器，用于查找人脸框和关键点\n    recognizer = create_face_recognizer()                   # 初始化特征识别器，用于提取和比较人脸特征\n    names, features = load_feature_file()                   # 读取登记文件，得到代号和特征，沿用37\n    if not names:\n        print("登记内容: 为空，请先用例程 36 准备 common/faces.npz")\n        return                                              # 结束run，外层with随后释放会话和连接\n\n    last_image = None\n    count = 0                                               # 累计识别user01目标成功次数，达到 REQUIRED_MATCHES 后打招呼\n    while True:\n        if cv2.waitKey(100) == 27:                          # 每轮等待100毫秒并检查按键，舵机调整最多约10次/秒\n            return                                          # Esc结束run，外层with随后释放实时会话、连接和相机\n\n        # 第一步：只处理新的有效图片，避免对同一张图片重复累计角度\n        image = camera.latest()                             # 沿用26，图片缺失或超过0.5秒时返回None\n        if image is None or image is last_image:\n            continue                                        # 无有效新图时跳过识别与调角，等待下一轮\n        last_image = image\n\n        # 第二步：沿用35的质量判断和36的身份匹配，只让已登记的人脸带动镜头\n        raw_face = get_quality_face(detector, image)        # 检测并筛选人脸，返回唯一合格人脸的框和关键点\n        if raw_face is None:\n            draw_face_tracking(image, None, "no valid face", None)  # 显示无合格人脸的状态，保持镜头角度\n            continue                                        # 无脸、多人或质量不合格时保持角度，继续等待新图\n        query_feature = get_face_feature(detector, recognizer, image, raw_face=raw_face)  # 提取128个人脸特征，使用已有结果不重复检测\n        person_name, score = identify_face(recognizer, query_feature, names, features)  # 比较登记特征，得到匹配代号和相似度\n\n        # 第三步：调用本文件上方的函数，用已登记人脸的位置控制双舵机\n        up_down_angle, left_right_angle = track_face(commands, raw_face, image.shape, person_name, up_down_angle, left_right_angle)  # 按人脸位置调角，返回新的上下和左右角度\n\n        # 第四步：原来的绘制与显示代码收进face_tools.draw_face_tracking\n        draw_face_tracking(image, raw_face, person_name, score)  # 显示代号、分数、人脸框、中心和画面对准标记\n\n        # 第五步：只有user01的新图片才计数，达到次数后围绕当前追踪角度点头\n        if person_name == "user01":\n            count += 1\n        if count >= REQUIRED_MATCHES:\n            nod_camera(commands, up_down_angle, left_right_angle)  # 围绕本轮调角后的姿态点头两次并回位\n            break                                           # 结束run的循环，返回main并释放外层with持有的资源\n\ndef main():\n    """连接相机、复位双舵机，追踪人脸并在累计识别后点头结束。"""\n    try:\n        with Camera() as camera:\n            with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n                with robot.control():\n                    up_down_angle, left_right_angle = reset_servos(robot)  # 沿用27，复位并取得上下、左右起始角度\n                    # 打开实时控制会话\n                    with robot.realtime.open(command_targets={"pwm_position_servos": (4, 5)}) as session:\n                        run(camera, session.commands, up_down_angle, left_right_angle)\n    except KeyboardInterrupt:\n        log_message("INFO", "face", "Ctrl+C 主动结束")\n    except (OSError, ValueError, KeyError, cv2.error, pm.lite.LiteError) as exc:\n        log_message("ERROR", "face", str(exc))\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    登记内容: 为空，请先用例程 36 准备 common/faces.npz
+    ```
+    或正常运行时，窗口显示代号、分数、人脸框、中心和画面对准标记；识别满 20 张 user01 新图后点头两次。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 38_face_greeting_project.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `K` | int | 5 | 偏差为 1 时每轮调整 5° |
+| `REQUIRED_MATCHES` | int | 20 | 累计识别 user01 满此数后点头 |
+| 点头偏移 | int | ±10° | 每次抬头/低头幅度 |
+
+> 本页是人脸链路的收口，串起 YuNet 检测、SFace 特征和双舵机执行。

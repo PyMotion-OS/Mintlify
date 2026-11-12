@@ -1,0 +1,65 @@
+---
+title: "8.5 YOLO 性能实测"
+description: "测本地 YOLO 推理耗时，显示检测耗时和处理器温度"
+---
+
+import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+
+## 前置条件
+
+- 完成 [8.4 OpenCV 性能实测](../48-measure-opencv/index)
+- 把 `camera.py`、`yolo_detection.py` 和本地模型 `data/yolo11n.pt` 复制到本页目录
+
+## 关键函数
+
+| 函数 / 语法 | 说明 |
+| --- | --- |
+| `load_yolo_resources()` | 只加载一次离线标签和模型 |
+| `detect_objects(model, image, conf)` | 检测，返回字段和毫秒耗时 |
+| 温度文件 | 启动时读一次，不在循环中重复读 |
+
+## 完整示例
+
+YOLO 是树莓派上最吃算力的一环，测出推理耗时和可达帧率。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+
+<Tabs>
+  <Tab title="代码">
+
+        <CodeFold
+      title="measure_yolo.py"
+      docs={[]}
+      folds={[
+        { label: "def run(camera, temperature):", from: 13, to: 36 },
+        { label: "def main():", from: 38, to: 52, defaultOpen: true },
+      ]}
+      code={'from pathlib import Path\n\nimport cv2\n\nfrom camera import Camera, log_message     # 沿用26的有效取图、后台重连与日志\n# 加载离线模型与标签、检测物体、绘制检测结果：沿用32，本例只观察耗时和温度\nfrom yolo_detection import detect_objects, draw_detections, load_yolo_resources\n\n# --- 本例程可调整的参数 ---\nCONFIDENCE = 0.25                          # 只保留置信度达到0.25的检测结果\nTEMP_WARN = 75.0                           # 处理器达到75℃时显示过热\n\ndef run(camera, temperature):\n    """检测有效新图片，显示检测耗时和启动时读取的处理器温度。"""\n    _, model = load_yolo_resources()                        # 第一步：只加载一次本例data中的离线标签和模型\n    last_image = None\n    while True:\n        if cv2.waitKey(20) == 27:\n            return                                          # 结束run，外层with随后停止相机线程\n\n        # 第二步：取得有效新图片，不在主文件重复检查图片年龄\n        image = camera.latest()\n        if image is None or image is last_image:\n            continue                                        # 无图或仍是上一张图片时，跳过本轮检测\n        last_image = image\n\n        # 第三步：检测返回的耗时已经是毫秒，直接沿用绘画显示，不再设置慢推理分级\n        detections, detection_time = detect_objects(model, image, CONFIDENCE)\n        marked_image = draw_detections(image, detections, detection_time)\n        temperature_text = "None"\n        if temperature is not None:\n            temperature_text = f"{temperature:.1f} C"\n            if temperature >= TEMP_WARN:\n                temperature_text += " HOT"\n        cv2.putText(marked_image, f"TEMP {temperature_text}", (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 176, 255), 2)\n        cv2.imshow("YOLO performance - Esc to close", marked_image)\n\ndef main():\n    """读取一次处理器温度，打开相机运行本地YOLO性能观察。"""\n    try:\n        temperature = None                                  # 非树莓派没有温度文件时，画面显示None\n        temperature_file = Path("/sys/class/thermal/thermal_zone0/temp")\n        if temperature_file.exists():\n            temperature = int(temperature_file.read_text().strip()) / 1000  # 沿用45，系统温度除以1000换算为℃，启动时读取一次\n        with Camera() as camera:\n            run(camera, temperature)                        # 把本次温度值传给显示循环，不在循环中重复读取\n    except KeyboardInterrupt:\n        log_message("INFO", "yolo", "Ctrl+C 主动结束")\n    except (OSError, ValueError, cv2.error) as exc:\n        log_message("ERROR", "yolo", str(exc))\n    finally:\n        cv2.destroyAllWindows()\n\nif __name__ == "__main__":\n    main()'}
+    />
+
+  </Tab>
+  <Tab title="结果预览">
+
+    ```text
+    窗口左上角: objects=3  time=96 ms
+    窗口下方: TEMP 58.2 C
+    ```
+
+    画面显示检测耗时；温度超过 75℃ 时追加 `HOT` 提示。
+
+  </Tab>
+</Tabs>
+
+### 运行方式
+
+```bash
+python 49_measure_yolo.py
+```
+
+## 参数说明
+
+| 名称 | 类型 | 默认值或范围 | 作用 |
+| --- | --- | --- | --- |
+| `CONFIDENCE` | float | 0.25 | 检测置信度门槛 |
+| `TEMP_WARN` | float | 75.0 ℃ | 过热提醒阈值 |
+| `IMAGE_SIZE` | int | 320 | 输入尺寸，降尺寸换速度 |
+
+> 本页是模块八收口，测出 YOLO 基线后按"降分辨率→缩 ROI→跳帧→换轻模型"逐项优化。
