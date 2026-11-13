@@ -96,25 +96,25 @@
                     ]
                   },
                   {
-                    "group": "2 运动与传感器",
+                    "group": "2 实时运动控制",
                     "pages": [
-                      "cn/ai-vision-robot/02-motion-and-sensors/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/08-motor-speed/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/09-servo-position/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/10-realtime-data-queue/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/11-differential-drive/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/12-keyboard-control/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/13-obstacle-stop/index",
-                      "cn/ai-vision-robot/02-motion-and-sensors/14-safe-stop/index"
+                      "cn/ai-vision-robot/02-realtime-motion/index",
+                      "cn/ai-vision-robot/02-realtime-motion/08-motor-speed/index",
+                      "cn/ai-vision-robot/02-realtime-motion/09-servo-position/index",
+                      "cn/ai-vision-robot/02-realtime-motion/10-realtime-data-queue/index",
+                      "cn/ai-vision-robot/02-realtime-motion/11-differential-drive/index",
+                      "cn/ai-vision-robot/02-realtime-motion/12-keyboard-control/index"
                     ]
                   },
                   {
-                    "group": "3 循迹",
+                    "group": "3 超声波与循迹",
                     "pages": [
-                      "cn/ai-vision-robot/03-line-following/index",
-                      "cn/ai-vision-robot/03-line-following/15-line-classification-and-motion/index",
-                      "cn/ai-vision-robot/03-line-following/16-line-following/index",
-                      "cn/ai-vision-robot/03-line-following/17-safe-line-following/index"
+                      "cn/ai-vision-robot/03-ultrasonic-line-following/index",
+                      "cn/ai-vision-robot/03-ultrasonic-line-following/13-obstacle-stop/index",
+                      "cn/ai-vision-robot/03-ultrasonic-line-following/14-safe-stop/index",
+                      "cn/ai-vision-robot/03-ultrasonic-line-following/15-line-classification-and-motion/index",
+                      "cn/ai-vision-robot/03-ultrasonic-line-following/16-line-following/index",
+                      "cn/ai-vision-robot/03-ultrasonic-line-following/17-safe-line-following/index"
                     ]
                   },
                   {
