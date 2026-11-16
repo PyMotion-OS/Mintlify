@@ -71,8 +71,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def draw_status():", from: 7, to: 27, defaultOpen: false },
-    { label: "def run():", from: 29, to: 51, defaultOpen: false },
+    { label: "def draw_status(image, ultrasonic_data, tracker_line_data):", from: 7, to: 27, defaultOpen: false },
+    { label: "def run(camera, data_queue):", from: 29, to: 51, defaultOpen: false },
     { label: "def main():", from: 53, to: 66, defaultOpen: true },
   ],
 }

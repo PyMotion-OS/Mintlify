@@ -96,8 +96,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def log_message():", from: 15, to: 25, defaultOpen: false },
-    { label: "def save_image():", from: 27, to: 33, defaultOpen: false },
+    { label: "def log_message(level, source, message):", from: 15, to: 25, defaultOpen: false },
+    { label: "def save_image(path, image):", from: 27, to: 33, defaultOpen: false },
     { label: "def main():", from: 74, to: 91, defaultOpen: true },
   ],
 }

@@ -78,9 +78,9 @@ if __name__ == "__main__":
     main()`,
   folds: [
     { label: "def create_face_recognizer():", from: 18, to: 26, defaultOpen: false },
-    { label: "def get_face_feature():", from: 28, to: 33, defaultOpen: false },
-    { label: "def compare_face_features():", from: 35, to: 39, defaultOpen: false },
-    { label: "def save_feature_file():", from: 41, to: 47, defaultOpen: false },
+    { label: "def get_face_feature(detector, recognizer, image):", from: 28, to: 33, defaultOpen: false },
+    { label: "def compare_face_features(recognizer, reference_feature, query_feature):", from: 35, to: 39, defaultOpen: false },
+    { label: "def save_feature_file(names, features):", from: 41, to: 47, defaultOpen: false },
     { label: "def main():", from: 49, to: 72, defaultOpen: true },
   ],
 }

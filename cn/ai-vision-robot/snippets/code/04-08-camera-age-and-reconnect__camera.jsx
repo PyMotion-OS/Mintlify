@@ -88,6 +88,6 @@ class Camera:
             self.capture.release()                          # 关闭本次视频流，主函数随后可建立新连接
             self.capture = None`,
   folds: [
-    { label: "def log_message():", from: 7, to: 10, defaultOpen: false },
+    { label: "def log_message(level, source, message):", from: 7, to: 10, defaultOpen: false },
   ],
 }

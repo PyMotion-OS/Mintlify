@@ -57,7 +57,7 @@ def line_tracker_to_vw(sensor_states, v, k):
     w = k * (0 - line_offset)                               # 0 减偏差改变方向：负偏差得到正 W 左转
     return v, w, pattern_type                               # 返回基础 V、计算后的 W 和图案分类`,
   folds: [
-    { label: "def classify_pattern():", from: 14, to: 43, defaultOpen: false },
-    { label: "def line_tracker_to_vw():", from: 46, to: 55, defaultOpen: false },
+    { label: "def classify_pattern(sensor_states):", from: 14, to: 43, defaultOpen: false },
+    { label: "def line_tracker_to_vw(sensor_states, v, k):", from: 46, to: 55, defaultOpen: false },
   ],
 }

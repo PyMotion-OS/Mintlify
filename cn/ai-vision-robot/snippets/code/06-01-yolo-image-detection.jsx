@@ -113,8 +113,8 @@ if __name__ == "__main__":
   folds: [
     { label: "def load_image():", from: 17, to: 20, defaultOpen: false },
     { label: "def load_yolo_resources():", from: 22, to: 35, defaultOpen: false },
-    { label: "def detect_objects():", from: 37, to: 67, defaultOpen: false },
-    { label: "def draw_detections():", from: 69, to: 79, defaultOpen: false },
+    { label: "def detect_objects(model, image, confidence, image_size=320):", from: 37, to: 67, defaultOpen: false },
+    { label: "def draw_detections(image, detections, detection_time):", from: 69, to: 79, defaultOpen: false },
     { label: "def main():", from: 81, to: 106, defaultOpen: true },
   ],
 }

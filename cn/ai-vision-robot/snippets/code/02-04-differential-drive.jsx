@@ -47,8 +47,8 @@ def drive(commands, v, w, valid_for=0.35):
     )
     return left, right                                      # 主程序继续使用两个转速`,
   folds: [
-    { label: "def limit_rpm():", from: 12, to: 19, defaultOpen: false },
-    { label: "def vw_to_rpm():", from: 22, to: 34, defaultOpen: false },
-    { label: "def drive():", from: 37, to: 45, defaultOpen: false },
+    { label: "def limit_rpm(left, right):", from: 12, to: 19, defaultOpen: false },
+    { label: "def vw_to_rpm(v, w):", from: 22, to: 34, defaultOpen: false },
+    { label: "def drive(commands, v, w, valid_for=0.35):", from: 37, to: 45, defaultOpen: false },
   ],
 }

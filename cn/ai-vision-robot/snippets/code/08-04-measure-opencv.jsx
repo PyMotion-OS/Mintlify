@@ -65,8 +65,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def resize_image():", from: 11, to: 17, defaultOpen: false },
-    { label: "def run():", from: 19, to: 48, defaultOpen: false },
+    { label: "def resize_image(image):", from: 11, to: 17, defaultOpen: false },
+    { label: "def run(camera):", from: 19, to: 48, defaultOpen: false },
     { label: "def main():", from: 50, to: 60, defaultOpen: true },
   ],
 }

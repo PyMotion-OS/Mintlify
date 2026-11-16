@@ -73,8 +73,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def decide_motion():", from: 13, to: 20, defaultOpen: false },
-    { label: "def run():", from: 22, to: 55, defaultOpen: false },
+    { label: "def decide_motion(line_motion, ultrasonic_data):", from: 13, to: 20, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 22, to: 55, defaultOpen: false },
     { label: "def main():", from: 57, to: 68, defaultOpen: true },
   ],
 }

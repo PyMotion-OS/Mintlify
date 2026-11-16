@@ -129,9 +129,9 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def track_objects():", from: 12, to: 43, defaultOpen: false },
-    { label: "def choose_target():", from: 45, to: 68, defaultOpen: false },
-    { label: "def draw_tracks():", from: 70, to: 88, defaultOpen: false },
+    { label: "def track_objects(model, image, confidence):", from: 12, to: 43, defaultOpen: false },
+    { label: "def choose_target(tracks, selected_id, target_label):", from: 45, to: 68, defaultOpen: false },
+    { label: "def draw_tracks(image, tracks, selected_id, target_label, tracking_time):", from: 70, to: 88, defaultOpen: false },
     { label: "def main():", from: 90, to: 124, defaultOpen: true },
   ],
 }

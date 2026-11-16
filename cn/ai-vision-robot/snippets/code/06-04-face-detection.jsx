@@ -97,8 +97,8 @@ if __name__ == "__main__":
   folds: [
     { label: "def load_image():", from: 15, to: 18, defaultOpen: false },
     { label: "def create_face_detector():", from: 20, to: 30, defaultOpen: false },
-    { label: "def observe_faces():", from: 32, to: 67, defaultOpen: false },
-    { label: "def draw_faces():", from: 69, to: 80, defaultOpen: false },
+    { label: "def observe_faces(detector, image):", from: 32, to: 67, defaultOpen: false },
+    { label: "def draw_faces(image, faces):", from: 69, to: 80, defaultOpen: false },
     { label: "def main():", from: 82, to: 90, defaultOpen: true },
   ],
 }

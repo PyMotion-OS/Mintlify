@@ -112,9 +112,9 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def track_face():", from: 22, to: 34, defaultOpen: false },
-    { label: "def nod_camera():", from: 36, to: 48, defaultOpen: false },
-    { label: "def run():", from: 50, to: 90, defaultOpen: false },
+    { label: "def track_face(commands, raw_face, image_shape, person_name, up_down_angle, left_right_angle):", from: 22, to: 34, defaultOpen: false },
+    { label: "def nod_camera(commands, up_down_angle, left_right_angle):", from: 36, to: 48, defaultOpen: false },
+    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 50, to: 90, defaultOpen: false },
     { label: "def main():", from: 92, to: 107, defaultOpen: true },
   ],
 }

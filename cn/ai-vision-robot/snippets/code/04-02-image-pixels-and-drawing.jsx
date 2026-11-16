@@ -63,7 +63,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def load_image():", from: 13, to: 16, defaultOpen: false },
+    { label: "def load_image(path):", from: 13, to: 16, defaultOpen: false },
     { label: "def main():", from: 18, to: 58, defaultOpen: true },
   ],
 }

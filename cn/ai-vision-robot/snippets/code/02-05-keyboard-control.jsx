@@ -86,7 +86,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run_window():", from: 11, to: 69, defaultOpen: false },
+    { label: "def run_window(commands):", from: 11, to: 69, defaultOpen: false },
     { label: "def main():", from: 71, to: 81, defaultOpen: true },
   ],
 }

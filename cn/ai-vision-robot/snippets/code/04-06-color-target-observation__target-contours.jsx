@@ -62,8 +62,8 @@ def find_target_contours(image, target_type="blue"):
             valid_contours.append(contour)                  # 把达到面积下限的轮廓加入列表
     return closed_mask, valid_contours, (left, top, right, bottom)`,
   folds: [
-    { label: "def make_gray_mask():", from: 18, to: 23, defaultOpen: false },
-    { label: "def make_color_mask():", from: 25, to: 30, defaultOpen: false },
-    { label: "def find_target_contours():", from: 32, to: 60, defaultOpen: false },
+    { label: "def make_gray_mask(image, left, top, right, bottom):", from: 18, to: 23, defaultOpen: false },
+    { label: "def make_color_mask(image, left, top, right, bottom, target_color):", from: 25, to: 30, defaultOpen: false },
+    { label: "def find_target_contours(image, target_type=\"blue\"):", from: 32, to: 60, defaultOpen: false },
   ],
 }

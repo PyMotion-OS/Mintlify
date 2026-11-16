@@ -70,8 +70,8 @@ def draw_qr_marks(image, qr_data):
     cv2.putText(marked_image, text, (30, 52), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 176, 255), 2)
     return marked_image`,
   folds: [
-    { label: "def create_qr():", from: 12, to: 22, defaultOpen: false },
-    { label: "def find_qr():", from: 24, to: 51, defaultOpen: false },
-    { label: "def draw_qr_marks():", from: 53, to: 68, defaultOpen: false },
+    { label: "def create_qr(text):", from: 12, to: 22, defaultOpen: false },
+    { label: "def find_qr(image):", from: 24, to: 51, defaultOpen: false },
+    { label: "def draw_qr_marks(image, qr_data):", from: 53, to: 68, defaultOpen: false },
   ],
 }

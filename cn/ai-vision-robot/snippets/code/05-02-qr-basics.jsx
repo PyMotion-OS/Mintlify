@@ -97,10 +97,10 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def create_qr():", from: 17, to: 27, defaultOpen: false },
-    { label: "def load_image():", from: 29, to: 32, defaultOpen: false },
-    { label: "def find_qr():", from: 34, to: 61, defaultOpen: false },
-    { label: "def draw_qr_marks():", from: 63, to: 78, defaultOpen: false },
+    { label: "def create_qr(text):", from: 17, to: 27, defaultOpen: false },
+    { label: "def load_image(path):", from: 29, to: 32, defaultOpen: false },
+    { label: "def find_qr(image):", from: 34, to: 61, defaultOpen: false },
+    { label: "def draw_qr_marks(image, qr_data):", from: 63, to: 78, defaultOpen: false },
     { label: "def main():", from: 80, to: 92, defaultOpen: true },
   ],
 }

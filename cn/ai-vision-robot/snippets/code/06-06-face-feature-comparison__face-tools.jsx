@@ -80,7 +80,7 @@ def get_quality_face(detector, image):
   folds: [
     { label: "def load_image():", from: 17, to: 23, defaultOpen: false },
     { label: "def create_face_detector():", from: 25, to: 28, defaultOpen: false },
-    { label: "def check_face_quality():", from: 30, to: 59, defaultOpen: false },
-    { label: "def get_quality_face():", from: 61, to: 76, defaultOpen: false },
+    { label: "def check_face_quality(image, face):", from: 30, to: 59, defaultOpen: false },
+    { label: "def get_quality_face(detector, image):", from: 61, to: 76, defaultOpen: false },
   ],
 }

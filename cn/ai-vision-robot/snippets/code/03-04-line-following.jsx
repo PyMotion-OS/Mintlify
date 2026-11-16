@@ -56,7 +56,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run():", from: 13, to: 38, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 13, to: 38, defaultOpen: false },
     { label: "def main():", from: 40, to: 51, defaultOpen: true },
   ],
 }

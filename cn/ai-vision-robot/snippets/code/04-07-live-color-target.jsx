@@ -108,7 +108,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def log_message():", from: 13, to: 16, defaultOpen: false },
+    { label: "def log_message(level, source, message):", from: 13, to: 16, defaultOpen: false },
     { label: "def main():", from: 73, to: 103, defaultOpen: true },
   ],
 }

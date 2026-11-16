@@ -83,7 +83,7 @@ if __name__ == "__main__":
     main()`,
   folds: [
     { label: "def load_feature_file():", from: 15, to: 23, defaultOpen: false },
-    { label: "def identify_face():", from: 25, to: 36, defaultOpen: false },
+    { label: "def identify_face(recognizer, query_feature, names, features, threshold):", from: 25, to: 36, defaultOpen: false },
     { label: "def main():", from: 38, to: 77, defaultOpen: true },
   ],
 }

@@ -63,8 +63,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def choose_rpm():", from: 12, to: 26, defaultOpen: false },
-    { label: "def run():", from: 28, to: 47, defaultOpen: false },
+    { label: "def choose_rpm(ultrasonic_data):", from: 12, to: 26, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 28, to: 47, defaultOpen: false },
     { label: "def main():", from: 49, to: 58, defaultOpen: true },
   ],
 }

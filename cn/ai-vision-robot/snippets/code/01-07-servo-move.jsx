@@ -1,4 +1,4 @@
-// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联）；改代码请改源码后重跑脚本
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const servoMove = {
   title: "servo_move.py",
   code: `import time

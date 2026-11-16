@@ -73,10 +73,10 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def load_image():", from: 16, to: 19, defaultOpen: false },
-    { label: "def draw_roi():", from: 21, to: 25, defaultOpen: false },
-    { label: "def make_color_mask():", from: 27, to: 38, defaultOpen: false },
-    { label: "def show_image():", from: 40, to: 44, defaultOpen: false },
+    { label: "def load_image(path):", from: 16, to: 19, defaultOpen: false },
+    { label: "def draw_roi(image, left, top, right, bottom):", from: 21, to: 25, defaultOpen: false },
+    { label: "def make_color_mask(image, left, top, right, bottom, color_low, color_high):", from: 27, to: 38, defaultOpen: false },
+    { label: "def show_image(title, image, x, y, scale):", from: 40, to: 44, defaultOpen: false },
     { label: "def main():", from: 46, to: 68, defaultOpen: true },
   ],
 }

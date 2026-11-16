@@ -70,7 +70,7 @@ if __name__ == "__main__":
     main()`,
   folds: [
     { label: "def load_image():", from: 19, to: 22, defaultOpen: false },
-    { label: "def show_image():", from: 24, to: 28, defaultOpen: false },
+    { label: "def show_image(title, image, x, y, scale):", from: 24, to: 28, defaultOpen: false },
     { label: "def main():", from: 30, to: 64, defaultOpen: true },
   ],
 }
