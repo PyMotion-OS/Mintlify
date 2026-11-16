@@ -1,8 +1,9 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const targetObservation = {
   title: "target_observation.py",
   code: `import cv2
 import numpy as np
+
 
 # --- 目标观测参数 ---
 ROI_LEFT, ROI_RIGHT = 0.15, 0.85           # 只在画面中间 70% 的宽度内寻找目标
@@ -20,6 +21,8 @@ COLOR_RANGES = {
     "yellow": ((20, 80, 60), (35, 255, 255)),
 }
 
+
+# 吸收例程 20：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜
 def make_gray_mask(image, left, top, right, bottom):
     """吸收例程 20：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜。"""
     roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI
@@ -27,6 +30,8 @@ def make_gray_mask(image, left, top, right, bottom):
     _, gray_mask = cv2.threshold(gray_image, GRAY_LIMIT, 255, cv2.THRESH_BINARY_INV)
     return gray_mask
 
+
+# 吸收例程 21：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜
 def make_color_mask(image, left, top, right, bottom, target_color):
     """吸收例程 21：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜。"""
     roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI
@@ -34,6 +39,8 @@ def make_color_mask(image, left, top, right, bottom, target_color):
     color_low, color_high = COLOR_RANGES[target_color]      # 根据名称取出这种颜色的 HSV 上下限
     return cv2.inRange(hsv_image, color_low, color_high)     # 颜色范围内变白，其余变黑
 
+
+# 按目标类型生成掩膜，完成开闭运算，再返回清理后掩膜、有效轮廓和 ROI
 def find_target_contours(image, target_type="blue"):
     """按目标类型生成掩膜，完成开闭运算，再返回清理后掩膜、有效轮廓和 ROI。"""
     if target_type not in ("gray", "blue", "green", "yellow"):
@@ -64,6 +71,8 @@ def find_target_contours(image, target_type="blue"):
             valid_contours.append(contour)                  # 把达到面积下限的轮廓加入列表
     return closed_mask, valid_contours, (left, top, right, bottom)
 
+
+# 吸收例程 23：计算目标中心相对画面指定位置的横向和纵向偏差
 def center_to_error(center, image_shape):
     """吸收例程 23：计算目标中心相对画面指定位置的横向和纵向偏差。"""
     height, width = image_shape[:2]                         # image.shape 前两项依次是高度和宽度
@@ -73,6 +82,8 @@ def center_to_error(center, image_shape):
     error_y = (center[1] - reference_y) / (height / 2)      # 目标在上为负，在下为正
     return error_x, error_y
 
+
+# 选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差
 def find_target(image, target_type="blue"):
     """选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差。"""
     # 第一步：引用例程 22，得到清理后的黑白掩膜、有效轮廓和 ROI
@@ -114,6 +125,8 @@ def find_target(image, target_type="blue"):
         "roi": roi,                                        # 后续绘图使用的处理区域像素坐标
     }
 
+
+# 复制原图，再用基础图形标出处理区域、参考中心和目标位置
 def draw_target_marks(image, target_data):
     """复制原图，再用基础图形标出处理区域、参考中心和目标位置。"""
     marked_image = image.copy()                             # copy() 复制出新图片，后续绘制不会修改 image
@@ -134,11 +147,11 @@ def draw_target_marks(image, target_data):
         cv2.arrowedLine(marked_image, (reference_x, reference_y), target_data["center"], (0, 176, 255), 4)
     return marked_image`,
   folds: [
-    { label: "def make_gray_mask(image, left, top, right, bottom):", from: 20, to: 25, defaultOpen: false },
-    { label: "def make_color_mask(image, left, top, right, bottom, target_color):", from: 27, to: 32, defaultOpen: false },
-    { label: "def find_target_contours(image, target_type=\"blue\"):", from: 34, to: 62, defaultOpen: false },
-    { label: "def center_to_error(center, image_shape):", from: 64, to: 71, defaultOpen: false },
-    { label: "def find_target(image, target_type=\"blue\"):", from: 73, to: 112, defaultOpen: false },
-    { label: "def draw_target_marks(image, target_data):", from: 114, to: 132, defaultOpen: false },
+    { label: "def make_gray_mask(image, left, top, right, bottom):", from: 23, to: 28, defaultOpen: false },
+    { label: "def make_color_mask(image, left, top, right, bottom, target_color):", from: 32, to: 37, defaultOpen: false },
+    { label: "def find_target_contours(image, target_type=\"blue\"):", from: 41, to: 69, defaultOpen: false },
+    { label: "def center_to_error(center, image_shape):", from: 73, to: 80, defaultOpen: false },
+    { label: "def find_target(image, target_type=\"blue\"):", from: 84, to: 123, defaultOpen: false },
+    { label: "def draw_target_marks(image, target_data):", from: 127, to: 145, defaultOpen: false },
   ],
 }

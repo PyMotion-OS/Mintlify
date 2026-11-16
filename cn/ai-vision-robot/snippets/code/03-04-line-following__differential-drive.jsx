@@ -1,17 +1,18 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const differentialDrive = {
   title: "differential_drive.py",
   code: `import math
 
 # --- 机器人尺寸 ---
-R = 33.75                                  # 轮子半径，毫米（直径 67.5）
-D = 160.0                                  # 左右轮间距，毫米
+R = 33.3                                   # 轮子半径，毫米（直径 66.6）
+D = 172.0                                  # 左右轮间距，毫米
 
 # --- 共用配置（一般不用动）---
 PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮接 M3，右轮接 M4
-MAX_RPM = 60                               # 单轮转速上限
+MAX_RPM = 60                               # 单轮转速上限（理论转速上限 360）
 
 
+# 同尺度限幅：超过单轮上限就两边一起缩小，弯道形状不变；返回值已取整
 def limit_rpm(left, right):
     """同尺度限幅：超过单轮上限就两边一起缩小，弯道形状不变；返回值已取整"""
     fast = max(abs(left), abs(right))                       # 两轮里转得最快的那个
@@ -22,6 +23,7 @@ def limit_rpm(left, right):
     return round(left), round(right)                        # 电机只收整数，四舍五入
 
 
+# 差速映射：前进速度和转弯快慢 → 左右轮的转速（RPM）
 def vw_to_rpm(v, w):
     """差速映射：前进速度和转弯快慢 → 左右轮的转速（RPM）
 
@@ -37,18 +39,19 @@ def vw_to_rpm(v, w):
     return limit_rpm(left_v * 60 / c, right_v * 60 / c)     # 线速度换成转速，再限幅
 
 
+# 沿用例程11的差速能力，把线速度和角速度设为左右主动轮转速
 def drive(commands, v, w, valid_for=0.35):
     """沿用例程11的差速能力，把线速度和角速度设为左右主动轮转速。"""
     # commands 是实时会话的命令入口；v 毫米/秒，w 度/秒，valid_for 是命令有效期
     left, right = vw_to_rpm(v, w)                           # 得到限幅取整后的左右轮转速
     commands.motor_speeds.write(                            # 选择其中的电机速度命令
         {PORT_LEFT: left, PORT_RIGHT: right},               # 设定左右主动轮的目标转速
-        valid_for=valid_for,                                # 大于 0.1 秒发送周期；定时发送中断后会自动停机
+        valid_for=valid_for,
     )
     return left, right                                      # 主程序继续使用两个转速`,
   folds: [
-    { label: "def limit_rpm(left, right):", from: 12, to: 19, defaultOpen: false },
-    { label: "def vw_to_rpm(v, w):", from: 22, to: 34, defaultOpen: false },
-    { label: "def drive(commands, v, w, valid_for=0.35):", from: 37, to: 45, defaultOpen: false },
+    { label: "def limit_rpm(left, right):", from: 13, to: 20, defaultOpen: false },
+    { label: "def vw_to_rpm(v, w):", from: 24, to: 36, defaultOpen: false },
+    { label: "def drive(commands, v, w, valid_for=0.35):", from: 40, to: 48, defaultOpen: false },
   ],
 }

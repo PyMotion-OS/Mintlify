@@ -11,6 +11,7 @@ PORT_LEFT_RIGHT = 5                        # 左右舵机接 PWM 端口 5（S5�
 UP_DOWN_HOME, LEFT_RIGHT_HOME = 90, 90    # 复位姿态：双 90° 约为居中，可以根据实际情况微调
 
 
+# 用普通位置命令复位双舵机，并返回两个复位角度
 def reset_servos(robot):
     """用普通位置命令复位双舵机，并返回两个复位角度。"""
     robot.pwm_servos.move_to({PORT_UP_DOWN: UP_DOWN_HOME, PORT_LEFT_RIGHT: LEFT_RIGHT_HOME})
@@ -18,6 +19,7 @@ def reset_servos(robot):
     return UP_DOWN_HOME, LEFT_RIGHT_HOME                    # 后续角度从复位姿态开始计算
 
 
+# 限制双舵机角度并发送实时命令，返回实际发送的两个角度
 def move_servos(commands, up_down_angle=90, left_right_angle=90):
     """限制双舵机角度并发送实时命令，返回实际发送的两个角度。"""
     # commands 是实时会话的命令入口，两个角度单位为度；省略时停在复位姿态
@@ -68,8 +70,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def reset_servos(robot):", from: 11, to: 15, defaultOpen: false },
-    { label: "def move_servos(commands, up_down_angle=90, left_right_angle=90):", from: 18, to: 36, defaultOpen: false },
-    { label: "def main():", from: 39, to: 62, defaultOpen: true },
+    { label: "def reset_servos(robot):", from: 12, to: 16, defaultOpen: false },
+    { label: "def move_servos(commands, up_down_angle=90, left_right_angle=90):", from: 20, to: 38, defaultOpen: false },
   ],
 }

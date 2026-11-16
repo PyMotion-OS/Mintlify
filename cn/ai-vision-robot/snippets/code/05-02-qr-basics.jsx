@@ -1,10 +1,11 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const qrBasics = {
   title: "qr_basics.py",
   code: `from pathlib import Path
 
 import cv2
 import numpy as np
+
 
 # --- 本例程可调整的参数 ---
 QR_TEXT = "GREETING"                       # 这段文字会被写入二维码
@@ -17,6 +18,8 @@ OUTPUT_DIR = Path(__file__).parent / "cards"
 OUTPUT_PATH = OUTPUT_DIR / f"{QR_TEXT}.png" # /继续拼接二维码文件名
 TEST_IMAGE_PATH = OUTPUT_DIR / TEST_IMAGE_NAME # 组合本次测试图片的完整路径
 
+
+# 把文字生成二维码并保存为图片
 def create_qr(text):
     """把文字生成二维码并保存为图片。"""
     encoder = cv2.QRCodeEncoder_create()                    # 创建二维码生成对象
@@ -29,11 +32,15 @@ def create_qr(text):
     OUTPUT_DIR.mkdir(exist_ok=True)                         # cards已经存在时保持不变
     cv2.imencode(".png", qr_image)[1].tofile(OUTPUT_PATH)   # 编码后写入文件，兼容中文路径
 
+
+# 读取图片文件，返回OpenCV使用的BGR图片
 def load_image(path):
     """读取图片文件，返回OpenCV使用的BGR图片。"""
     image_bytes = np.fromfile(path, dtype=np.uint8)         # 沿用模块四的中文路径读取方式
     return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
 
+
+# 识别一个二维码，返回文字、四角、中心、面积比例和二维偏差
 def find_qr(image):
     """识别一个二维码，返回文字、四角、中心、面积比例和二维偏差。"""
     # 创建二维码检测对象并直接识别，返回文字、四角坐标和拉正后的二维码
@@ -63,6 +70,8 @@ def find_qr(image):
         "error_y": (center_y - height / 2) / (height / 2), # 上边为负，下边为正
     }
 
+
+# 复制原图，再标出二维码边框、中心和二维偏差
 def draw_qr_marks(image, qr_data):
     """复制原图，再标出二维码边框、中心和二维偏差。"""
     marked_image = image.copy()
@@ -80,6 +89,7 @@ def draw_qr_marks(image, qr_data):
     cv2.putText(marked_image, text, (30, 52), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 176, 255), 2)
     return marked_image
 
+
 def main():
     """生成一张二维码，再用偏移图片观察识别与标记结果。"""
     create_qr(QR_TEXT)                                     # 调用本例程函数，生成可打印的二维码图片
@@ -94,13 +104,13 @@ def main():
     cv2.waitKey(0)                                         # 等待任意按键，再继续关闭窗口
     cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def create_qr(text):", from: 17, to: 27, defaultOpen: false },
-    { label: "def load_image(path):", from: 29, to: 32, defaultOpen: false },
-    { label: "def find_qr(image):", from: 34, to: 61, defaultOpen: false },
-    { label: "def draw_qr_marks(image, qr_data):", from: 63, to: 78, defaultOpen: false },
-    { label: "def main():", from: 80, to: 92, defaultOpen: true },
+    { label: "def create_qr(text):", from: 20, to: 30, defaultOpen: false },
+    { label: "def load_image(path):", from: 34, to: 37, defaultOpen: false },
+    { label: "def find_qr(image):", from: 41, to: 68, defaultOpen: false },
+    { label: "def draw_qr_marks(image, qr_data):", from: 72, to: 87, defaultOpen: false },
   ],
 }

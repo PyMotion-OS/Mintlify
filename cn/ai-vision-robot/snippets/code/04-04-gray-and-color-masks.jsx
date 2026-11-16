@@ -1,10 +1,11 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const grayAndColorMasks = {
   title: "gray_and_color_masks.py",
   code: `from pathlib import Path
 
 import cv2
 import numpy as np
+
 
 # --- 本例程可调整的参数 ---
 ROI_LEFT, ROI_RIGHT = 0.15, 0.85            # 与例程 20 使用相同 ROI
@@ -16,17 +17,23 @@ BLUE_HIGH = (135, 255, 255)                # 蓝色 HSV 范围上限
 BASE_DIR = Path(__file__).parent
 IMAGE_PATH = BASE_DIR / "camera_frame.jpg"
 
+
+# 读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片
 def load_image(path):
     """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""
     image_bytes = np.fromfile(path, dtype=np.uint8)
     return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
 
+
+# 复制原图，在副本上画出 ROI 并返回
 def draw_roi(image, left, top, right, bottom):
     """复制原图，在副本上画出 ROI 并返回。"""
     marked_image = image.copy()
     cv2.rectangle(marked_image, (left, top), (right - 1, bottom - 1), (217, 199, 0), 4)
     return marked_image
 
+
+# 裁剪 ROI，按 HSV 颜色范围返回选中的画面和黑白掩膜
 def make_color_mask(image, left, top, right, bottom, color_low, color_high):
     """裁剪 ROI，按 HSV 颜色范围返回选中的画面和黑白掩膜。"""
     roi_image = image[top:bottom, left:right]
@@ -40,11 +47,14 @@ def make_color_mask(image, left, top, right, bottom, color_low, color_high):
     selected_image = cv2.bitwise_and(roi_image, roi_image, mask=color_mask)
     return roi_image, selected_image, color_mask
 
+
+# 缩放图片副本，再在屏幕指定位置显示
 def show_image(title, image, x, y, scale):
     """缩放图片副本，再在屏幕指定位置显示。"""
     display_image = cv2.resize(image, None, fx=scale, fy=scale)
     cv2.imshow(title, display_image)
     cv2.moveWindow(title, x, y)
+
 
 def main():
     """依次显示 ROI、蓝色掩膜、选中区域和轮廓。"""
@@ -70,13 +80,13 @@ def main():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def load_image(path):", from: 16, to: 19, defaultOpen: false },
-    { label: "def draw_roi(image, left, top, right, bottom):", from: 21, to: 25, defaultOpen: false },
-    { label: "def make_color_mask(image, left, top, right, bottom, color_low, color_high):", from: 27, to: 38, defaultOpen: false },
-    { label: "def show_image(title, image, x, y, scale):", from: 40, to: 44, defaultOpen: false },
-    { label: "def main():", from: 46, to: 68, defaultOpen: true },
+    { label: "def load_image(path):", from: 19, to: 22, defaultOpen: false },
+    { label: "def draw_roi(image, left, top, right, bottom):", from: 26, to: 30, defaultOpen: false },
+    { label: "def make_color_mask(image, left, top, right, bottom, color_low, color_high):", from: 34, to: 45, defaultOpen: false },
+    { label: "def show_image(title, image, x, y, scale):", from: 49, to: 53, defaultOpen: false },
   ],
 }

@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const morphologyAndContours = {
   title: "morphology_and_contours.py",
   code: `from pathlib import Path
@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 
 from target_mask import make_target_mask    # 吸收例程 20/19，按选择返回灰度或 HSV 黑白掩膜
+
 
 # --- 本例程可调整的参数 ---
 TARGET_TYPE = "blue"                       # 可选 gray、blue、green 或 yellow
@@ -19,16 +20,21 @@ MIN_AREA = 500                              # 有效轮廓最小面积，小于�
 BASE_DIR = Path(__file__).parent
 IMAGE_PATH = BASE_DIR / "camera_frame.jpg"
 
+
+# 读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片
 def load_image():
     """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""
     image_bytes = np.fromfile(IMAGE_PATH, dtype=np.uint8)
     return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
 
+
+# 缩放图片副本，再在屏幕指定位置显示
 def show_image(title, image, x, y, scale):
     """缩放图片副本，再在屏幕指定位置显示。"""
     display_image = cv2.resize(image, None, fx=scale, fy=scale)
     cv2.imshow(title, display_image)
     cv2.moveWindow(title, x, y)
+
 
 def main():
     """选择灰度或 HSV 掩膜，再显示开闭运算和有效轮廓。"""
@@ -66,11 +72,11 @@ def main():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def load_image():", from: 19, to: 22, defaultOpen: false },
-    { label: "def show_image(title, image, x, y, scale):", from: 24, to: 28, defaultOpen: false },
-    { label: "def main():", from: 30, to: 64, defaultOpen: true },
+    { label: "def load_image():", from: 22, to: 25, defaultOpen: false },
+    { label: "def show_image(title, image, x, y, scale):", from: 29, to: 33, defaultOpen: false },
   ],
 }

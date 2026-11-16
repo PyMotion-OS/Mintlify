@@ -1,10 +1,11 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const cameraBasics = {
   title: "camera_basics.py",
   code: `from datetime import datetime              # 取得当前时间，用于统一日志格式
 from pathlib import Path                   # 导入用于组合文件夹和文件名的路径工具
 
 import cv2                                 # 使用 OpenCV 连接摄像头和显示图片
+
 
 # --- 本例程可调整的参数 ---
 CAMERA_URL = "rtsp://192.168.43.226:554/11" # 填写 RTSP 摄像头地址
@@ -15,6 +16,8 @@ BASE_DIR = Path(__file__).parent
 # / 把 output 文件夹和图片文件名接到当前文件夹路径后面
 OUTPUT_PATH = BASE_DIR / "output/camera_image.jpg"
 
+
+# 按照“时间、级别、来源、说明”的本项目统一格式打印一条日志
 def log_message(level, source, message):
     """按照“时间、级别、来源、说明”的本项目统一格式打印一条日志。"""
     # level 表示 INFO 或 ERROR 等级别，source 表示日志来源，message 表示具体说明
@@ -27,6 +30,8 @@ def log_message(level, source, message):
     # <7 和 <8 表示左对齐并分别至少占 7 位和 8 位 ; 把排版完成的日志打印
     print(f"{time_text} {level:<7} {source:<8} {message}")
 
+
+# 把 OpenCV 图片编码后保存到指定路径
 def save_image(path, image):
     """把 OpenCV 图片编码后保存到指定路径。"""
     path.parent.mkdir(exist_ok=True)                        # 创建 output 文件夹，已经存在时不报错
@@ -34,6 +39,7 @@ def save_image(path, image):
     if not is_encoded:                                      # 编码失败时不继续写入文件
         raise ValueError("摄像头图片编码失败")
     path.write_bytes(image_bytes.tobytes())                 # 把编码后的字节写入 camera_image.jpg
+
 
 class Camera:
     """把摄像头的连接、取图和释放操作放在一个类里。
@@ -74,6 +80,7 @@ class Camera:
         """
         self.capture.release()                              # release() 关闭连接并释放摄像头资源
 
+
 def main():
     """取得、保存并显示一张摄像头图片。"""
     try:
@@ -93,11 +100,15 @@ def main():
     except ValueError as exc:
         log_message("ERROR", "camera", str(exc))            # str() 把出错对象 exc 转成可以作为日志消息显示的文字
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def log_message(level, source, message):", from: 15, to: 25, defaultOpen: false },
-    { label: "def save_image(path, image):", from: 27, to: 33, defaultOpen: false },
-    { label: "def main():", from: 74, to: 91, defaultOpen: true },
+    { label: "def log_message(level, source, message):", from: 18, to: 28, defaultOpen: false },
+    { label: "def save_image(path, image):", from: 32, to: 38, defaultOpen: false },
+    { label: "    def __init__(self, camera_url):", from: 48, to: 51, defaultOpen: false },
+    { label: "    def __enter__(self):", from: 53, to: 63, defaultOpen: false },
+    { label: "    def get_image(self):", from: 65, to: 71, defaultOpen: false },
+    { label: "    def __exit__(self, exc_type, exc_value, traceback):", from: 73, to: 78, defaultOpen: false },
   ],
 }

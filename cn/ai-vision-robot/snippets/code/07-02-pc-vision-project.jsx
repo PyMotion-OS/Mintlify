@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const pcVisionProject = {
   title: "pc_vision_project.py",
   code: `import time
@@ -16,11 +16,14 @@ from servo_control import nod_camera, reset_servos  # 复位返回双角度，�
 # load_yolo_resources：加载资源；detect_objects：检测；draw_detections：标记检测快照
 from yolo_detection import detect_objects, draw_detections, load_yolo_resources
 
+
 # --- 本例程可调整的参数 ---
 V = 80                                     # 正常前进速度，单位毫米/秒
 SLOW_V = 40                                # 看到站台后的减速速度，单位毫米/秒
 K = 25                                     # 每格五路偏差对应的转向速度，单位度/秒
 
+
+# 取得有效图片和二维码观测，非等待阶段显示实时标记
 def observe_station(camera, task_state):
     """取得有效图片和二维码观测，非等待阶段显示实时标记。"""
     image = camera.latest()                                 # 无图或过期时返回None，不能把断流当作二维码消失
@@ -31,6 +34,8 @@ def observe_station(camera, task_state):
             cv2.imshow("AI route - Esc close, Space continue", draw_qr_marks(image, qr_data))
     return image, qr_data                                   # wait阶段保留到站检测快照，不被实时图片覆盖
 
+
+# 识别到站快照并点头两次，调用前须先停机
 def run_station_task(model, image, commands, up_down_angle, left_right_angle, station_name):
     """识别到站快照并点头两次，调用前须先停机。"""
     detections, detection_time = detect_objects(model, image, 0.25)  # 沿用32，仅检测到站图片，置信度门槛0.25
@@ -41,6 +46,8 @@ def run_station_task(model, image, commands, up_down_angle, left_right_angle, st
     log_message("INFO", "vision", f"站台: {station_name}  物体: {labels}")
     nod_camera(commands, up_down_angle, left_right_angle)   # 沿用38，围绕实际双角度点头两次并回位
 
+
+# 结合站台阶段、图片和两种事件的时效，得到最终V/W与原因
 def get_project_motion(tracker_event, ultrasonic_event, task_state, image):
     """结合站台阶段、图片和两种事件的时效，得到最终V/W与原因。"""
     now = time.monotonic()                                  # 在识别与点头之后取时刻，耗时也计入数据存放时间
@@ -59,6 +66,8 @@ def get_project_motion(tracker_event, ultrasonic_event, task_state, image):
         line_motion = (0, 0, "image_waiting")
     return decide_motion(line_motion, ultrasonic_data)      # 吸收43，停机意图优先，其次应用测距保护
 
+
+# 循迹到站后静止识别、点头两次，等待空格确认再继续
 def run(camera, data_queue, commands, up_down_angle, left_right_angle):
     """循迹到站后静止识别、点头两次，等待空格确认再继续。"""
     _, model = load_yolo_resources()                        # 加载一次YOLO模型和标签，不在每个站台重复加载
@@ -110,6 +119,7 @@ def run(camera, data_queue, commands, up_down_angle, left_right_angle):
             log_message("INFO", "decision", f"阶段: {task_state}  原因: {reason}  左轮: {left_rpm} RPM  右轮: {right_rpm} RPM")
             last_motion = motion
 
+
 def main():
     """连接相机与传感器，取得控制权后运行视觉站台任务。"""
     try:
@@ -127,13 +137,13 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def observe_station(camera, task_state):", from: 21, to: 29, defaultOpen: false },
-    { label: "def run_station_task(model, image, commands, up_down_angle, left_right_angle, station_name):", from: 31, to: 39, defaultOpen: false },
-    { label: "def get_project_motion(tracker_event, ultrasonic_event, task_state, image):", from: 41, to: 57, defaultOpen: false },
-    { label: "def run(camera, data_queue, commands, up_down_angle, left_right_angle):", from: 59, to: 108, defaultOpen: false },
-    { label: "def main():", from: 110, to: 125, defaultOpen: true },
+    { label: "def observe_station(camera, task_state):", from: 24, to: 32, defaultOpen: false },
+    { label: "def run_station_task(model, image, commands, up_down_angle, left_right_angle, station_name):", from: 36, to: 44, defaultOpen: false },
+    { label: "def get_project_motion(tracker_event, ultrasonic_event, task_state, image):", from: 48, to: 64, defaultOpen: false },
+    { label: "def run(camera, data_queue, commands, up_down_angle, left_right_angle):", from: 68, to: 117, defaultOpen: false },
   ],
 }

@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const measureOpencv = {
   title: "measure_opencv.py",
   code: `import time
@@ -8,9 +8,12 @@ import cv2
 from camera import Camera, log_message     # 沿用26的有效取图、后台重连与日志
 from target_observation import draw_target_marks, find_target  # 原样吸收例程 26 的颜色观测与二维标记
 
+
 # --- 本例程可调整的参数 ---
 PROCESS_WIDTH = 640                        # 处理宽度越小，通常处理越快、细节越少
 
+
+# 按处理宽度等比例缩小图片，并返回缩小后的图片
 def resize_image(image):
     """按处理宽度等比例缩小图片，并返回缩小后的图片。"""
     if image.shape[1] <= PROCESS_WIDTH:                     # 图片宽度已经不超过目标宽度
@@ -19,6 +22,8 @@ def resize_image(image):
     image_height = round(image.shape[0] * scale)            # 高度使用同一比例，避免图片变形
     return cv2.resize(image, (PROCESS_WIDTH, image_height))
 
+
+# 显示颜色目标，并测量每张有效新图片的处理耗时
 def run(camera):
     """显示颜色目标，并测量每张有效新图片的处理耗时。"""
     last_image = None                                       # 沿用38，以图片对象判断后台是否收到新图
@@ -50,6 +55,7 @@ def run(camera):
             log_message("INFO", "opencv", f"状态: {target_data['state']}  处理耗时: {processing_time:.0f} ms")
             last_state = target_data["state"]
 
+
 def main():
     """打开相机，运行OpenCV性能观察。"""
     try:
@@ -62,11 +68,11 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def resize_image(image):", from: 11, to: 17, defaultOpen: false },
-    { label: "def run(camera):", from: 19, to: 48, defaultOpen: false },
-    { label: "def main():", from: 50, to: 60, defaultOpen: true },
+    { label: "def resize_image(image):", from: 14, to: 20, defaultOpen: false },
+    { label: "def run(camera):", from: 24, to: 53, defaultOpen: false },
   ],
 }

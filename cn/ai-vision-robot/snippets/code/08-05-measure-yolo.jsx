@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const measureYolo = {
   title: "measure_yolo.py",
   code: `from pathlib import Path
@@ -9,10 +9,13 @@ from camera import Camera, log_message     # 沿用26的有效取图、后台重
 # 加载离线模型与标签、检测物体、绘制检测结果：沿用32，本例只观察耗时和温度
 from yolo_detection import detect_objects, draw_detections, load_yolo_resources
 
+
 # --- 本例程可调整的参数 ---
 CONFIDENCE = 0.25                          # 只保留置信度达到0.25的检测结果
 TEMP_WARN = 75.0                           # 处理器达到75℃时显示过热
 
+
+# 检测有效新图片，显示检测耗时和启动时读取的处理器温度
 def run(camera, temperature):
     """检测有效新图片，显示检测耗时和启动时读取的处理器温度。"""
     _, model = load_yolo_resources()                        # 第一步：只加载一次本例data中的离线标签和模型
@@ -38,6 +41,7 @@ def run(camera, temperature):
         cv2.putText(marked_image, f"TEMP {temperature_text}", (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 176, 255), 2)
         cv2.imshow("YOLO performance - Esc to close", marked_image)
 
+
 def main():
     """读取一次处理器温度，打开相机运行本地YOLO性能观察。"""
     try:
@@ -54,10 +58,10 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run(camera, temperature):", from: 13, to: 36, defaultOpen: false },
-    { label: "def main():", from: 38, to: 52, defaultOpen: true },
+    { label: "def run(camera, temperature):", from: 16, to: 39, defaultOpen: false },
   ],
 }

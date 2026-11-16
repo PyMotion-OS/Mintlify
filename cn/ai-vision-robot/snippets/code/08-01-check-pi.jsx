@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const checkPi = {
   title: "check_pi.py",
   code: `import glob
@@ -10,10 +10,13 @@ from pathlib import Path
 
 import pymotion as pm
 
+
 # --- 本例程可调整的参数 ---
 TEMP_WARN = 75.0                           # 温度达到 75℃ 时显示过热提醒
 MIN_FREE_GB = 2.0                          # 存储剩余不足 2GB 时显示空间不足
 
+
+# 读取树莓派处理器温度，读取不到时返回 None
 def read_temperature():
     """读取树莓派处理器温度，读取不到时返回 None。"""
     temperature_file = Path("/sys/class/thermal/thermal_zone0/temp")
@@ -21,6 +24,7 @@ def read_temperature():
         return int(temperature_file.read_text().strip()) / 1000  # 系统文件以千分之一摄氏度保存温度，除以 1000 得到 ℃
     except (OSError, ValueError):
         return None
+
 
 def main():
     """检查树莓派、Python、SDK、USB、温度、存储和图形会话。"""
@@ -67,10 +71,10 @@ def main():
     else:
         print(f"图形会话: {display}")
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def read_temperature():", from: 14, to: 20, defaultOpen: false },
-    { label: "def main():", from: 22, to: 65, defaultOpen: true },
+    { label: "def read_temperature():", from: 17, to: 23, defaultOpen: false },
   ],
 }

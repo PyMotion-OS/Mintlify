@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const sensorDecision = {
   title: "sensor_decision.py",
   code: `import time
@@ -9,10 +9,13 @@ from differential_drive import vw_to_rpm   # 吸收例程 11 的差速函数
 from line_control import line_tracker_to_vw  # 吸收例程 15 的五路分类与转向
 from obstacle_policy import ultrasonic_to_vw  # 吸收例程 17 的超声波保护
 
+
 # --- 本例程可调整的参数 ---
 V = 60                                     # 循迹基础前进速度，单位毫米/秒
 K = 25                                     # 每格五路偏差对应的转向速度，单位度/秒
 
+
+# 先检查循迹意图和测距输入，再由超声波保持、减半或归零 V/W
 def decide_motion(line_motion, ultrasonic_data):
     """先检查循迹意图和测距输入，再由超声波保持、减半或归零 V/W。"""
     v, w, line_state = line_motion
@@ -22,6 +25,8 @@ def decide_motion(line_motion, ultrasonic_data):
         return 0, 0, "distance_waiting"                     # 没收到测距或测距过期时停止
     return ultrasonic_to_vw(ultrasonic_data, v, w)          # 复用 15 的 no_echo、无效、减速与停止规则
 
+
+# 独立更新两种事件，计算最终策略，并按0.1秒节拍下发双轮目标
 def run(data_queue, commands):
     """独立更新两种事件，计算最终策略，并按0.1秒节拍下发双轮目标。"""
     tracker_event, ultrasonic_event = None, None
@@ -57,6 +62,7 @@ def run(data_queue, commands):
             print(f"策略: {reason}  V: {v} mm/s  W: {w} °/s  左轮: {left_rpm} RPM  右轮: {right_rpm} RPM")
             last_motion = motion
 
+
 def main():
     """连接真实传感器，取得控制权后运行多源运动决策。"""
     try:
@@ -70,11 +76,11 @@ def main():
     except (ValueError, pm.lite.LiteError) as exc:
         print(f"出错: {exc}")
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def decide_motion(line_motion, ultrasonic_data):", from: 13, to: 20, defaultOpen: false },
-    { label: "def run(data_queue, commands):", from: 22, to: 55, defaultOpen: false },
-    { label: "def main():", from: 57, to: 68, defaultOpen: true },
+    { label: "def decide_motion(line_motion, ultrasonic_data):", from: 16, to: 23, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 27, to: 60, defaultOpen: false },
   ],
 }

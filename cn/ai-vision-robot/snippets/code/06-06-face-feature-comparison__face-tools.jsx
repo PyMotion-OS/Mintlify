@@ -1,10 +1,11 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const faceTools = {
   title: "face_tools.py",
   code: `from pathlib import Path
 
 import cv2
 import numpy as np
+
 
 MIN_FACE_SIZE = 80
 MIN_BRIGHTNESS = 45
@@ -17,6 +18,8 @@ DATA_DIR = Path(__file__).with_name("data")
 REFERENCE_PATH = DATA_DIR / "face_sample.png"
 QUERY_PATH = DATA_DIR / "face_sample_2.png"
 
+
+# 读取本例程的两张图片，返回登记图片和查询图片
 def load_image():
     """读取本例程的两张图片，返回登记图片和查询图片。"""
     reference_bytes = np.fromfile(REFERENCE_PATH, dtype=np.uint8)
@@ -25,11 +28,15 @@ def load_image():
     query_image = cv2.imdecode(query_bytes, cv2.IMREAD_COLOR)
     return reference_image, query_image
 
+
+# 读取本地 YuNet 文件，并返回 OpenCV 人脸检测器
 def create_face_detector():
     """读取本地 YuNet 文件，并返回 OpenCV 人脸检测器。"""
     model_bytes = np.fromfile(DETECTION_MODEL, dtype=np.uint8)
     return cv2.FaceDetectorYN.create("onnx", model_bytes, np.empty(0, np.uint8), (320, 320), 0.80)
 
+
+# 依次检查人脸完整度、尺寸、亮度和清晰度，再返回是否合格和原因
 def check_face_quality(image, face):
     """依次检查人脸完整度、尺寸、亮度和清晰度，再返回是否合格和原因。"""
     face_x, face_y, face_width, face_height = face["box"]
@@ -61,6 +68,8 @@ def check_face_quality(image, face):
         return False, "、".join(reasons)
     return True, "人脸质量合格"
 
+
+# 吸收例程 34、34 的检测与质量判断，返回 SFace 需要的一行 YuNet 原始数据
 def get_quality_face(detector, image):
     """吸收例程 34、34 的检测与质量判断，返回 SFace 需要的一行 YuNet 原始数据。"""
     image_height, image_width = image.shape[0], image.shape[1]
@@ -78,9 +87,9 @@ def get_quality_face(detector, image):
         raise ValueError(reason)
     return raw_face`,
   folds: [
-    { label: "def load_image():", from: 17, to: 23, defaultOpen: false },
-    { label: "def create_face_detector():", from: 25, to: 28, defaultOpen: false },
-    { label: "def check_face_quality(image, face):", from: 30, to: 59, defaultOpen: false },
-    { label: "def get_quality_face(detector, image):", from: 61, to: 76, defaultOpen: false },
+    { label: "def load_image():", from: 20, to: 26, defaultOpen: false },
+    { label: "def create_face_detector():", from: 30, to: 33, defaultOpen: false },
+    { label: "def check_face_quality(image, face):", from: 37, to: 66, defaultOpen: false },
+    { label: "def get_quality_face(detector, image):", from: 70, to: 85, defaultOpen: false },
   ],
 }

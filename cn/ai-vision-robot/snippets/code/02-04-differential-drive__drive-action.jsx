@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const driveAction = {
   title: "drive_action.py",
   code: `import math
@@ -12,12 +12,14 @@ V = 175                                    # 前进速度，毫米/秒（175 对
 W = 60                                     # 转弯快慢，度/秒（50 对应原地转 20 RPM）
 
 # --- 机器人尺寸 ---
-R = 33.75                                  # 轮子半径，毫米（直径 67.5）
-D = 160.0                                  # 左右轮间距，毫米
+R = 33.3                                   # 轮子半径，毫米（直径 66.6）
+D = 172.0                                  # 左右轮间距，毫米
 
 # --- 共用配置（一般不用动）---
 PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮 M3、右轮 M4
-MAX_RPM = 60                               # 单轮转速上限
+MAX_RPM = 60                               # 单轮转速上限（理论转速上限 360）
+TRANSPORT = "wifi"                         # Wi-Fi 连接模式
+TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
 ACTIONS = {                                # 动作表：名字 → (前进速度, 转弯快慢)
     "forward": (V, 0),                     # 直行向前
@@ -28,6 +30,8 @@ ACTIONS = {                                # 动作表：名字 → (前进速�
     "spin_right": (0, -W),                 # 原地向右转
 }
 
+
+# 同尺度限幅：超过单轮上限就两边一起缩小，弯道形状不变；返回值已取整
 def limit_rpm(left, right):
     """同尺度限幅：超过单轮上限就两边一起缩小，弯道形状不变；返回值已取整"""
     fast = max(abs(left), abs(right))                       # 两轮里转得最快的那个
@@ -37,6 +41,8 @@ def limit_rpm(left, right):
         right = right * scale                               # 右轮按同一比例缩小
     return round(left), round(right)                        # 电机只收整数，四舍五入
 
+
+# 差速映射：前进速度和转弯快慢 → 左右轮的转速（RPM）
 def vw_to_rpm(v, w):
     """差速映射：前进速度和转弯快慢 → 左右轮的转速（RPM）
 
@@ -51,15 +57,18 @@ def vw_to_rpm(v, w):
     right_v = v + w * D / 2                                 # 右轮线速度，毫米/秒
     return limit_rpm(left_v * 60 / c, right_v * 60 / c)     # 线速度换成转速，再限幅
 
-def drive(commands, v, w, valid_for=0.35):
+
+# 把前进速度和转弯快慢换算成左右轮转速并写入命令入口，返回两个转速
+def drive(commands, v, w, valid_for=0.35):                  # 不填valid_for则默认取值0.35
     """把前进速度和转弯快慢换算成左右轮转速并写入命令入口，返回两个转速。"""
     # commands 是实时会话的命令入口；v 毫米/秒，w 度/秒，valid_for 是命令有效期
     left, right = vw_to_rpm(v, w)                           # 得到限幅取整后的左右轮转速
     commands.motor_speeds.write(
         {PORT_LEFT: left, PORT_RIGHT: right},               # 设定左右主动轮的目标转速
-        valid_for=valid_for,                                # 大于 0.1 秒发送周期；定时发送中断后会自动停机
+        valid_for=valid_for,
     )
     return left, right                                      # 主程序继续使用两个转速
+
 
 def main():
     """选一个动作，算出左右轮转速，运行 1.5 秒后停机。"""
@@ -69,17 +78,17 @@ def main():
         with robot.control():
             # 打开实时控制会话
             with robot.realtime.open(command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)}) as session:
-                left, right = drive(session.commands, v, w)
+                left, right = drive(session.commands, v, w, valid_for=1.7)
                 print(f"动作: {ACTION}  左轮: {left} RPM  右轮: {right} RPM")
-                time.sleep(1.5)                             # 保持这个动作运行 1.5 秒
+                time.sleep(1.5)                             # 只运行1.5秒
                 session.commands.motor_speeds.stop()        # 主动停机，不等待命令自己过期
+
 
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def limit_rpm(left, right):", from: 28, to: 35, defaultOpen: false },
-    { label: "def vw_to_rpm(v, w):", from: 37, to: 49, defaultOpen: false },
-    { label: "def drive(commands, v, w, valid_for=0.35):", from: 51, to: 59, defaultOpen: false },
-    { label: "def main():", from: 61, to: 72, defaultOpen: true },
+    { label: "def limit_rpm(left, right):", from: 32, to: 39, defaultOpen: false },
+    { label: "def vw_to_rpm(v, w):", from: 43, to: 55, defaultOpen: false },
+    { label: "def drive(commands, v, w, valid_for=0.35):                  # 不填valid_for则默认取值0.35", from: 59, to: 67, defaultOpen: false },
   ],
 }

@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const obstacleStop = {
   title: "obstacle_stop.py",
   code: `import pymotion as pm
@@ -11,7 +11,11 @@ SLOW_RPM = 15                              # 减速双轮转速，单位转/分
 
 # --- 共用配置（一般不用动）---
 PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮接 M3，右轮接 M4
+TRANSPORT = "wifi"                         # Wi-Fi 连接模式
+TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
+
+# 根据超声波状态和距离选择正常、减速或停机
 def choose_rpm(ultrasonic_data):
     """根据超声波状态和距离选择正常、减速或停机。"""
     if ultrasonic_data.state == "no_echo":                 # 本例程把无回波作为未测到障碍，保持正常速度
@@ -28,6 +32,8 @@ def choose_rpm(ultrasonic_data):
 
     return NORMAL_RPM, "正常"                               # 距离较远时保持正常速度
 
+
+# 持续获取距离、选择速度、发送双轮目标并打印状态变化
 def run(data_queue, commands):
     """持续获取距离、选择速度、发送双轮目标并打印状态变化。"""
     last_state = None
@@ -49,6 +55,7 @@ def run(data_queue, commands):
             print(f"状态: {state}  距离(mm): {distance}  目标: {rpm} RPM")
             last_state = state
 
+
 def main():
     """连接机器人，持续根据前方距离调整双轮转速。"""
     try:
@@ -60,11 +67,11 @@ def main():
     except KeyboardInterrupt:
         print("Ctrl+C 主动停机")
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def choose_rpm(ultrasonic_data):", from: 12, to: 26, defaultOpen: false },
-    { label: "def run(data_queue, commands):", from: 28, to: 47, defaultOpen: false },
-    { label: "def main():", from: 49, to: 58, defaultOpen: true },
+    { label: "def choose_rpm(ultrasonic_data):", from: 16, to: 30, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 34, to: 53, defaultOpen: false },
   ],
 }

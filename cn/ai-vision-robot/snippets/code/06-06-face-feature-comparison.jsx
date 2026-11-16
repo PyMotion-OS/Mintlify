@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const faceFeatureComparison = {
   title: "face_feature_comparison.py",
   code: `from pathlib import Path
@@ -8,6 +8,7 @@ import numpy as np
 
 from face_tools import create_face_detector, get_quality_face, load_image  # 吸收例程 35 的检测与质量判断
 
+
 # --- 本例程可调整的参数 ---
 MATCH_THRESHOLD = 0.50                     # 余弦相似度达到此值时，判断为同一个人
 PERSON_NAME = "user01"                     # 人为设置的登记代号，匹配到这组特征后返回它，不是模型猜出的姓名
@@ -15,9 +16,10 @@ PERSON_NAME = "user01"                     # 人为设置的登记代号，匹�
 # --- 共用配置（一般不用动）---
 COMMON_DIR = Path(__file__).parents[1] / "common"
 RECOGNITION_MODEL = COMMON_DIR / "face_recognition_sface_2021dec.onnx"
-DATA_DIR = Path(__file__).with_name("data")
-FEATURE_FILE = DATA_DIR / "faces.npz"      # 本例程先在 data 生成，准备好后放入 common 供后续使用
+FEATURE_FILE = COMMON_DIR / "faces.npz"     # 直接写入 common，后续例程读这一份
 
+
+# 读取本地 SFace 文件，并返回 OpenCV 人脸特征模型
 def create_face_recognizer():
     """读取本地 SFace 文件，并返回 OpenCV 人脸特征模型。"""
     model_bytes = np.fromfile(RECOGNITION_MODEL, dtype=np.uint8)
@@ -28,6 +30,8 @@ def create_face_recognizer():
         np.empty(0, np.uint8),                              # SFace 不需要单独的配置文件
     )
 
+
+# 检测一张质量合格的人脸，完成对齐，再返回 SFace 提取的 128 个特征
 def get_face_feature(detector, recognizer, image):
     """检测一张质量合格的人脸，完成对齐，再返回 SFace 提取的 128 个特征。"""
     raw_face = get_quality_face(detector, image)            # 吸收例程 35，返回 SFace 需要的 YuNet 原始数据
@@ -35,12 +39,16 @@ def get_face_feature(detector, recognizer, image):
     feature_row = recognizer.feature(aligned_face)          # feature() 把对齐图片转换成一行 128 个特征数值
     return feature_row.reshape(-1)                          # reshape(-1) 把一行数组整理成一维数组，仍保留 128 个数
 
+
+# 用 SFace 比较两组人脸特征，返回余弦相似度
 def compare_face_features(recognizer, reference_feature, query_feature):
     """用 SFace 比较两组人脸特征，返回余弦相似度。"""
     # match() 是 SFace 自带的特征比较能力；FR_COSINE 指定余弦相似度，越大表示越相似
     score = recognizer.match(reference_feature, query_feature, cv2.FaceRecognizerSF_FR_COSINE)
     return float(score)                                     # 相似度不是概率，0.75 不表示有 75% 的把握
 
+
+# 把匿名代号和对应人脸特征保存为本地 NPZ 文件
 def save_feature_file(names, features):
     """把匿名代号和对应人脸特征保存为本地 NPZ 文件。"""
     FEATURE_FILE.parent.mkdir(exist_ok=True)                # 第一次保存时创建特征文件所在文件夹
@@ -48,6 +56,7 @@ def save_feature_file(names, features):
     feature_rows = np.asarray(features, dtype=np.float32).reshape(-1, 128)
     # names 保存文字数组，features 保存数值数组；文件不包含原始照片
     np.savez(FEATURE_FILE, names=np.asarray(names, dtype=str), features=feature_rows)
+
 
 def main():
     """提取两张图片的特征并比较，再把登记图片的特征保存为 NPZ。"""
@@ -74,13 +83,13 @@ def main():
     print(f"登记代号: {PERSON_NAME}")
     print(f"特征文件: {FEATURE_FILE}")
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def create_face_recognizer():", from: 18, to: 26, defaultOpen: false },
-    { label: "def get_face_feature(detector, recognizer, image):", from: 28, to: 33, defaultOpen: false },
-    { label: "def compare_face_features(recognizer, reference_feature, query_feature):", from: 35, to: 39, defaultOpen: false },
-    { label: "def save_feature_file(names, features):", from: 41, to: 47, defaultOpen: false },
-    { label: "def main():", from: 49, to: 72, defaultOpen: true },
+    { label: "def create_face_recognizer():", from: 20, to: 28, defaultOpen: false },
+    { label: "def get_face_feature(detector, recognizer, image):", from: 32, to: 37, defaultOpen: false },
+    { label: "def compare_face_features(recognizer, reference_feature, query_feature):", from: 41, to: 45, defaultOpen: false },
+    { label: "def save_feature_file(names, features):", from: 49, to: 55, defaultOpen: false },
   ],
 }

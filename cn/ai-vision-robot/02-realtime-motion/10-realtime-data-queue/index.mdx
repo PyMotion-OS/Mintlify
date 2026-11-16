@@ -15,8 +15,7 @@ import { realtimeDataQueue } from "/cn/ai-vision-robot/snippets/code/02-03-realt
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `robot.realtime.open(data_sources=("ultrasonic", "line_tracker"))` | 声明本会话要收哪几种数据（与 `command_targets` 是同一次 `open()` 的两个方向） |
-| `session.data.read(timeout=0.5)` | 从队列取一条；队列空时最多等 0.5 秒，超时返回 `None` |
-| `sensor_data.source` | 这条数据来自哪个传感器，用它分派 |
+| `session.data.read(timeout=0.5)` | 从数据队列取走一条；`timeout` 秒内没等到新数据就返回 `None` |
 | `pprint(…, width=120, sort_dicts=False)` | 按字段顺序、限宽打印嵌套结构 |
 
 ## 完整示例
@@ -28,9 +27,9 @@ import { realtimeDataQueue } from "/cn/ai-vision-robot/snippets/code/02-03-realt
 
         <CodeFold
           docs={[
-          { label: "while", doc: "两种数据都还没拿到\n就继续读" },
-          { label: "read", doc: "取走一条\n队列里就没有了" },
-          { label: "TimeoutError", doc: "超时说明数据没到齐" },
+          { label: "while", doc: "循环：条件为真就反复执行\n两种数据没拿齐\n就继续读" },
+          { label: "read", doc: "session.data 是不断自己更新的队列\nread() 取走一条数据\n队列里就没有这条了" },
+          { label: "TimeoutError", doc: "timeout 内没等到数据\n用 raise 上报这个错误\n程序随即终止" },
           { label: "pprint", doc: "结构体太长\n限宽避免乱折行" },
           ]}
           {...realtimeDataQueue}
@@ -82,4 +81,4 @@ python realtime_data_queue.py
 | `received_monotonic` | float | 只增时钟 | 收到这条数据的时刻 |
 | `age` | float | 秒 | 这条数据从采集到取出多旧 |
 
-> `read()` 是**取走**，不是「看一眼」——取出来队列里就没有了，没有副本。
+> `read()` 每调用一次取走**一条**数据，返回这条数据的完整结构；`timeout` 秒内没有等到新数据时返回 `None`。

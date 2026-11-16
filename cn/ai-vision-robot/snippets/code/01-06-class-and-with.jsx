@@ -43,6 +43,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def main():", from: 25, to: 37, defaultOpen: true },
+    { label: "    def __init__(self, robot):", from: 11, to: 13, defaultOpen: false },
+    { label: "    def __enter__(self):", from: 15, to: 18, defaultOpen: false },
+    { label: "    def __exit__(self, exc_type, exc_value, traceback):     # Python 自动传这三个参数", from: 20, to: 22, defaultOpen: false },
   ],
 }
