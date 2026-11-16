@@ -4,6 +4,7 @@ description: "同一个前进 2 秒写两遍——手动停发停一遍，交给
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+import { classAndWith } from "/cn/ai-vision-robot/snippets/code/01-06-class-and-with.jsx"
 
 ## 前置条件
 
@@ -29,16 +30,15 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
   <Tab title="代码">
 
     <CodeFold
-      title="safe_motors.py"
       docs={[
-        { label: "SafeMotors", doc: "两路电机的包装\n进 with 停一次\n出 with 再停一次" },
-        { label: "__init__", doc: "创建对象时执行\n把电机组记下来" },
-        { label: "__enter__", doc: "进 with 时执行\n先停一次再把电机组交给 as 后的名字" },
-        { label: "__exit__", doc: "出 with 时执行\n停一次电机\n三个参数 Python 自动传" },
-        { label: "main", doc: "同一个动作写两遍\n写法一自己写 stop\n写法二交给 SafeMotors" },
-        { label: "robot.control", doc: "先拿控制权\n电机动作必须包在它里面" },
+      { label: "SafeMotors", doc: "两路电机的包装\n进 with 停一次\n出 with 再停一次" },
+      { label: "__init__", doc: "创建对象时执行\n把电机组记下来" },
+      { label: "__enter__", doc: "进 with 时执行\n先停一次再把电机组交给 as 后的名字" },
+      { label: "__exit__", doc: "出 with 时执行\n停一次电机\n三个参数 Python 自动传" },
+      { label: "main", doc: "同一个动作写两遍\n写法一自己写 stop\n写法二交给 SafeMotors" },
+      { label: "robot.control", doc: "先拿控制权\n电机动作必须包在它里面" },
       ]}
-      code={'import pymotion as pm\n\nPORT_LEFT = 3                              # 左轮接 M3 口\nPORT_RIGHT = 4                             # 右轮接 M4 口\nRPM = 30                                   # 转速：转/分钟，正数向前\n\n\nclass SafeMotors:\n    """两路电机的包装：进 with 时停一次，出 with 时再停一次。"""\n\n    def __init__(self, robot):\n        """创建对象时执行：把机器人的电机组记下来。"""\n        self.motors = robot.motors\n\n    def __enter__(self):\n        """进 with 时执行：先停一次，再把电机组交给 as 后面的名字。"""\n        self.motors.stop()\n        return self.motors\n\n    def __exit__(self, exc_type, exc_value, traceback):     # Python 自动传这三个参数\n        """出 with 时执行：停一次电机。"""\n        self.motors.stop()\n\n\ndef main():\n    """同一个动作写两遍：一遍自己写 stop，一遍交给 SafeMotors。"""\n\n    with pm.lite.connect(transport="wifi", timeout=15.0) as robot:\n        with robot.control():                               # 先拿控制权\n            # 写法一：不用类——停、发、停，三步都得自己写，忘一步就出事\n            robot.motors.stop()                             # 跑前停一次\n            robot.motors.set_speeds({PORT_LEFT: RPM, PORT_RIGHT: RPM}, duration=2)  # 前进 2 秒\n            robot.motors.stop()                             # 收尾停一次\n\n            # 写法二：用类——进出 with 自动停，中间只写动作\n            with SafeMotors(robot) as motors:\n                motors.set_speeds({PORT_LEFT: RPM, PORT_RIGHT: RPM}, duration=2)\n\n\nif __name__ == "__main__":\n    main()'}
+      {...classAndWith}
     />
 
   </Tab>
