@@ -4,6 +4,7 @@ description: "每秒打印一次机器人状态包；中途按 Ctrl-C 或拔网�
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
+import { exceptionsAndCleanup } from "/cn/ai-vision-robot/snippets/code/01-05-exceptions-and-cleanup.jsx"
 
 ## 前置条件
 
@@ -28,14 +29,13 @@ import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
   <Tab title="代码">
 
     <CodeFold
-      title="watch_status.py"
       docs={[
-        { label: "read_status", doc: "读一次状态\n把整包 8 个字段全打出来" },
-        { label: "main", doc: "连上后每秒读一次\n不用 with，手动收尾\nCtrl-C 和断网都干净退出" },
-        { label: "except KeyboardInterrupt", doc: "Ctrl-C 也是异常\n接住它打印一句" },
-        { label: "finally", doc: "不管上面怎么结束\n这里都会执行\nrobot.close() 一定被调到" },
+      { label: "read_status", doc: "读一次状态\n把整包 8 个字段全打出来" },
+      { label: "main", doc: "连上后每秒读一次\n不用 with，手动收尾\nCtrl-C 和断网都干净退出" },
+      { label: "except KeyboardInterrupt", doc: "Ctrl-C 也是异常\n接住它打印一句" },
+      { label: "finally", doc: "不管上面怎么结束\n这里都会执行\nrobot.close() 一定被调到" },
       ]}
-      code={'import time\n\nimport pymotion as pm\n\n\ndef read_status(robot):\n    """读一次状态，把整包 8 个字段全打出来。"""\n    status = robot.status()                      # 读一次状态\n    print("{")\n    print(f\'  "device_id": "{status.device_id}",\')          # 设备编号\n    print(f\'  "state": "{status.state}",\')                  # 设备当前状态\n    print(f\'  "lease_active": {status.lease_active},\')      # 是否持有控制权（1.6 会用到）\n    print(f\'  "estop_latched": {status.estop_latched},\')    # 急停是否锁存：按下会一直锁着\n    print(f\'  "estop_reason": "{status.estop_reason}",\')    # 急停原因，没触发是空字符串\n    print(f\'  "fault_latched": {status.fault_latched},\')    # 故障是否锁存\n    print(f\'  "fault_reason": "{status.fault_reason}",\')    # 故障原因\n    print(f\'  "age": {status.age}\')                         # 数据有多旧\n    print("}")\n\n\ndef main():\n    """连上以后每秒读一次；中途 Ctrl-C 或断网，都由 finally 收尾。"""\n    robot = pm.lite.connect(transport="wifi", timeout=15.0)  # 注意：没有 with\n\n    try:\n        for i in range(20):                                 # 连续读 20 轮\n            read_status(robot)\n            time.sleep(1.0)                                 # 每轮停 1 秒\n    except KeyboardInterrupt:                               # Ctrl-C 也是异常，可以接住\n        print("被 Ctrl-C 打断")\n    except pm.lite.LiteError as exc:                        # 只接 SDK 冒出来的错\n        print(f"出错（{exc}）")\n    finally:\n        robot.close()                                       # 不管上面怎么结束，这里都会执行\n\n\nif __name__ == "__main__":\n    main()'}
+      {...exceptionsAndCleanup}
     />
 
   </Tab>

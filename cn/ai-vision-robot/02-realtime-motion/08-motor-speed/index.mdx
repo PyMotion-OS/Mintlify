@@ -4,7 +4,7 @@ description: "让一个主动轮正转 1 秒后自己停，再反转 1 秒被主
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
-import { motorSpeed } from "/cn/ai-vision-robot/snippets/code/motorSpeed.jsx"
+import { motorSpeed } from "/cn/ai-vision-robot/snippets/code/02-01-motor-speed.jsx"
 
 ## 前置条件
 
@@ -31,9 +31,9 @@ import { motorSpeed } from "/cn/ai-vision-robot/snippets/code/motorSpeed.jsx"
 
     <CodeFold
       docs={[
-        { label: "main", doc: "限幅 → 连接 → 控制权\n→ 开会话 → 正转\n→ sleep 2 秒看到期\n→ 反转 → 主动停" },
-        { label: "valid_for", doc: "命令存活秒数\n到期设备端自动停\nsleep 比它长就能看到" },
-        { label: "stop", doc: "提前结束\n不等到期" },
+      { label: "main", doc: "限幅 → 连接 → 控制权\n→ 开会话 → 正转\n→ sleep 2 秒看到期\n→ 反转 → 主动停" },
+      { label: "valid_for", doc: "命令存活秒数\n到期设备端自动停\nsleep 比它长就能看到" },
+      { label: "stop", doc: "提前结束\n不等到期" },
       ]}
       {...motorSpeed}
     />
