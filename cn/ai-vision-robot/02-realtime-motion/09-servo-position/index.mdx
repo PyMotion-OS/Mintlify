@@ -14,10 +14,11 @@ import { servoPosition } from "/cn/ai-vision-robot/snippets/code/02-02-servo-pos
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `robot.pwm_servos.move_to({端口: 角度, ...})` | 普通位置命令：发一次角度，舵机自己转过去（1.7 学过，本页只做复位） |
+| `reset_servos(robot)` | 本页定义：用普通位置命令让双舵机到达复位姿态（90°/90°），返回两个复位角度 |
+| `robot.pwm_servos.move_to({端口: 角度, ...})` | 普通位置命令：发一次角度，让双舵机转到指定角度（1.7 学过） |
+| `move_servos(commands, up_down_angle=90, left_right_angle=90)` | 本页定义：先限幅再发实时角度命令，返回实际发送的角度；省略参数时停在复位姿态 |
 | `commands.pwm_position_servos.write({端口: 角度}, valid_for=0.3)` | 实时位置命令：走会话通道发角度，可带有效期 |
 | 角度限幅（`if/elif`） | 上下 0～居中+15°、左右 0～180°，超范围夹到边界 |
-| `def move_servos(commands, up_down_angle=90, left_right_angle=90)` | 带默认参数的函数，省略时停在复位姿态 |
 
 ## 完整示例
 
@@ -30,8 +31,8 @@ import { servoPosition } from "/cn/ai-vision-robot/snippets/code/02-02-servo-pos
       docs={[
       { label: "reset_servos", doc: "move_to 复位\n+ sleep 1 秒\n等转到位" },
       { label: "move_servos", doc: "先限幅再发命令\n返回实际发送的角度" },
-      { label: "pwm_position_servos", doc: "实时通道\nvalid_for=0.3\n只约束命令本身" },
-      { label: "commands", doc: "会话的命令入口\n和 robot. 开头的调用\n不是一回事" },
+      { label: "pwm_position_servos", doc: "舵机的实时位置命令通道\n发过的角度一直保持\n直到下一条命令覆盖" },
+      { label: "commands", doc: "session 对象的指令模块\n实时命令都从这里发出" },
       ]}
       {...servoPosition}
     />
@@ -66,3 +67,9 @@ python servo_position.py
 | `move_servos` 两个默认参数 | int | 90 / 90 | 省略时停在复位姿态 |
 
 > 本页是 1.7 的对照页：1.7 讲「怎么转到某个角度」，本页讲「实时命令与角度保持」——电机命令过期就停，舵机命令过期角度还在。
+
+## 本页产出 · 舵机当前的方法和参数
+
+- 普通位置命令：`robot.pwm_servos.move_to({端口: 角度})` —— 发一次转到位，适合复位
+- 实时位置命令：`session.commands.pwm_position_servos.write({端口: 角度}, valid_for=0.3)` —— 会话内可反复发，命令过期角度仍保持
+- 角度范围：上下 0～105°（90° 居中 +15°）、左右 0～180°，双 90° 为居中姿态，可按实际情况微调

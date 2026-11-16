@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const colorServoTracking = {
   title: "color_servo_tracking.py",
   code: `import time
@@ -10,17 +10,22 @@ from camera import Camera, log_message       # 引用例程26的摄像头类和�
 from servo_control import move_servos, reset_servos # 引用舵机复位和安全执行函数
 from target_observation import draw_target_marks, find_target # 引用例程26的目标观测和结果标记
 
+
 # --- 本例程可调整的参数 ---
 TARGET_TYPE = "blue"                         # 跟随蓝色目标，也可改为gray、green或yellow
 DEAD_ZONE = 0.10                             # 二维偏差进入中心10%后保持当前角度
 K = 5                                      # 偏差为1时调整10°，数值越大跟随动作越强
 
+
+# 把一个方向的归一化偏差换成新的舵机角度
 def error_to_angle(error, angle, K):
     """把一个方向的归一化偏差换成新的舵机角度。"""
     if error is None or abs(error) <= DEAD_ZONE:
         return angle                                         # 没有目标或进入中心范围时保持当前角度
     return angle + error * K                                # 偏差乘K得到本轮需要调整的角度
 
+
+# 持续把颜色目标偏差换成舵机角度并发送实时命令
 def run(camera, commands, up_down_angle, left_right_angle):
     """持续把颜色目标偏差换成舵机角度并发送实时命令。"""
     last_angles = None                                      # 两个角度变化时才打印新日志
@@ -45,6 +50,7 @@ def run(camera, commands, up_down_angle, left_right_angle):
             break                                           # Esc结束循环，退出实时会话并关闭双舵机输出
         time.sleep(0.1)                                     # 每0.1秒执行一次，实时指令约为10 Hz
 
+
 def main():
     """启动时先复位，再让双舵机持续跟随颜色目标。"""
     try:
@@ -62,11 +68,11 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def error_to_angle(error, angle, K):", from: 15, to: 19, defaultOpen: false },
-    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 21, to: 43, defaultOpen: false },
-    { label: "def main():", from: 45, to: 60, defaultOpen: true },
+    { label: "def error_to_angle(error, angle, K):", from: 18, to: 22, defaultOpen: false },
+    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 26, to: 48, defaultOpen: false },
   ],
 }

@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const safeStop = {
   title: "safe_stop.py",
   code: `import threading                           # 导入线程工具
@@ -11,7 +11,11 @@ RUN_SECONDS = 20.0                         # 最长运行时间，单位秒
 
 # --- 共用配置（一般不用动）---
 PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮接 M3，右轮接 M4
+TRANSPORT = "wifi"                         # Wi-Fi 连接模式
+TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
+
+# 输入 stop 后把列表中的运行标记改为 False
 def listen_keyboard(is_running):
     """输入 stop 后把列表中的运行标记改为 False。"""
     try:
@@ -24,6 +28,7 @@ def listen_keyboard(is_running):
     # ctrl c后输入端关闭，input()冒出EOFError异常：输入端关闭或不可用，在此捕获异常并安静地结束监听线程，如果不捕获任其继续冒出，终端会打印此异常
     except EOFError:
         return
+
 
 def main():
     """连接机器人，运行双轮，等待时间到期 或 输入stop 或 Ctrl+C 或 断开网络 双轮会自动停止。"""
@@ -56,10 +61,10 @@ def main():
     except Exception as exc:
         print(f"出错: {type(exc).__name__}: {exc}")
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def listen_keyboard(is_running):", from: 12, to: 23, defaultOpen: false },
-    { label: "def main():", from: 25, to: 54, defaultOpen: true },
+    { label: "def listen_keyboard(is_running):", from: 16, to: 27, defaultOpen: false },
   ],
 }

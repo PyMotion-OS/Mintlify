@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const objectTracking = {
   title: "object_tracking.py",
   code: `import time
@@ -8,10 +8,13 @@ import cv2
 from camera import Camera, log_message     # 沿用例程 32 的实时摄像头输入
 from yolo_detection import IMAGE_SIZE, load_yolo_resources  # 沿用例程 32 的模型、标签和输入尺寸
 
+
 # --- 本例程可调整的参数 ---
 TARGET_LABEL = "person"                    # 只保留 person 类别的跟踪结果
 CONFIDENCE = 0.25                          # 全模块统一只保留置信度达到 0.25 的结果
 
+
+# 调用模型自带的跟踪能力，在稳定检测字段中增加持续编号
 def track_objects(model, image, confidence):
     """调用模型自带的跟踪能力，在稳定检测字段中增加持续编号。"""
     start_time = time.monotonic()                           # 记录开始时刻，用于计算整次跟踪耗时
@@ -45,6 +48,8 @@ def track_objects(model, image, confidence):
     tracking_time = (time.monotonic() - start_time) * 1000   # 秒乘 1000 得到本次跟踪耗时，单位毫秒
     return tracks, tracking_time
 
+
+# 第一次选择面积最大的指定类别，之后只寻找同一个跟踪编号
 def choose_target(tracks, selected_id, target_label):
     """第一次选择面积最大的指定类别，之后只寻找同一个跟踪编号。"""
     # 先从模型返回的所有类别中，只留下本例程要跟踪的人物
@@ -70,6 +75,8 @@ def choose_target(tracks, selected_id, target_label):
 
     return None, selected_id                                # 目标丢失时保留编号，但本帧不产生目标
 
+
+# 候选画橘框，当前选中目标画红框，并显示类别、编号和置信度
 def draw_tracks(image, tracks, selected_id, target_label, tracking_time):
     """候选画橘框，当前选中目标画红框，并显示类别、编号和置信度。"""
     marked_image = image.copy()
@@ -89,6 +96,7 @@ def draw_tracks(image, tracks, selected_id, target_label, tracking_time):
 
     cv2.putText(marked_image, f"time={tracking_time:.0f} ms", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)
     return marked_image
+
 
 def main():
     """实时跟踪摄像头中的人物，并持续锁定第一次选择的编号。"""
@@ -126,12 +134,12 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def track_objects(model, image, confidence):", from: 12, to: 43, defaultOpen: false },
-    { label: "def choose_target(tracks, selected_id, target_label):", from: 45, to: 68, defaultOpen: false },
-    { label: "def draw_tracks(image, tracks, selected_id, target_label, tracking_time):", from: 70, to: 88, defaultOpen: false },
-    { label: "def main():", from: 90, to: 124, defaultOpen: true },
+    { label: "def track_objects(model, image, confidence):", from: 15, to: 46, defaultOpen: false },
+    { label: "def choose_target(tracks, selected_id, target_label):", from: 50, to: 73, defaultOpen: false },
+    { label: "def draw_tracks(image, tracks, selected_id, target_label, tracking_time):", from: 77, to: 95, defaultOpen: false },
   ],
 }

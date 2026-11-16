@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const faceQuality = {
   title: "face_quality.py",
   code: `import cv2
@@ -6,12 +6,15 @@ export const faceQuality = {
 # face_tools.py 吸收例程 34 已经学过的人脸检测和绘制，本文件只展开质量判断
 from face_tools import create_face_detector, draw_faces, load_image, observe_faces
 
+
 # --- 本例程可调整的参数 ---
 MIN_FACE_SIZE = 80                         # 人脸框的宽和高都至少为 80 像素
 MIN_BRIGHTNESS = 45                        # 平均亮度低于 45 时认为人脸区域过暗
 MAX_BRIGHTNESS = 210                       # 平均亮度高于 210 时认为人脸区域过亮
 MIN_SHARPNESS = 100.0                      # 清晰度低于 100 时认为人脸区域模糊
 
+
+# 依次检查人脸完整度、尺寸、亮度和清晰度，再返回检查数据和原因
 def check_face_quality(image, face):
     """依次检查人脸完整度、尺寸、亮度和清晰度，再返回检查数据和原因。"""
     face_x, face_y, face_width, face_height = face["box"]
@@ -48,6 +51,7 @@ def check_face_quality(image, face):
         reason = "、".join(reasons)                         # join() 用顿号连接全部不合格原因
         return False, brightness, sharpness, f"{reason}，请重新拍摄"
     return True, brightness, sharpness, "人脸质量合格，可以进入后续特征提取"
+
 
 def main():
     """检测图片中的人脸，再判断数量、完整度、尺寸、亮度和清晰度是否适合后续使用。"""
@@ -90,10 +94,10 @@ def main():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def check_face_quality(image, face):", from: 12, to: 47, defaultOpen: false },
-    { label: "def main():", from: 49, to: 88, defaultOpen: true },
+    { label: "def check_face_quality(image, face):", from: 15, to: 50, defaultOpen: false },
   ],
 }

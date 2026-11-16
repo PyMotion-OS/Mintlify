@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const yoloLiveDetection = {
   title: "yolo_live_detection.py",
   code: `import cv2
@@ -7,8 +7,10 @@ from camera import Camera, log_message     # 沿用模块四、五最终版的�
 # yolo_detection.py 吸收例程 31 的三个 YOLO 函数
 from yolo_detection import detect_objects, draw_detections, load_yolo_resources
 
+
 # --- 本例程可调整的参数 ---
 CONFIDENCE = 0.25                          # 只保留置信度达到 0.25 的检测结果
+
 
 def main():
     """把 Camera 提供的最新有效图片持续交给例程 31 的 YOLO 函数。"""
@@ -31,9 +33,9 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def main():", from: 10, to: 29, defaultOpen: true },
   ],
 }

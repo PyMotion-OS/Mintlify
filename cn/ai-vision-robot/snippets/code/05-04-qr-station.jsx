@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const qrStation = {
   title: "qr_station.py",
   code: `import time
@@ -11,11 +11,14 @@ from differential_drive import vw_to_rpm   # 引用例程11的差速函数
 from line_control import line_tracker_to_vw  # 引用例程15的五路分类和转向函数
 from qr_observation import check_qr_state, draw_qr_marks, find_qr  # 引用例程29的连续识别和绘画
 
+
 # --- 本例程可调整的参数 ---
 V = 100                                     # 默认循迹速度，单位毫米/秒
 SLOW_V = 60                                # 站台任务中的减速速度，单位毫米/秒
 K = 25                                     # 五路偏差每增加一格，W增加25度/秒
 
+
+# 循迹遇到站台时减速，二维码离开后停机8秒，再恢复循迹
 def run(camera, data_queue, commands):
     """循迹遇到站台时减速，二维码离开后停机8秒，再恢复循迹。"""
     state = "normal"                                        # normal正常循迹，slow减速
@@ -64,6 +67,7 @@ def run(camera, data_queue, commands):
         if cv2.waitKey(1) == 27:
             return                                          # Esc结束run，外层with随后停止实时控制并释放连接
 
+
 def main():
     """连接摄像头、五路和双轮，运行循迹站台演示。"""
     try:
@@ -80,10 +84,10 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run(camera, data_queue, commands):", from: 16, to: 62, defaultOpen: false },
-    { label: "def main():", from: 64, to: 78, defaultOpen: true },
+    { label: "def run(camera, data_queue, commands):", from: 19, to: 65, defaultOpen: false },
   ],
 }

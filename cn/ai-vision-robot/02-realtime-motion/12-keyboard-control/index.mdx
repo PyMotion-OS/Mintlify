@@ -1,6 +1,6 @@
 ---
 title: "2.5 键盘遥控"
-description: "弹出窗口，用方向键遥控；松手就停、切走窗口就停、关窗也停"
+description: "弹出窗口，用方向键遥控小车，支持同时按多个键组合动作；松开、切走窗口或关窗都会停"
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
@@ -11,16 +11,13 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/02-05-keybo
 
 - Robot 通信正常（参考 [1.1 WIFI模式连接](../../01-python-basics/01-connect-wifi/index)，能打印出设备 ID）
 - 把 2.4 的产出 `differential_drive.py` 复制到本页目录（和主文件同一层，否则 `import` 报错）
-- **车轮架空**
 
 ## 关键函数
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `from differential_drive import vw_to_rpm` | 直接用 2.4 的换算函数，不重写 |
+| `from differential_drive import PORT_LEFT, PORT_RIGHT, drive` | 直接用 2.4 的差速能力，不重写 |
 | `window.bind("<KeyPress>", …)` / `<KeyRelease>` | 按键按下与松开，配合 `keys` 集合记录「现在按着哪些键」 |
-| `commands.motor_speeds.write({…}, valid_for=0.35)` | 每隔 0.1 秒重发；`valid_for` 比发送周期长，程序卡死最多再跑 0.35 秒 |
-| `<FocusOut>` / 关窗回调 | 窗口失焦或关闭 → 立刻停 |
 
 ## 完整示例
 
@@ -33,7 +30,6 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/02-05-keybo
           docs={[
           { label: "drive", doc: "调 2.4 的函数\n→ 发双轮速度" },
           { label: "run_window", doc: "建窗口、绑键\n按 0.1 秒节拍刷新" },
-          { label: "valid_for", doc: "心跳式重发\n断供就自动停" },
           { label: "main", doc: "控制权 → 会话\n→ 开窗" },
           ]}
           {...keyboardControl}
@@ -71,6 +67,5 @@ python keyboard_control.py
 | --- | --- | --- | --- |
 | `V` | int | 106 毫米/秒 | 前后方向线速度 |
 | `W` | int | 40 度/秒 | 左右方向角速度 |
-| `valid_for` | float | 0.35 | 必须大于发送周期 0.1，断供自动停 |
 | `PORT_LEFT` / `PORT_RIGHT` | int | 3 / 4 | 左轮 M3、右轮 M4 |
 | `keys` | set | 集合 | 同时记多个按下的键 |

@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const followingObservation = {
   title: "following_observation.py",
   code: `import cv2
@@ -9,10 +9,13 @@ from target_selection import choose_follow_motion, find_unique_target
 # load_yolo_resources：加载模型和标签；track_objects：模型自带编号跟踪；draw_follow_tracking：绘制跟随结果
 from yolo_detection import draw_follow_tracking, load_yolo_resources, track_objects
 
+
 # --- 本例程可调整的参数 ---
 CONFIDENCE = 0.25                          # 检测置信度门槛
 W = 90                                     # 原地对准时的转向速度，单位度/秒
 
+
+# 首次只选择唯一指定类别，之后只寻找同一个跟踪编号
 def choose_target(tracks, selected_id, target_label):
     """首次只选择唯一指定类别，之后只寻找同一个跟踪编号。"""
     # 演化例程 33 的 choose_target：第一次由选最大人物改为只接受唯一人物
@@ -26,6 +29,7 @@ def choose_target(tracks, selected_id, target_label):
         if candidate["track_id"] == selected_id:
             return candidate, selected_id                   # 锁定编号仍在画面中，返回同一个人物
     return None, selected_id
+
 
 def main():
     """首次接受唯一人物，持续显示原编号的跟随意图，按R重新选择。"""
@@ -65,10 +69,10 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def choose_target(tracks, selected_id, target_label):", from: 13, to: 25, defaultOpen: false },
-    { label: "def main():", from: 27, to: 63, defaultOpen: true },
+    { label: "def choose_target(tracks, selected_id, target_label):", from: 16, to: 28, defaultOpen: false },
   ],
 }

@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const qrObservation = {
   title: "qr_observation.py",
   code: `from pathlib import Path
@@ -6,12 +6,15 @@ export const qrObservation = {
 import cv2
 import numpy as np
 
+
 # 吸收例程28的二维码生成能力和配置，本例程未调用时也保留
 QR_TEXT = "GREETING"                       # 这段文字会被写入二维码
 QR_SCALE = 32                              # 生成约900像素的大图，方便手机展示和摄像头识别
 OUTPUT_DIR = Path(__file__).parent / "cards"
 OUTPUT_PATH = OUTPUT_DIR / f"{QR_TEXT}.png" # /继续拼接二维码文件名
 
+
+# 把文字生成二维码并保存为图片
 def create_qr(text):
     """把文字生成二维码并保存为图片。"""
     encoder = cv2.QRCodeEncoder_create()                    # 创建二维码生成对象
@@ -24,6 +27,8 @@ def create_qr(text):
     OUTPUT_DIR.mkdir(exist_ok=True)                         # cards已经存在时保持不变
     cv2.imencode(".png", qr_image)[1].tofile(OUTPUT_PATH)   # 编码后写入文件，兼容中文路径
 
+
+# 识别一个二维码，返回文字、四角、中心、面积比例和二维偏差
 def find_qr(image):
     """识别一个二维码，返回文字、四角、中心、面积比例和二维偏差。"""
     # 创建二维码检测对象并直接识别，返回文字、四角坐标和拉正后的二维码
@@ -53,6 +58,8 @@ def find_qr(image):
         "error_y": (center_y - height / 2) / (height / 2), # 上边为负，下边为正
     }
 
+
+# 复制原图，再标出二维码边框、中心和二维偏差
 def draw_qr_marks(image, qr_data):
     """复制原图，再标出二维码边框、中心和二维偏差。"""
     marked_image = image.copy()
@@ -70,8 +77,8 @@ def draw_qr_marks(image, qr_data):
     cv2.putText(marked_image, text, (30, 52), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 176, 255), 2)
     return marked_image`,
   folds: [
-    { label: "def create_qr(text):", from: 12, to: 22, defaultOpen: false },
-    { label: "def find_qr(image):", from: 24, to: 51, defaultOpen: false },
-    { label: "def draw_qr_marks(image, qr_data):", from: 53, to: 68, defaultOpen: false },
+    { label: "def create_qr(text):", from: 15, to: 25, defaultOpen: false },
+    { label: "def find_qr(image):", from: 29, to: 56, defaultOpen: false },
+    { label: "def draw_qr_marks(image, qr_data):", from: 60, to: 75, defaultOpen: false },
   ],
 }

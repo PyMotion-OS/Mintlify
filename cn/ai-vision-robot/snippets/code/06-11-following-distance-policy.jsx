@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const followingDistancePolicy = {
   title: "following_distance_policy.py",
   code: `import cv2
@@ -8,10 +8,13 @@ from target_selection import find_unique_target  # 唯一目标观测函数，�
 # load_yolo_resources：加载模型和标签；detect_objects：检测；draw_follow_motion：绘制跟随意图
 from yolo_detection import detect_objects, draw_follow_motion, load_yolo_resources
 
+
 # --- 本例程可调整的参数 ---
 CONFIDENCE = 0.25                          # 检测置信度门槛
 W = 90                                     # 原地对准时的转向速度，单位度/秒
 
+
+# 把目标框画面占比分成前进、减速和停止三档
 def target_area_to_v(area_ratio):
     """把目标框画面占比分成前进、减速和停止三档。"""
     if area_ratio is None:
@@ -22,6 +25,8 @@ def target_area_to_v(area_ratio):
         return 40, "slow"                                   # 框占画面达到4%时减速，V为40毫米/秒
     return 70, "forward"                                    # 目标较远，V为70毫米/秒
 
+
+# 先检查远近，再原地对准，最后返回前进速度、转向速度和状态
 def choose_follow_motion(error_x, area_ratio, W=90):
     """先检查远近，再原地对准，最后返回前进速度、转向速度和状态。"""
     # error_x左负右正，area_ratio是框占比；W是转向速度，默认90度/秒
@@ -35,6 +40,7 @@ def choose_follow_motion(error_x, area_ratio, W=90):
     if error_x > 0.10:
         return 0, -W, "right"                               # 偏差超出中心10%，负W表示原地右转
     return v, 0, state                                      # 已对准才使用远近决定的V，W为0
+
 
 def main():
     """观察真实人物方向和远近对应的V/W，仅显示，不连接主动轮。"""
@@ -69,11 +75,11 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def target_area_to_v(area_ratio):", from: 12, to: 20, defaultOpen: false },
-    { label: "def choose_follow_motion(error_x, area_ratio, W=90):", from: 22, to: 34, defaultOpen: false },
-    { label: "def main():", from: 36, to: 67, defaultOpen: true },
+    { label: "def target_area_to_v(area_ratio):", from: 15, to: 23, defaultOpen: false },
+    { label: "def choose_follow_motion(error_x, area_ratio, W=90):", from: 27, to: 39, defaultOpen: false },
   ],
 }

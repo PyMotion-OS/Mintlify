@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const keyboardControl = {
   title: "keyboard_control.py",
   code: `import tkinter as tk                       # Tkinter 用来创建键盘控制窗口
@@ -11,6 +11,8 @@ from differential_drive import PORT_LEFT, PORT_RIGHT, drive  # 引用例程 11 �
 V = 106                                    # 前后方向的线速度，单位毫米/秒
 W = 40                                     # 左右方向的角速度，单位度/秒
 
+
+# 用实时命令入口打开键盘窗口，并持续刷新双轮速度
 def run_window(commands):
     """用实时命令入口打开键盘窗口，并持续刷新双轮速度。"""
     window = tk.Tk()                                        # 创建一个窗口
@@ -71,6 +73,7 @@ def run_window(commands):
     finally:
         commands.motor_speeds.stop()                        # 关窗退出实时控制前，最后主动停机一次
 
+
 def main():
     """连接 → 拿控制权 → 开双轮通道 → 开窗口"""
     try:
@@ -83,10 +86,14 @@ def main():
     except Exception as exc:
         print(f"出错: {type(exc).__name__}: {exc}")
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run_window(commands):", from: 11, to: 69, defaultOpen: false },
-    { label: "def main():", from: 71, to: 81, defaultOpen: true },
+    { label: "def run_window(commands):", from: 13, to: 71, defaultOpen: false },
+    { label: "    def tick():", from: 28, to: 42, defaultOpen: false },
+    { label: "    def on_press(event):", from: 45, to: 51, defaultOpen: false },
+    { label: "    def on_release(event):", from: 54, to: 56, defaultOpen: false },
+    { label: "    def on_focus_out(_event):", from: 59, to: 62, defaultOpen: false },
   ],
 }

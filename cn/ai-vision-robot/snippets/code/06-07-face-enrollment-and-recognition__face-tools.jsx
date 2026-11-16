@@ -1,10 +1,11 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const faceTools = {
   title: "face_tools.py",
   code: `from pathlib import Path
 
 import cv2
 import numpy as np
+
 
 MIN_FACE_SIZE = 80
 MIN_BRIGHTNESS = 45
@@ -16,11 +17,15 @@ DETECTION_MODEL = COMMON_DIR / "face_detection_yunet_2023mar.onnx"
 RECOGNITION_MODEL = COMMON_DIR / "face_recognition_sface_2021dec.onnx"
 FEATURE_FILE = COMMON_DIR / "faces.npz"    # 吸收 36 的保存接口；36 的视频识别主流程只读此文件
 
+
+# 读取本地 YuNet 文件，并返回 OpenCV 人脸检测器
 def create_face_detector():
     """读取本地 YuNet 文件，并返回 OpenCV 人脸检测器。"""
     model_bytes = np.fromfile(DETECTION_MODEL, dtype=np.uint8)
     return cv2.FaceDetectorYN.create("onnx", model_bytes, np.empty(0, np.uint8), (320, 320), 0.80)
 
+
+# 依次检查人脸完整度、尺寸、亮度和清晰度，再返回是否合格和原因
 def check_face_quality(image, face):
     """依次检查人脸完整度、尺寸、亮度和清晰度，再返回是否合格和原因。"""
     face_x, face_y, face_width, face_height = face["box"]
@@ -52,6 +57,8 @@ def check_face_quality(image, face):
         return False, "、".join(reasons)
     return True, "人脸质量合格"
 
+
+# 返回合格人脸的 YuNet 原始数据；实时画面不合格时返回 None
 def get_quality_face(detector, image):
     """返回合格人脸的 YuNet 原始数据；实时画面不合格时返回 None。"""
     image_height, image_width = image.shape[0], image.shape[1]
@@ -69,6 +76,8 @@ def get_quality_face(detector, image):
         return None                                         # 尺寸、亮度或清晰度不合格，不进入特征提取
     return raw_face
 
+
+# 读取本地 SFace 文件，并返回 OpenCV 人脸特征模型
 def create_face_recognizer():
     """读取本地 SFace 文件，并返回 OpenCV 人脸特征模型。"""
     model_bytes = np.fromfile(RECOGNITION_MODEL, dtype=np.uint8)
@@ -79,6 +88,8 @@ def create_face_recognizer():
         np.empty(0, np.uint8),                              # SFace 不需要单独的配置文件
     )
 
+
+# 提取合格人脸的 128 个特征；没有合格人脸时返回 None
 def get_face_feature(detector, recognizer, image):
     """提取合格人脸的 128 个特征；没有合格人脸时返回 None。"""
     raw_face = get_quality_face(detector, image)            # 吸收例程 35，返回 SFace 需要的 YuNet 原始数据
@@ -88,12 +99,16 @@ def get_face_feature(detector, recognizer, image):
     feature_row = recognizer.feature(aligned_face)          # feature() 把对齐图片转换成一行 128 个特征数值
     return feature_row.reshape(-1)                          # reshape(-1) 把一行数组整理成一维数组，仍保留 128 个数
 
+
+# 用 SFace 比较两组人脸特征，返回余弦相似度
 def compare_face_features(recognizer, reference_feature, query_feature):
     """用 SFace 比较两组人脸特征，返回余弦相似度。"""
     # match() 是 SFace 自带的特征比较能力；FR_COSINE 指定余弦相似度，越大表示越相似
     score = recognizer.match(reference_feature, query_feature, cv2.FaceRecognizerSF_FR_COSINE)
     return float(score)                                     # 相似度不是概率，0.75 不表示有 75% 的把握
 
+
+# 复制图片，在水印下方显示识别代号和相似度
 def draw_faces(image, person_name, score):
     """复制图片，在水印下方显示识别代号和相似度。"""
     marked_image = image.copy()                             # 只在副本上绘制，保留原始图片供后续识别
@@ -104,6 +119,8 @@ def draw_faces(image, person_name, score):
     cv2.putText(marked_image, text, (20, 105), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)
     return marked_image
 
+
+# 把匿名代号和对应人脸特征保存为本地 NPZ 文件
 def save_feature_file(names, features):
     """把匿名代号和对应人脸特征保存为本地 NPZ 文件。"""
     FEATURE_FILE.parent.mkdir(exist_ok=True)                # 第一次保存时创建特征文件所在文件夹
@@ -112,13 +129,13 @@ def save_feature_file(names, features):
     # names 保存文字数组，features 保存数值数组；文件不包含原始照片
     np.savez(FEATURE_FILE, names=np.asarray(names, dtype=str), features=feature_rows)`,
   folds: [
-    { label: "def create_face_detector():", from: 16, to: 19, defaultOpen: false },
-    { label: "def check_face_quality(image, face):", from: 21, to: 50, defaultOpen: false },
-    { label: "def get_quality_face(detector, image):", from: 52, to: 67, defaultOpen: false },
-    { label: "def create_face_recognizer():", from: 69, to: 77, defaultOpen: false },
-    { label: "def get_face_feature(detector, recognizer, image):", from: 79, to: 86, defaultOpen: false },
-    { label: "def compare_face_features(recognizer, reference_feature, query_feature):", from: 88, to: 92, defaultOpen: false },
-    { label: "def draw_faces(image, person_name, score):", from: 94, to: 102, defaultOpen: false },
-    { label: "def save_feature_file(names, features):", from: 104, to: 110, defaultOpen: false },
+    { label: "def create_face_detector():", from: 19, to: 22, defaultOpen: false },
+    { label: "def check_face_quality(image, face):", from: 26, to: 55, defaultOpen: false },
+    { label: "def get_quality_face(detector, image):", from: 59, to: 74, defaultOpen: false },
+    { label: "def create_face_recognizer():", from: 78, to: 86, defaultOpen: false },
+    { label: "def get_face_feature(detector, recognizer, image):", from: 90, to: 97, defaultOpen: false },
+    { label: "def compare_face_features(recognizer, reference_feature, query_feature):", from: 101, to: 105, defaultOpen: false },
+    { label: "def draw_faces(image, person_name, score):", from: 109, to: 117, defaultOpen: false },
+    { label: "def save_feature_file(names, features):", from: 121, to: 127, defaultOpen: false },
   ],
 }

@@ -1,6 +1,6 @@
 ---
 title: "2.4 差速驱动"
-description: "选一个动作，把「前进多快、转弯多急」换算成左右轮转速，跑 1.5 秒停下"
+description: "选一个动作，把线速度和角速度转化为左右轮转速（差速驱动的核心换算），运行 1.5 秒后停下"
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
@@ -10,14 +10,14 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/02-04-diffe
 ## 前置条件
 
 - Robot 通信正常（参考 [1.1 WIFI模式连接](../../01-python-basics/01-connect-wifi/index)，能打印出设备 ID）
-- **车轮架空**
 
 ## 关键函数
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
+| `drive(commands, v, w, valid_for=0.35)` | 把线速度和角速度转化为左右轮转速并写入命令，本页产出文件的核心函数 |
 | `vw_to_rpm(v, w)` | 线速度 V（毫米/秒）+ 角速度 W（度/秒）→ 左右轮转速 |
-| `limit_rpm(left, right)` | 同尺度限幅：超上限两边一起缩，弯道形状不变 |
+| `limit_rpm(left, right)` | 同尺度限幅：超过上限两边一起缩，弯道形状不变 |
 | `math.radians(w)` | 度/秒 → 弧度/秒，角度换算是这里唯一的坑 |
 | `ACTIONS` 字典 | 动作名 → (V, W)，改一行换一个动作 |
 
@@ -30,10 +30,11 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/02-04-diffe
 
         <CodeFold
           docs={[
-          { label: "limit_rpm", doc: "快的一边是基准\n两边同比缩" },
-          { label: "vw_to_rpm", doc: "左 = V − W×D/2\n右 = V + W×D/2\n再换算成 RPM" },
+          { label: "limit_rpm", doc: "边界是 MAX_RPM\n快的一边超过它\n就以它为基准两边同比缩" },
+          { label: "vw_to_rpm", doc: "把线速度、角速度转化为左右轮转速\n左 = V − W×D/2\n右 = V + W×D/2\n线速度再换算成 RPM" },
+          { label: "drive", doc: "把线速度和角速度\n转化为左右轮转速\n写入电机速度命令" },
           { label: "ACTIONS", doc: "6 个动作\n名字 → (V, W)" },
-          { label: "main", doc: "查表 → 换算\n→ 发双轮速度\n→ 1.5 秒后停" },
+          { label: "main", doc: "查动作表得到线速度角速度\n→ drive 换算并发送\n→ 持续执行 1.5 秒" },
           ]}
           {...driveAction}
         />
@@ -42,7 +43,7 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/02-04-diffe
   <Tab title="结果预览">
 
     ```text
-    动作: spin_left  左轮: -5 RPM  右轮: 5 RPM
+    动作: spin_left  左轮: -26 RPM  右轮: 26 RPM
     ```
 
     原地向左转（左轮反转、右轮正转）。换 `forward` 则是「前进同时画弧」。
@@ -61,15 +62,15 @@ python drive_action.py
 | 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
 | `V` | float | 175 毫米/秒 | 前进速度（≈ 直行 50 RPM），负值后退 |
-| `W` | float | 60 度/秒 | 转弯快慢（≈ 原地 20 RPM），正左转负右转 |
-| `R` | float | 33.75 毫米 | 轮子半径，换轮子必须改 |
-| `D` | float | 160 毫米 | 左右轮间距，影响转弯半径 |
-| `MAX_RPM` | int | 60 | 单轮转速上限 |
+| `W` | float | 60 度/秒 | 转弯快慢（角速度），正左转负右转 |
+| `R` | float | 33.3 毫米 | 轮子半径（直径 66.6），换轮子必须改 |
+| `D` | float | 172.0 毫米 | 左右轮间距，影响转弯半径 |
+| `MAX_RPM` | int | 60 | 单轮转速上限（理论转速上限 360） |
 | `ACTIONS` | dict | 6 个键 | 动作名 → (V, W)，改一行换一个动作 |
 
 ## 本页产出 · differential_drive.py
 
-本页把 `limit_rpm()` 和 `vw_to_rpm()` 两个纯函数抽出来，单独放成一个文件，**2.5 键盘遥控会直接 import 它**，不重写。这个文件不含 `main`、不连设备，只有换算逻辑。
+本页把差速能力整理成一个可复用文件：包含 `limit_rpm()`、`vw_to_rpm()`、`drive()` 三个函数——输入线速度和角速度，输出左右轮转速并下发。不含 `main`、不连设备，只有换算与下发逻辑，供需要双轮运动的页面直接 import。
 
     <CodeFold
       docs={[]}

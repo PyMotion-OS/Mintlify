@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const camera = {
   title: "camera.py",
   code: `from datetime import datetime
@@ -7,10 +7,13 @@ import time
 
 import cv2
 
+
+# 按照时间、级别、来源和说明打印一条规范化日志
 def log_message(level, source, message):
     """按照时间、级别、来源和说明打印一条规范化日志。"""
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     print(f"{current_time} {level:<7} {source:<8} {message}")
+
 
 class Camera:
     """管理一次摄像头连接，并在后台持续更新最新图片。"""
@@ -88,6 +91,12 @@ class Camera:
             self.capture.release()                          # 关闭本次视频流，主函数随后可建立新连接
             self.capture = None`,
   folds: [
-    { label: "def log_message(level, source, message):", from: 7, to: 10, defaultOpen: false },
+    { label: "def log_message(level, source, message):", from: 9, to: 12, defaultOpen: false },
+    { label: "    def __init__(self):", from: 20, to: 30, defaultOpen: false },
+    { label: "    def __enter__(self):", from: 32, to: 38, defaultOpen: false },
+    { label: "    def update_image(self):", from: 40, to: 61, defaultOpen: false },
+    { label: "    def latest_data(self):", from: 63, to: 71, defaultOpen: false },
+    { label: "    def latest(self, max_age=0.5):", from: 73, to: 81, defaultOpen: false },
+    { label: "    def __exit__(self, exc_type, exc_value, traceback):", from: 83, to: 89, defaultOpen: false },
   ],
 }

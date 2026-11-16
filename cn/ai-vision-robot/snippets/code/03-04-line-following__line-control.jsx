@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const lineControl = {
   title: "line_control.py",
   code: `MAX_LINE_SENSORS = 3                       # 正常循迹线最多连续触发三个探头
@@ -14,6 +14,7 @@ PATTERN_NAMES = {
 }
 
 
+# 检查五路状态，找出探测位置，再返回图案分类和循迹线偏差
 def classify_pattern(sensor_states):
     """检查五路状态，找出探测位置，再返回图案分类和循迹线偏差。"""
     # 第一步：只有收到完整的五路数据，才能继续分类
@@ -46,6 +47,7 @@ def classify_pattern(sensor_states):
     return "line", line_offset                              # 返回单段连续线和中心偏差
 
 
+# 传入五路状态、基础 V 和增益 K，返回 V、W 和图案分类
 def line_tracker_to_vw(sensor_states, v, k):
     """传入五路状态、基础 V 和增益 K，返回 V、W 和图案分类。"""
     # 调用上面的分类函数，得到图案分类和循迹线偏差
@@ -57,7 +59,7 @@ def line_tracker_to_vw(sensor_states, v, k):
     w = k * (0 - line_offset)                               # 0 减偏差改变方向：负偏差得到正 W 左转
     return v, w, pattern_type                               # 返回基础 V、计算后的 W 和图案分类`,
   folds: [
-    { label: "def classify_pattern(sensor_states):", from: 14, to: 43, defaultOpen: false },
-    { label: "def line_tracker_to_vw(sensor_states, v, k):", from: 46, to: 55, defaultOpen: false },
+    { label: "def classify_pattern(sensor_states):", from: 15, to: 44, defaultOpen: false },
+    { label: "def line_tracker_to_vw(sensor_states, v, k):", from: 48, to: 57, defaultOpen: false },
   ],
 }

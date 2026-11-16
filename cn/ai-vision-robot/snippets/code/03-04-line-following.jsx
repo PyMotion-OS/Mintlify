@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const lineFollowing = {
   title: "line_following.py",
   code: `import pymotion as pm
@@ -6,13 +6,17 @@ export const lineFollowing = {
 from differential_drive import vw_to_rpm
 from line_control import PATTERN_NAMES, line_tracker_to_vw  # 引用例程15产出的分类和运动计算
 
+
 # --- 本例程可调整的参数 ---
 V = 80                                     # 基础前进速度，毫米/秒
 K = 25                                     # 转弯增益，每一格偏差增加 25 度/秒的 W
 
 # --- 共用配置（一般不用动）---
 PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮接 M3，右轮接 M4
+TRANSPORT = "wifi"                         # Wi-Fi 连接模式
+TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
+# 持续把最新五路数据换成 V/W 和双轮转速，再发送双轮目标
 def run(data_queue, commands):
     """持续把最新五路数据换成 V/W 和双轮转速，再发送双轮目标。"""
     last_motion = None
@@ -40,6 +44,7 @@ def run(data_queue, commands):
             )
             last_motion = current_motion
 
+
 def main():
     """连接机器人，根据五路循迹数据持续调整双轮转速。"""
     try:
@@ -53,10 +58,10 @@ def main():
     except pm.lite.LiteError as exc:
         print(f"出错: {type(exc).__name__}: {exc}")
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run(data_queue, commands):", from: 13, to: 38, defaultOpen: false },
-    { label: "def main():", from: 40, to: 51, defaultOpen: true },
+    { label: "def run(data_queue, commands):", from: 17, to: 42, defaultOpen: false },
   ],
 }

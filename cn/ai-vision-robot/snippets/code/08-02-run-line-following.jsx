@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const runLineFollowing = {
   title: "run_line_following.py",
   code: `import time
@@ -9,10 +9,13 @@ from differential_drive import vw_to_rpm   # 吸收例程 11，V/W 换成左右�
 from line_control import PATTERN_NAMES, line_tracker_to_vw  # 吸收例程 17 的五路分类、转向和名称
 from obstacle_policy import OBSTACLE_NAMES, ultrasonic_to_vw  # 吸收例程 17 的超声波保护
 
+
 # --- 本例程可调整的参数 ---
 V = 60                                     # 基础前进速度，毫米/秒
 K = 25                                     # 转弯增益，每一格偏差增加 25 度/秒的 W
 
+
+# 在 0.3 秒内收齐两种未过期事件，再返回五路和超声波读数
 def receive_sensors(data_queue):
     """在 0.3 秒内收齐两种未过期事件，再返回五路和超声波读数。"""
     tracker_event, ultrasonic_event = None, None
@@ -33,6 +36,8 @@ def receive_sensors(data_queue):
         return None, None
     return tracker_event.data, ultrasonic_event.data
 
+
+# 依次进行循迹、避障和差速计算，丢线时发送双轮 0 并结束
 def run(data_queue, commands):
     """依次进行循迹、避障和差速计算，丢线时发送双轮 0 并结束。"""
     last_motion = None
@@ -70,10 +75,11 @@ def run(data_queue, commands):
             print("结果: 丢失循迹线，程序结束")
             return
 
+
 def main():
     """在树莓派通过 USB 运行例程 17 的安全循迹任务。"""
     try:
-        with pm.lite.connect(transport="usb", timeout=15.0) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():                           # 发送主动轮目标前取得控制权
                 # 打开实时控制会话
                 with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (3, 4)}, frequency="medium", data_queue_size=8) as session:
@@ -83,11 +89,11 @@ def main():
     except pm.lite.LiteError as exc:
         print(f"出错: {type(exc).__name__}: {exc}")
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def receive_sensors(data_queue):", from: 13, to: 31, defaultOpen: false },
-    { label: "def run(data_queue, commands):", from: 33, to: 68, defaultOpen: false },
-    { label: "def main():", from: 70, to: 81, defaultOpen: true },
+    { label: "def receive_sensors(data_queue):", from: 16, to: 34, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 38, to: 73, defaultOpen: false },
   ],
 }

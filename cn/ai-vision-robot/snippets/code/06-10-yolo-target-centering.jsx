@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const yoloTargetCentering = {
   title: "yolo_target_centering.py",
   code: `import cv2
@@ -11,10 +11,13 @@ from target_selection import find_unique_target  # 唯一目标观测函数，�
 # load_yolo_resources：加载模型和标签；detect_objects：检测；draw_servo_tracking：绘制目标和舵机角度
 from yolo_detection import detect_objects, draw_servo_tracking, load_yolo_resources
 
+
 # --- 本例程可调整的参数 ---
 CONFIDENCE = 0.25                          # 检测置信度门槛
 K = 5                                      # 偏差为1时每轮调整5°
 
+
+# 把目标偏差换成双舵机角度，下发后返回两个安全角度
 def follow_target(commands, target_data, up_down_angle, left_right_angle):
     """把目标偏差换成双舵机角度，下发后返回两个安全角度。"""
     # target_data沿用39的error_x/error_y；当前角度来自复位或上一轮返回值，单位为度
@@ -23,6 +26,8 @@ def follow_target(commands, target_data, up_down_angle, left_right_angle):
     # 无目标时偏差为None，进入死区时偏差较小，上面的方法都会保留当前角度
     return move_servos(commands, up_down_angle, left_right_angle)  # 限制并下发S4/S5角度，返回两个安全角度
 
+
+# 取图、检测唯一人物，再用双舵机追随并显示角度
 def run(camera, commands, up_down_angle, left_right_angle):
     """取图、检测唯一人物，再用双舵机追随并显示角度。"""
     _, model = load_yolo_resources()                        # 加载YOLO模型和标签，沿用32
@@ -46,6 +51,7 @@ def run(camera, commands, up_down_angle, left_right_angle):
         marked_image = draw_servo_tracking(image, target_data, up_down_angle, left_right_angle)  # 绘制目标、参考中心和双角度
         cv2.imshow("YOLO servo centering - Esc to close", marked_image)
 
+
 def main():
     """连接相机、复位双舵机，取得会话后追随唯一人物。"""
     try:
@@ -63,11 +69,11 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def follow_target(commands, target_data, up_down_angle, left_right_angle):", from: 15, to: 21, defaultOpen: false },
-    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 23, to: 44, defaultOpen: false },
-    { label: "def main():", from: 46, to: 61, defaultOpen: true },
+    { label: "def follow_target(commands, target_data, up_down_angle, left_right_angle):", from: 18, to: 24, defaultOpen: false },
+    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 28, to: 49, defaultOpen: false },
   ],
 }

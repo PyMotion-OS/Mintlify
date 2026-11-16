@@ -1,14 +1,19 @@
-// code-fold.jsx — 编辑器式折叠代码块 v8
+// code-fold.jsx — 编辑器式折叠代码块 v9
 //
 // 用法：
 //   <CodeFold
 //     title="line_following.py"
-//     folds={[{ label: "def read_line_state(data_queue):", from: 1, to: 5 }]}  // from..to 闭区间 = 一个完整顶层块；label 传完整签名
+//     folds={[{ label: "def read_line_state(data_queue):", from: 1, to: 5 }]}  // from..to 闭区间 = 一个完整块；label 传完整签名行（内嵌函数带原缩进）
 //     docs={[{ label: "read_line_state", doc: "伪代码……" }]}                   // 代码内（含折叠条）同名函数 hover 出伪代码
 //     code={'def ...\n    ...'} />                                            // 用 \n 转义单行串！MDX 会剥多行模板串的公共缩进
 //
-// 默认展开/折叠约定：`run` / `main`（入口方法）默认展开，其余函数默认折叠 —— 在对应
+// 默认展开/折叠约定：`run` / `main`（入口方法）默认展开，其余函数（含内嵌函数）默认折叠 —— 在对应
 // fold 项上传 defaultOpen: true 即可，组件不强判函数名。
+//
+// v9 变更（2026-11-16 审核意见"二层的内嵌函数是否也能够收缩"）：
+// 1. folds 支持嵌套区间（函数内定义的内嵌函数）：展开外层后，内部再按同样规则扫描内嵌 fold；
+//    外层折叠时内层随之隐藏 —— 行为与 VSCode 大纲折叠一致
+// 2. 展开状态改用 from 行号做键（嵌套后无法再用数组下标）；label 保留原始缩进（FoldRow 按原文渲染）
 //
 // v8 变更（2026-11-10 用户反馈"头部颜色和人家不一致，颜色不能靠猜"）：
 // 抓 SSR + 官方 CSS 实锤：自定义组件里的 Tailwind 类会被 Mintlify 改名成 mint-*，
@@ -254,29 +259,36 @@ const FoldRow = ({ n, label, w, docs, onClick, nums }) => (
 );
 
 export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
-  // 默认折叠；fold 项传 defaultOpen: true 则初始展开（约定：run / main 入口方法）
-  const [open, setOpen] = useState(folds.map((f) => !!f.defaultOpen));
+  // 展开状态以 fold 的 from 行号为键；未设置时回落到 defaultOpen（约定：run / main 入口方法）
+  const [open, setOpen] = useState({});
   const [copied, setCopied] = useState(false);
   const [nums, setNums] = useState(false);
   const lines = code.replace(/\n$/, "").split("\n");
   const w = `${String(lines.length).length + 1}em`;
 
-  // folds 的 from/to 为闭区间；区间互不重叠且各自覆盖一个完整 def 块
-  const blocks = [];
-  let i = 0;
-  while (i < lines.length) {
-    const idx = folds.findIndex((f) => f.from === i + 1);
-    if (idx !== -1) {
-      const f = folds[idx];
-      blocks.push({ type: "fold", idx, text: lines.slice(f.from - 1, f.to) });
-      i = f.to;
-    } else {
-      blocks.push({ type: "line", n: i + 1, text: lines[i] });
-      i++;
-    }
-  }
+  const isOpen = (f) => (open[f.from] !== undefined ? open[f.from] : !!f.defaultOpen);
+  const toggle = (f) => setOpen({ ...open, [f.from]: !isOpen(f) });
 
-  const toggle = (idx) => setOpen(open.map((v, j) => (j === idx ? !v : v)));
+  // 把一段行切片切成块序列：命中 fold 起点 → 整块 fold；否则普通行。
+  // offset = ls[0] 的真实行号（1 基）。内嵌 fold 的区间落在外层区间内部，
+  // 只有外层展开后才会被扫描到（折叠时随外层一起隐藏）。
+  const build = (ls, offset) => {
+    const blocks = [];
+    let i = 0;
+    while (i < ls.length) {
+      const no = offset + i;
+      const f = folds.find((x) => x.from === no);
+      if (f) {
+        const len = f.to - f.from + 1;
+        blocks.push({ type: "fold", f, text: ls.slice(i, i + len) });
+        i += len;
+      } else {
+        blocks.push({ type: "line", n: no, text: ls[i] });
+        i++;
+      }
+    }
+    return blocks;
+  };
 
   const copy = () => {
     const done = () => {
@@ -353,37 +365,46 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
             className="font-mono whitespace-pre leading-6"
             style={{ fontFamily: "var(--font-paper-mono, ui-monospace, SFMono-Regular, Menlo, monospace)" }}
           >
-            {blocks.map((b, bi) =>
-              b.type === "line" ? (
-                <Line key={bi} n={b.n} text={b.text} w={w} docs={docs} nums={nums} />
-              ) : open[b.idx] ? (
-                // 展开：正常渲染 [from, to] 全部行，▾ 落在首行箭头列，无独立头行 → 行号连续
-                <span key={bi}>
-                  {b.text.map((t, li) => (
-                    <Line
-                      key={li}
-                      n={folds[b.idx].from + li}
-                      text={t}
+            {(() => {
+              const renderBlocks = (blocks) =>
+                blocks.map((b, bi) =>
+                  b.type === "line" ? (
+                    <Line key={bi} n={b.n} text={b.text} w={w} docs={docs} nums={nums} />
+                  ) : isOpen(b.f) ? (
+                    // 展开：递归渲染区间内全部行（内嵌 fold 会被再次扫描），
+                    // ▾ 落在首行（def 行）箭头列，行号连续
+                    <span key={bi}>
+                      {build(b.text, b.f.from).map((ib, ii) =>
+                        ii === 0 && ib.type === "line" ? (
+                          <Line
+                            key={ii}
+                            n={ib.n}
+                            text={ib.text}
+                            w={w}
+                            docs={docs}
+                            nums={nums}
+                            arrow="▾"
+                            onFold={() => toggle(b.f)}
+                          />
+                        ) : (
+                          renderBlocks([ib])
+                        )
+                      )}
+                    </span>
+                  ) : (
+                    <FoldRow
+                      key={bi}
+                      n={b.f.from}
+                      label={b.f.label}
                       w={w}
                       docs={docs}
                       nums={nums}
-                      arrow={li === 0 ? "▾" : ""}
-                      onFold={li === 0 ? () => toggle(b.idx) : undefined}
+                      onClick={() => toggle(b.f)}
                     />
-                  ))}
-                </span>
-              ) : (
-                <FoldRow
-                  key={bi}
-                  n={folds[b.idx].from}
-                  label={folds[b.idx].label}
-                  w={w}
-                  docs={docs}
-                  nums={nums}
-                  onClick={() => toggle(b.idx)}
-                />
-              )
-            )}
+                  )
+                );
+              return renderBlocks(build(lines, 1));
+            })()}
           </div>
         </div>
       </div>

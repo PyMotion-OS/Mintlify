@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const faceEnrollmentAndRecognition = {
   title: "face_enrollment_and_recognition.py",
   code: `from pathlib import Path
@@ -9,12 +9,15 @@ import numpy as np
 from camera import Camera, log_message
 from face_tools import compare_face_features, create_face_detector, create_face_recognizer, draw_faces, get_face_feature  # 吸收例程 36 的特征能力，显示结果交给 draw_faces
 
+
 # --- 本例程可调整的参数 ---
 MATCH_THRESHOLD = 0.50                     # 最佳相似度不足此值时显示 unknown
 
 # --- 共用配置（一般不用动）---
 FEATURE_FILE = Path(__file__).parents[1] / "common" / "faces.npz"
 
+
+# 读取本地 NPZ 中的匿名代号和人脸特征；文件不存在时返回空列表
 def load_feature_file():
     """读取本地 NPZ 中的匿名代号和人脸特征；文件不存在时返回空列表。"""
     if not FEATURE_FILE.exists():
@@ -25,6 +28,8 @@ def load_feature_file():
         features = list(feature_file["features"])           # 每一行保存同一人的 128 个特征
     return names, features
 
+
+# 逐一比较查询特征与已登记特征，返回最高分代号和相似度
 def identify_face(recognizer, query_feature, names, features, threshold):
     """逐一比较查询特征与已登记特征，返回最高分代号和相似度。"""
     if not names:
@@ -37,6 +42,7 @@ def identify_face(recognizer, query_feature, names, features, threshold):
     if best_score < threshold:
         return "unknown", best_score                        # 分数不足时拒绝匹配，仍返回真实分数供观察
     return best_name, best_score
+
 
 def main():
     """读取登记文件，在视频中识别人脸，显示并打印匹配到的代号。"""
@@ -79,11 +85,11 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def load_feature_file():", from: 15, to: 23, defaultOpen: false },
-    { label: "def identify_face(recognizer, query_feature, names, features, threshold):", from: 25, to: 36, defaultOpen: false },
-    { label: "def main():", from: 38, to: 77, defaultOpen: true },
+    { label: "def load_feature_file():", from: 18, to: 26, defaultOpen: false },
+    { label: "def identify_face(recognizer, query_feature, names, features, threshold):", from: 30, to: 41, defaultOpen: false },
   ],
 }

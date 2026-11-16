@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const faceGreetingProject = {
   title: "face_greeting_project.py",
   code: `import time
@@ -14,14 +14,17 @@ from camera import Camera, log_message
 # get_face_feature：提取人脸的128个特征数值
 # load_feature_file：读取登记代号和对应特征
 # identify_face：比较特征，返回匹配代号和相似度
-# draw_face_tracking：显示识别结果、人脸框和对准标记
+# draw_face_tracking：显示识别结果、安全区四角、人脸框和偏差连线
 from face_tools import create_face_detector, create_face_recognizer, draw_face_tracking, get_face_feature, get_quality_face, identify_face, load_feature_file
 from servo_control import error_to_angle, move_servos, reset_servos  # 复用26的偏差调角、角度限制和舵机执行
 
+
 # --- 本例程可调整的参数 ---
 K = 5                                      # 偏差为1时每轮调整5°，数值越大跟随动作越强
-REQUIRED_MATCHES = 20                      # 累计识别到user01满20张新图片后点头并结束
+REQUIRED_MATCHES = 50                      # 累计识别到user01满20张新图片后点头并结束
 
+
+# 把已登记人脸的位置换成双舵机角度，发送后返回两个安全角度
 def track_face(commands, raw_face, image_shape, person_name, up_down_angle, left_right_angle):
     """把已登记人脸的位置换成双舵机角度，发送后返回两个安全角度。"""
     # raw_face是YuNet人脸数组，image_shape是图片尺寸；两个angle参数是当前舵机角度，单位为度
@@ -36,6 +39,8 @@ def track_face(commands, raw_face, image_shape, person_name, up_down_angle, left
     left_right_angle = error_to_angle(error_x, left_right_angle, -K)  # 偏差换成角度：左右与横向偏差反号，沿用27
     return move_servos(commands, up_down_angle, left_right_angle)  # 限制并发送双舵机角度，返回两个安全角度
 
+
+# 围绕当前上下角度点头两次，保持左右角度，最后回到当前姿态
 def nod_camera(commands, up_down_angle, left_right_angle):
     """围绕当前上下角度点头两次，保持左右角度，最后回到当前姿态。"""
     # 两个角度来自track_face的返回值；每次偏移10°，超出范围时由move_servos限制
@@ -50,6 +55,8 @@ def nod_camera(commands, up_down_angle, left_right_angle):
     move_servos(commands, up_down_angle, left_right_angle)  # 回到点头前瞄准人脸的姿态
     time.sleep(0.2)                                         # 留出回位时间，再让外层退出会话并关闭输出
 
+
+# 持续对准已登记人脸，累计识别到user01达到次数后点头并结束
 def run(camera, commands, up_down_angle, left_right_angle):
     """持续对准已登记人脸，累计识别到user01达到次数后点头并结束。"""
     detector = create_face_detector()                       # 初始化人脸检测器，用于查找人脸框和关键点
@@ -83,7 +90,7 @@ def run(camera, commands, up_down_angle, left_right_angle):
         up_down_angle, left_right_angle = track_face(commands, raw_face, image.shape, person_name, up_down_angle, left_right_angle)  # 按人脸位置调角，返回新的上下和左右角度
 
         # 第四步：原来的绘制与显示代码收进face_tools.draw_face_tracking
-        draw_face_tracking(image, raw_face, person_name, score)  # 显示代号、分数、人脸框、中心和画面对准标记
+        draw_face_tracking(image, raw_face, person_name, score)  # 显示代号、分数、安全区、人脸框和指向人脸的偏差连线
 
         # 第五步：只有user01的新图片才计数，达到次数后围绕当前追踪角度点头
         if person_name == "user01":
@@ -91,6 +98,7 @@ def run(camera, commands, up_down_angle, left_right_angle):
         if count >= REQUIRED_MATCHES:
             nod_camera(commands, up_down_angle, left_right_angle)  # 围绕本轮调角后的姿态点头两次并回位
             break                                           # 结束run的循环，返回main并释放外层with持有的资源
+
 
 def main():
     """连接相机、复位双舵机，追踪人脸并在累计识别后点头结束。"""
@@ -102,6 +110,7 @@ def main():
                     # 打开实时控制会话
                     with robot.realtime.open(command_targets={"pwm_position_servos": (4, 5)}) as session:
                         run(camera, session.commands, up_down_angle, left_right_angle)
+                    reset_servos(robot)
     except KeyboardInterrupt:
         log_message("INFO", "face", "Ctrl+C 主动结束")
     except (OSError, ValueError, KeyError, cv2.error, pm.lite.LiteError) as exc:
@@ -109,12 +118,12 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def track_face(commands, raw_face, image_shape, person_name, up_down_angle, left_right_angle):", from: 22, to: 34, defaultOpen: false },
-    { label: "def nod_camera(commands, up_down_angle, left_right_angle):", from: 36, to: 48, defaultOpen: false },
-    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 50, to: 90, defaultOpen: false },
-    { label: "def main():", from: 92, to: 107, defaultOpen: true },
+    { label: "def track_face(commands, raw_face, image_shape, person_name, up_down_angle, left_right_angle):", from: 25, to: 37, defaultOpen: false },
+    { label: "def nod_camera(commands, up_down_angle, left_right_angle):", from: 41, to: 53, defaultOpen: false },
+    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 57, to: 97, defaultOpen: false },
   ],
 }

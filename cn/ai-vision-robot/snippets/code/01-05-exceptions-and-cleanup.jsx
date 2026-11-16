@@ -41,6 +41,5 @@ if __name__ == "__main__":
     main()`,
   folds: [
     { label: "def read_status(robot):", from: 6, to: 18, defaultOpen: false },
-    { label: "def main():", from: 21, to: 34, defaultOpen: true },
   ],
 }

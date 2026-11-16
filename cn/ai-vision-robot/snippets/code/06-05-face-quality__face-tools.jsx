@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const faceTools = {
   title: "face_tools.py",
   code: `from pathlib import Path
@@ -6,15 +6,20 @@ export const faceTools = {
 import cv2
 import numpy as np
 
+
 COMMON_DIR = Path(__file__).parents[1] / "common"
 MODEL_PATH = COMMON_DIR / "face_detection_yunet_2023mar.onnx"
 IMAGE_PATH = Path(__file__).with_name("face_sample.png")
 
+
+# 读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片
 def load_image():
     """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""
     image_bytes = np.fromfile(IMAGE_PATH, dtype=np.uint8)
     return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
 
+
+# 读取本地 YuNet 文件，并返回 OpenCV 人脸检测器
 def create_face_detector():
     """读取本地 YuNet 文件，并返回 OpenCV 人脸检测器。"""
     model_bytes = np.fromfile(MODEL_PATH, dtype=np.uint8)   # 模型字节写法支持 Windows 中文路径
@@ -26,6 +31,8 @@ def create_face_detector():
         0.85,                                               # 只保留置信度达到 0.85 的人脸
     )
 
+
+# 检测人脸，再把原始数组整理成人脸框、landmarks（五个人脸关键点坐标）和置信度
 def observe_faces(detector, image):
     """检测人脸，再把原始数组整理成人脸框、landmarks（五个人脸关键点坐标）和置信度。"""
     # 创建检测器时的 320×320 只是初始值；检测前必须换成当前图片的真实尺寸
@@ -57,6 +64,8 @@ def observe_faces(detector, image):
         })
     return faces
 
+
+# 给每张人脸画出检测框、五个关键点和置信度
 def draw_faces(image, faces):
     """给每张人脸画出检测框、五个关键点和置信度。"""
     marked_image = image.copy()
@@ -69,9 +78,9 @@ def draw_faces(image, faces):
         cv2.putText(marked_image, text, (face_x, max(25, face_y - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 200, 0), 2)
     return marked_image`,
   folds: [
-    { label: "def load_image():", from: 10, to: 13, defaultOpen: false },
-    { label: "def create_face_detector():", from: 15, to: 24, defaultOpen: false },
-    { label: "def observe_faces(detector, image):", from: 26, to: 55, defaultOpen: false },
-    { label: "def draw_faces(image, faces):", from: 57, to: 67, defaultOpen: false },
+    { label: "def load_image():", from: 13, to: 16, defaultOpen: false },
+    { label: "def create_face_detector():", from: 20, to: 29, defaultOpen: false },
+    { label: "def observe_faces(detector, image):", from: 33, to: 62, defaultOpen: false },
+    { label: "def draw_faces(image, faces):", from: 66, to: 76, defaultOpen: false },
   ],
 }

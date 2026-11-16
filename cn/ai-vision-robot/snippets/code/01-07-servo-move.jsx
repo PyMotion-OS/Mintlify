@@ -41,6 +41,5 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def main():", from: 10, to: 35, defaultOpen: true },
   ],
 }

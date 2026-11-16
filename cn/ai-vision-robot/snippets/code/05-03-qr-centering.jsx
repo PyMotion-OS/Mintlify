@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const qrCentering = {
   title: "qr_centering.py",
   code: `import time
@@ -11,12 +11,15 @@ from differential_drive import vw_to_rpm   # 引用例程11的差速函数
 from qr_observation import draw_qr_marks, find_qr  # 吸收例程28的二维码观测和绘画函数
 from servo_control import CENTER_ERROR, error_to_angle, move_servos, reset_servos  # 引用舵机控制函数
 
+
 # --- 本例程可调整的参数 ---
 TARGET_TEXT = "GREETING"                   # 只对准文字与这里相同的二维码
 LOST_SECONDS = 0.5                         # 连续0.5秒未识别到目标，才确认识别中断
 W = 80                                     # 横向转动强度；左右轮转不动时增大这个值
 SERVO_K = 5                                # 纵向偏差为1时，上下舵机本轮调整5度
 
+
+# 连续检查指定二维码，返回识别状态和最近一次识别时刻
 def check_qr_state(qr_data, target_text, last_detected_time, lost_seconds):
     """连续检查指定二维码，返回识别状态和最近一次识别时刻。"""
     if target_text is None:
@@ -35,6 +38,8 @@ def check_qr_state(qr_data, target_text, last_detected_time, lost_seconds):
 
     return "lost", last_detected_time                       # 达到规定时间，确认识别已经中断
 
+
+# 横向用双轮对准二维码，纵向用S4对准二维码
 def run(camera, commands, up_down_angle, left_right_angle):
     """横向用双轮对准二维码，纵向用S4对准二维码。"""
     last_detected_time = None                               # 保存目标二维码最近一次识别成功的时刻
@@ -72,6 +77,7 @@ def run(camera, commands, up_down_angle, left_right_angle):
             break                                           # Esc结束循环，退出实时控制会话
         time.sleep(0.1)                                     # 每0.1秒处理一次，命令频率约为10Hz
 
+
 def main():
     """复位双舵机，再用双轮和S4对准指定二维码。"""
     try:
@@ -89,11 +95,11 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def check_qr_state(qr_data, target_text, last_detected_time, lost_seconds):", from: 17, to: 33, defaultOpen: false },
-    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 35, to: 70, defaultOpen: false },
-    { label: "def main():", from: 72, to: 87, defaultOpen: true },
+    { label: "def check_qr_state(qr_data, target_text, last_detected_time, lost_seconds):", from: 20, to: 36, defaultOpen: false },
+    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 40, to: 75, defaultOpen: false },
   ],
 }

@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const obstaclePolicy = {
   title: "obstacle_policy.py",
   code: `STOP_DISTANCE = 100                         # 100毫米内停止
@@ -14,6 +14,7 @@ OBSTACLE_NAMES = {
 }
 
 
+# 根据超声波状态和距离保持、减半或归零 V/W，并返回避障状态
 def ultrasonic_to_vw(ultrasonic_data, v, w):
     """根据超声波状态和距离保持、减半或归零 V/W，并返回避障状态。"""
     if ultrasonic_data.state == "no_echo":                 # 本例程把无回波作为未测到障碍，保持原来的 V/W
@@ -30,6 +31,6 @@ def ultrasonic_to_vw(ultrasonic_data, v, w):
 
     return v, w, "normal"                                   # 距离较远时保持原来的 V/W`,
   folds: [
-    { label: "def ultrasonic_to_vw(ultrasonic_data, v, w):", from: 14, to: 28, defaultOpen: false },
+    { label: "def ultrasonic_to_vw(ultrasonic_data, v, w):", from: 15, to: 29, defaultOpen: false },
   ],
 }

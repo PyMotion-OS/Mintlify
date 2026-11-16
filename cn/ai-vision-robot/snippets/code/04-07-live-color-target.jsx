@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const liveColorTarget = {
   title: "live_color_target.py",
   code: `from datetime import datetime
@@ -9,14 +9,18 @@ import cv2
 
 from target_observation import draw_target_marks, find_target  # 吸收例程 23 的目标观测和结果标记函数
 
+
 # --- 本例程可调整的参数 ---
 CAMERA_URL = "rtsp://192.168.43.226:554/11" # 填写 RTSP 摄像头地址
 MAX_AGE = 0.5                              # 图片收到后超过 0.5 秒就不再用于识别，单位秒
 
+
+# 按照时间、级别、来源和说明打印一条规范化日志
 def log_message(level, source, message):
     """按照时间、级别、来源和说明打印一条规范化日志。"""
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     print(f"{current_time} {level:<7} {source:<8} {message}")
+
 
 class Camera:
     """在例程 18 的基础上，使用后台线程持续更新最新图片。"""
@@ -73,6 +77,7 @@ class Camera:
         self.thread.join(timeout=2.0)                       # 最多等待 2 秒，让 update_image() 运行结束
         self.capture.release()                              # 关闭 self.capture 保存的视频流
 
+
 def main():
     """后台更新图片，主程序只识别有效期内、没有处理过的图片。"""
     last_frame_number = 0                                   # 保存主程序已经处理过的最新图片编号
@@ -105,10 +110,15 @@ def main():
     finally:
         cv2.destroyAllWindows()                             # 正常结束或中断后都关闭图片窗口
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def log_message(level, source, message):", from: 13, to: 16, defaultOpen: false },
-    { label: "def main():", from: 73, to: 103, defaultOpen: true },
+    { label: "def log_message(level, source, message):", from: 16, to: 19, defaultOpen: false },
+    { label: "    def __init__(self, camera_url):", from: 25, to: 35, defaultOpen: false },
+    { label: "    def __enter__(self):", from: 37, to: 49, defaultOpen: false },
+    { label: "    def update_image(self):", from: 51, to: 65, defaultOpen: false },
+    { label: "    def latest_data(self):", from: 67, to: 69, defaultOpen: false },
+    { label: "    def __exit__(self, exc_type, exc_value, traceback):", from: 71, to: 75, defaultOpen: false },
   ],
 }

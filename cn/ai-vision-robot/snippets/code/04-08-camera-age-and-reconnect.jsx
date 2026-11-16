@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const cameraAgeAndReconnect = {
   title: "camera_age_and_reconnect.py",
   code: `import time
@@ -8,10 +8,13 @@ import cv2
 from camera import Camera, log_message     # 提取例程 24 的摄像头类和日志；latest() 吸收图片有效性判断
 from target_observation import draw_target_marks, find_target  # 引用例程 24 的目标观测和结果标记
 
+
 # --- 本例程可调整的参数 ---
 MAX_AGE = 0.5                              # 图片收到超过 0.5 秒就不再用于当前处理
 RECONNECT_SECONDS = 1.0                    # 断流后等待 1 秒再建立下一次连接
 
+
+# 打开一次视频连接，清空上次图片，成功返回 True，失败返回 False
 def connect(camera):
     """打开一次视频连接，清空上次图片，成功返回 True，失败返回 False。"""
     # FFmpeg 连接超时和取图超时在打开视频流时传入；3000、1000 的单位是毫秒
@@ -35,6 +38,8 @@ def connect(camera):
     log_message("INFO", "camera", "状态变为 connected")
     return True                                             # main() 随后进入 with，启动当前连接的取图线程
 
+
+# 把状态改为 disconnected，并清空不能继续使用的旧图片
 def set_disconnected(camera):
     """把状态改为 disconnected，并清空不能继续使用的旧图片。"""
     old_data = camera.frame_data
@@ -46,6 +51,7 @@ def set_disconnected(camera):
         "frame_number": old_data["frame_number"],           # 没有新图片，累计编号保持不变
         "received_at": None,                                # 没有有效图片，图片年龄也不存在
     }
+
 
 def main():
     """建立连接、识别有效图片；断流后释放旧连接，等待并重新连接。"""
@@ -85,11 +91,11 @@ def main():
     finally:
         cv2.destroyAllWindows()                             # 正常结束、中断或报错后都关闭图片窗口
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def connect(camera):", from: 12, to: 33, defaultOpen: false },
-    { label: "def set_disconnected(camera):", from: 35, to: 45, defaultOpen: false },
-    { label: "def main():", from: 47, to: 83, defaultOpen: true },
+    { label: "def connect(camera):", from: 15, to: 36, defaultOpen: false },
+    { label: "def set_disconnected(camera):", from: 40, to: 50, defaultOpen: false },
   ],
 }

@@ -1,10 +1,11 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const roiAndGrayMask = {
   title: "roi_and_gray_mask.py",
   code: `from pathlib import Path
 
 import cv2
 import numpy as np
+
 
 # --- 本例程可调整的参数 ---
 ROI_LEFT, ROI_RIGHT = 0.15, 0.85            # ROI 使用原图中间 70% 的宽度
@@ -15,17 +16,23 @@ GRAY_LIMIT = 130                            # 灰度不高于 130 的像素在�
 BASE_DIR = Path(__file__).parent
 IMAGE_PATH = BASE_DIR / "camera_frame.jpg"
 
+
+# 读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片
 def load_image(path):
     """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""
     image_bytes = np.fromfile(path, dtype=np.uint8)
     return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
 
+
+# 复制原图，在副本上画出 ROI 并返回
 def draw_roi(image, left, top, right, bottom):
     """复制原图，在副本上画出 ROI 并返回。"""
     marked_image = image.copy()                             # 复制后绘制，不修改后续处理的 image
     cv2.rectangle(marked_image, (left, top), (right - 1, bottom - 1), (217, 199, 0), 4)
     return marked_image
 
+
+# 依次裁剪 ROI、转成灰度图，再得到按亮暗筛选的黑白掩膜
 def make_gray_mask(image, left, top, right, bottom, gray_limit):
     """依次裁剪 ROI、转成灰度图，再得到按亮暗筛选的黑白掩膜。"""
     # 第一步：数组按 [上:下, 左:右] 裁剪，新图左上角重新成为 (0, 0)
@@ -38,12 +45,15 @@ def make_gray_mask(image, left, top, right, bottom, gray_limit):
     _, gray_mask = cv2.threshold(gray_image, gray_limit, 255, cv2.THRESH_BINARY_INV)
     return roi_image, gray_image, gray_mask                  # 按处理顺序返回三张中间图片
 
+
+# 缩放图片副本，再在屏幕指定位置显示
 def show_image(title, image, x, y, scale):
     """缩放图片副本，再在屏幕指定位置显示。"""
     # resize() 只缩放用于显示的副本，fx 和 fy 是宽度与高度的缩放比例
     display_image = cv2.resize(image, None, fx=scale, fy=scale)
     cv2.imshow(title, display_image)
     cv2.moveWindow(title, x, y)                             # 把窗口左上角移到屏幕像素坐标 (x, y)
+
 
 def main():
     """依次显示 ROI、裁剪图、灰度图、黑白掩膜和轮廓。"""
@@ -73,13 +83,13 @@ def main():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def load_image(path):", from: 15, to: 18, defaultOpen: false },
-    { label: "def draw_roi(image, left, top, right, bottom):", from: 20, to: 24, defaultOpen: false },
-    { label: "def make_gray_mask(image, left, top, right, bottom, gray_limit):", from: 26, to: 36, defaultOpen: false },
-    { label: "def show_image(title, image, x, y, scale):", from: 38, to: 43, defaultOpen: false },
-    { label: "def main():", from: 45, to: 71, defaultOpen: true },
+    { label: "def load_image(path):", from: 18, to: 21, defaultOpen: false },
+    { label: "def draw_roi(image, left, top, right, bottom):", from: 25, to: 29, defaultOpen: false },
+    { label: "def make_gray_mask(image, left, top, right, bottom, gray_limit):", from: 33, to: 43, defaultOpen: false },
+    { label: "def show_image(title, image, x, y, scale):", from: 47, to: 52, defaultOpen: false },
   ],
 }

@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const leadTargetSelection = {
   title: "lead_target_selection.py",
   code: `import cv2
@@ -7,9 +7,12 @@ from camera import Camera, log_message
 # load_yolo_resources：加载模型和标签；detect_objects：整理检测结果；draw_target：绘制唯一目标观测
 from yolo_detection import detect_objects, draw_target, load_yolo_resources
 
+
 # --- 本例程可调整的参数 ---
 CONFIDENCE = 0.25                          # 检测置信度门槛
 
+
+# 筛选指定类别，返回唯一目标的状态、二维偏差、占比和检测框
 def find_unique_target(detections, image_shape, target_label):
     """筛选指定类别，返回唯一目标的状态、二维偏差、占比和检测框。"""
     # detections沿用32的检测列表；先按label筛出指定类别，再判断是否只有一个候选
@@ -37,6 +40,7 @@ def find_unique_target(detections, image_shape, target_label):
         "area_ratio": area_ratio,
         "box": candidates[0]["box"],
     }
+
 
 def main():
     """从实时画面选择唯一目标，显示其二维偏差和画面占比。"""
@@ -70,10 +74,10 @@ def main():
     finally:
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def find_unique_target(detections, image_shape, target_label):", from: 10, to: 36, defaultOpen: false },
-    { label: "def main():", from: 38, to: 68, defaultOpen: true },
+    { label: "def find_unique_target(detections, image_shape, target_label):", from: 13, to: 39, defaultOpen: false },
   ],
 }

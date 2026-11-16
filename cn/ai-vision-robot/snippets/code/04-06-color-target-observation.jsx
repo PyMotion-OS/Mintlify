@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const colorTargetObservation = {
   title: "color_target_observation.py",
   code: `from pathlib import Path
@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 
 from target_contours import find_target_contours  # 吸收例程 22，返回清理后掩膜、有效轮廓和 ROI
+
 
 # --- 本例程可调整的参数 ---
 TARGET_TYPE = "blue"                       # 可选 gray、blue、green 或 yellow
@@ -17,11 +18,15 @@ CENTER_Y = 0.50                            # 目标对齐位置在画面高度 5
 BASE_DIR = Path(__file__).parent
 IMAGE_PATH = BASE_DIR / "camera_frame.jpg"
 
+
+# 读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片
 def load_image(path):
     """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""
     image_bytes = np.fromfile(path, dtype=np.uint8)
     return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
 
+
+# 计算目标中心相对画面指定位置的横向和纵向偏差
 def center_to_error(center, image_shape):
     """计算目标中心相对画面指定位置的横向和纵向偏差。"""
     height, width = image_shape[:2]                         # image.shape 前两项依次是高度和宽度
@@ -31,6 +36,8 @@ def center_to_error(center, image_shape):
     error_y = (center[1] - reference_y) / (height / 2)      # 目标在上为负，在下为正
     return error_x, error_y
 
+
+# 选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差
 def find_target(image, target_type="blue"):
     """选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差。"""
     # 第一步：引用例程 22，得到清理后的黑白掩膜、有效轮廓和 ROI
@@ -72,6 +79,8 @@ def find_target(image, target_type="blue"):
         "roi": roi,                                        # 后续绘图使用的处理区域像素坐标
     }
 
+
+# 复制原图，再用基础图形标出处理区域、参考中心和目标位置
 def draw_target_marks(image, target_data):
     """复制原图，再用基础图形标出处理区域、参考中心和目标位置。"""
     marked_image = image.copy()                             # copy() 复制出新图片，后续绘制不会修改 image
@@ -92,10 +101,13 @@ def draw_target_marks(image, target_data):
         cv2.arrowedLine(marked_image, (reference_x, reference_y), target_data["center"], (0, 176, 255), 4)
     return marked_image
 
+
+# 缩放图片副本，再在屏幕指定位置显示
 def show_image(title, image, x, y, scale):
     """缩放图片副本，再在屏幕指定位置显示。"""
     cv2.imshow(title, cv2.resize(image, None, fx=scale, fy=scale))
     cv2.moveWindow(title, x, y)
+
 
 def main():
     """选择灰度或 HSV 方式找到最大目标，并标出二维偏差。"""
@@ -112,14 +124,14 @@ def main():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def load_image(path):", from: 17, to: 20, defaultOpen: false },
-    { label: "def center_to_error(center, image_shape):", from: 22, to: 29, defaultOpen: false },
-    { label: "def find_target(image, target_type=\"blue\"):", from: 31, to: 70, defaultOpen: false },
-    { label: "def draw_target_marks(image, target_data):", from: 72, to: 90, defaultOpen: false },
-    { label: "def show_image(title, image, x, y, scale):", from: 92, to: 95, defaultOpen: false },
-    { label: "def main():", from: 97, to: 110, defaultOpen: true },
+    { label: "def load_image(path):", from: 20, to: 23, defaultOpen: false },
+    { label: "def center_to_error(center, image_shape):", from: 27, to: 34, defaultOpen: false },
+    { label: "def find_target(image, target_type=\"blue\"):", from: 38, to: 77, defaultOpen: false },
+    { label: "def draw_target_marks(image, target_data):", from: 81, to: 99, defaultOpen: false },
+    { label: "def show_image(title, image, x, y, scale):", from: 103, to: 106, defaultOpen: false },
   ],
 }

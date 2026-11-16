@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const realtimeDataQueue = {
   title: "realtime_data_queue.py",
   code: `import time
@@ -6,7 +6,9 @@ from pprint import pprint                  # 让字典按结构换行显示
 
 import pymotion as pm
 
-PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮接 M3，右轮接 M4
+TRANSPORT = "wifi"                         # Wi-Fi 连接模式
+TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
+
 
 def main():
     """接收两种传感数据，发送一次双轮速度并打印数据结构。"""
@@ -33,7 +35,7 @@ def main():
                     elif sensor_data.source == "line_tracker":
                         tracker_line_data = sensor_data               
 
-    print("\\ndata_queue.read() 返回的超声波结构:")
+    print("data_queue.read() 返回的超声波结构:")
     pprint(
         {
             "source": ultrasonic_data.source,
@@ -51,7 +53,7 @@ def main():
         sort_dicts=False,                                   # 按上面的字段顺序显示
     )
 
-    print("\\ndata_queue.read() 返回的五路循迹结构:")
+    print("data_queue.read() 返回的五路循迹结构:")
     pprint(
         {
             "source": tracker_line_data.source,
@@ -69,9 +71,9 @@ def main():
         sort_dicts=False,
     )
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def main():", from: 8, to: 67, defaultOpen: true },
   ],
 }

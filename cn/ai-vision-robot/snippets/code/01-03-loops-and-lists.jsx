@@ -37,6 +37,6 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def main():", from: 6, to: 31, defaultOpen: true },
+
   ],
 }

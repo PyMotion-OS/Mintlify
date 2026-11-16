@@ -1,10 +1,11 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const imagePixelsAndDrawing = {
   title: "image_pixels_and_drawing.py",
   code: `from pathlib import Path                   # 用路径对象找到与例程放在一起的图片
 
 import cv2                                 # 继续使用 OpenCV 解码和绘制图片
 import numpy as np                         # 使用 NumPy 读取图片字节和定位像素
+
 
 # --- 本例程可调整的参数 ---
 POINT_X, POINT_Y = 960, 900                # 选中像素的坐标 (x, y)，x 位于水平中心，y 位于画面下方
@@ -13,10 +14,13 @@ POINT_X, POINT_Y = 960, 900                # 选中像素的坐标 (x, y)，x �
 BASE_DIR = Path(__file__).parent           # 当前例程文件所在的文件夹
 IMAGE_PATH = BASE_DIR / "camera_frame.jpg" # 摄像头取得的真实图片:当前例程文件所在的文件夹下的camera_frame.jpg
 
+
+# 读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片
 def load_image(path):
     """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""
     image_bytes = np.fromfile(path, dtype=np.uint8)         # 把图片文件读成一组原始字节
     return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)      # 把原始字节解码成 BGR 图片
+
 
 def main():
     """读取图片，查看一个像素，并显示点、矩形和坐标轴。"""
@@ -60,10 +64,10 @@ def main():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def load_image(path):", from: 13, to: 16, defaultOpen: false },
-    { label: "def main():", from: 18, to: 58, defaultOpen: true },
+    { label: "def load_image(path):", from: 16, to: 19, defaultOpen: false },
   ],
 }

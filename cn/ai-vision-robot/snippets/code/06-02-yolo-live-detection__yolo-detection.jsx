@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const yoloDetection = {
   title: "yolo_detection.py",
   code: `from pathlib import Path
@@ -8,12 +8,15 @@ import time
 
 import cv2
 
+
 # --- 共用配置（一般不用动）---
 COMMON_DIR = Path(__file__).parents[1] / "common"
 LABELS_PATH = COMMON_DIR / "coco_labels.json"
 MODEL_PATH = COMMON_DIR / "yolo11n.pt"
 IMAGE_SIZE = 320                           # 输入越小通常检测越快、远处细节越少
 
+
+# 读取 common 中的类别标签和本地模型，返回标签表与模型对象
 def load_yolo_resources():
     """读取 common 中的类别标签和本地模型，返回标签表与模型对象。"""
     os.environ["YOLO_AUTOINSTALL"] = "false"                # 缺少依赖时直接报错，不在运行中自动安装
@@ -29,6 +32,8 @@ def load_yolo_resources():
     model = YOLO(str(MODEL_PATH))                            # 读取本地模型并得到后续检测使用的对象
     return labels, model
 
+
+# 把模型输出整理为稳定检测字段，并返回处理毫秒数
 def detect_objects(model, image, confidence):
     """把模型输出整理为稳定检测字段，并返回处理毫秒数。"""
     start_time = time.monotonic()
@@ -52,6 +57,8 @@ def detect_objects(model, image, confidence):
     detection_time = (time.monotonic() - start_time) * 1000  # 秒乘 1000 得到本次检测耗时，单位毫秒
     return detections, detection_time
 
+
+# 复制图片，再画出英文类别、置信度、检测框和处理耗时
 def draw_detections(image, detections, detection_time):
     """复制图片，再画出英文类别、置信度、检测框和处理耗时。"""
     marked_image = image.copy()
@@ -64,8 +71,8 @@ def draw_detections(image, detections, detection_time):
     cv2.putText(marked_image, f"objects={len(detections)}  time={detection_time:.0f} ms", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)
     return marked_image`,
   folds: [
-    { label: "def load_yolo_resources():", from: 14, to: 27, defaultOpen: false },
-    { label: "def detect_objects(model, image, confidence):", from: 29, to: 50, defaultOpen: false },
-    { label: "def draw_detections(image, detections, detection_time):", from: 52, to: 62, defaultOpen: false },
+    { label: "def load_yolo_resources():", from: 17, to: 30, defaultOpen: false },
+    { label: "def detect_objects(model, image, confidence):", from: 34, to: 55, defaultOpen: false },
+    { label: "def draw_detections(image, detections, detection_time):", from: 59, to: 69, defaultOpen: false },
   ],
 }

@@ -1,4 +1,4 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const yoloImageDetection = {
   title: "yolo_image_detection.py",
   code: `from pathlib import Path
@@ -9,6 +9,7 @@ import time
 import cv2
 import numpy as np
 
+
 # --- 本例程可调整的参数 ---
 # 置信度是模型对当前结果的评分，不是物体类别一定正确的概率
 CONFIDENCE = 0.25                          # 只保留置信度达到 0.25 的检测结果
@@ -17,11 +18,15 @@ CONFIDENCE = 0.25                          # 只保留置信度达到 0.25 的�
 COMMON_DIR = Path(__file__).parents[1] / "common"
 IMAGE_PATH = COMMON_DIR / "street.jpg"     # 用于第一次检测的固定图片
 
+
+# 读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片
 def load_image():
     """读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片。"""
     image_bytes = np.fromfile(IMAGE_PATH, dtype=np.uint8)
     return cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
 
+
+# 读取 common 中的类别标签和本地模型，返回标签表与模型对象
 def load_yolo_resources():
     """读取 common 中的类别标签和本地模型，返回标签表与模型对象。"""
     os.environ["YOLO_AUTOINSTALL"] = "false"                # 缺少依赖时直接报错，不在运行中自动安装
@@ -37,6 +42,8 @@ def load_yolo_resources():
     model = YOLO(str(COMMON_DIR / "yolo11n.pt"))            # 读取本地模型并得到后续检测使用的对象
     return labels, model
 
+
+# 把模型输出整理为稳定检测字段，并返回处理毫秒数
 def detect_objects(model, image, confidence, image_size=320):
     """把模型输出整理为稳定检测字段，并返回处理毫秒数。"""
     start_time = time.monotonic()                           # 单调时钟只向前走，适合计算一段代码的耗时
@@ -69,6 +76,8 @@ def detect_objects(model, image, confidence, image_size=320):
     detection_time = (time.monotonic() - start_time) * 1000  # 秒乘 1000 得到本次检测耗时，单位毫秒
     return detections, detection_time
 
+
+# 复制图片，再画出英文类别、置信度、检测框和处理耗时
 def draw_detections(image, detections, detection_time):
     """复制图片，再画出英文类别、置信度、检测框和处理耗时。"""
     marked_image = image.copy()
@@ -80,6 +89,7 @@ def draw_detections(image, detections, detection_time):
         cv2.putText(marked_image, text, (x1, max(25, y1 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 140, 255), 2)
     cv2.putText(marked_image, f"objects={len(detections)}  time={detection_time:.0f} ms", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 176, 255), 2)
     return marked_image
+
 
 def main():
     """使用固定图片认识本地 YOLO 模型、检测字段和绘图流程。"""
@@ -108,13 +118,13 @@ def main():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def load_image():", from: 17, to: 20, defaultOpen: false },
-    { label: "def load_yolo_resources():", from: 22, to: 35, defaultOpen: false },
-    { label: "def detect_objects(model, image, confidence, image_size=320):", from: 37, to: 67, defaultOpen: false },
-    { label: "def draw_detections(image, detections, detection_time):", from: 69, to: 79, defaultOpen: false },
-    { label: "def main():", from: 81, to: 106, defaultOpen: true },
+    { label: "def load_image():", from: 20, to: 23, defaultOpen: false },
+    { label: "def load_yolo_resources():", from: 27, to: 40, defaultOpen: false },
+    { label: "def detect_objects(model, image, confidence, image_size=320):", from: 44, to: 74, defaultOpen: false },
+    { label: "def draw_detections(image, detections, detection_time):", from: 78, to: 88, defaultOpen: false },
   ],
 }
