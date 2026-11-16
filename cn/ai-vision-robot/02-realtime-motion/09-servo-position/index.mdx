@@ -1,6 +1,6 @@
 ---
 title: "2.2 舵机位置与实时命令"
-description: "双舵机先复位到 70°/120°，再用实时命令各偏 10°；命令 0.3 秒就过期，舵机却停在目标角度不动"
+description: "双舵机先复位到双 90° 居中，再用实时命令各偏 10°；命令 0.3 秒就过期，舵机却停在目标角度不动"
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
@@ -16,8 +16,8 @@ import { servoPosition } from "/cn/ai-vision-robot/snippets/code/02-02-servo-pos
 | --- | --- |
 | `robot.pwm_servos.move_to({端口: 角度, ...})` | 普通位置命令：发一次角度，舵机自己转过去（1.7 学过，本页只做复位） |
 | `commands.pwm_position_servos.write({端口: 角度}, valid_for=0.3)` | 实时位置命令：走会话通道发角度，可带有效期 |
-| 角度限幅（`if/elif`） | 上下 0～85°、左右 60～180°，超范围夹到边界 |
-| `def move_servos(commands, up_down_angle=70, left_right_angle=120)` | 带默认参数的函数，省略时停在复位姿态 |
+| 角度限幅（`if/elif`） | 上下 0～居中+15°、左右 0～180°，超范围夹到边界 |
+| `def move_servos(commands, up_down_angle=90, left_right_angle=90)` | 带默认参数的函数，省略时停在复位姿态 |
 
 ## 完整示例
 
@@ -40,12 +40,11 @@ import { servoPosition } from "/cn/ai-vision-robot/snippets/code/02-02-servo-pos
   <Tab title="结果预览">
 
     ```text
-    复位: 上下 70°，左右 120°
-    舵机: 上下 60°，左右 130°
-    命令 0.3 秒就过期，但舵机保持在 60°/130°
+    复位: 上下 90°，左右 90°
+    舵机: 上下 80°，左右 100°
     ```
 
-    上下抬 10°、向右偏 10°，舵机停住不回弹。
+    上下更抬头 10°、向右偏 10°，舵机停住不回弹。
 
   </Tab>
 </Tabs>
@@ -60,10 +59,10 @@ python servo_position.py
 
 | 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
-| `PORT_UP_DOWN` | int | 4 | 上下舵机端口，角度范围 0～85° |
-| `PORT_LEFT_RIGHT` | int | 5 | 左右舵机端口，角度范围 60～180° |
-| `UP_DOWN_HOME` / `LEFT_RIGHT_HOME` | int | 70 / 120 | 复位姿态：上下 70°、左右居中 120° |
+| `PORT_UP_DOWN` | int | 4 | 上下舵机端口，限幅 0～居中+15° |
+| `PORT_LEFT_RIGHT` | int | 5 | 左右舵机端口，可输入 0～180° |
+| `UP_DOWN_HOME` / `LEFT_RIGHT_HOME` | int | 90 / 90 | 复位姿态：双 90° 约为居中，可按实际情况微调 |
 | `valid_for` | float | 0.3 | 只约束命令本身，不约束角度——命令过期角度仍保持 |
-| `move_servos` 两个默认参数 | int | 70 / 120 | 省略时停在复位姿态 |
+| `move_servos` 两个默认参数 | int | 90 / 90 | 省略时停在复位姿态 |
 
 > 本页是 1.7 的对照页：1.7 讲「怎么转到某个角度」，本页讲「实时命令与角度保持」——电机命令过期就停，舵机命令过期角度还在。
