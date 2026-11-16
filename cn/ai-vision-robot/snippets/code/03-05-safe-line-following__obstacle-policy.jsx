@@ -30,6 +30,6 @@ def ultrasonic_to_vw(ultrasonic_data, v, w):
 
     return v, w, "normal"                                   # 距离较远时保持原来的 V/W`,
   folds: [
-    { label: "def ultrasonic_to_vw():", from: 14, to: 28, defaultOpen: false },
+    { label: "def ultrasonic_to_vw(ultrasonic_data, v, w):", from: 14, to: 28, defaultOpen: false },
   ],
 }

@@ -83,7 +83,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run():", from: 16, to: 62, defaultOpen: false },
+    { label: "def run(camera, data_queue, commands):", from: 16, to: 62, defaultOpen: false },
     { label: "def main():", from: 64, to: 78, defaultOpen: true },
   ],
 }

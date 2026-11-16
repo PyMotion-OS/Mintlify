@@ -40,7 +40,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def check_V():", from: 9, to: 21, defaultOpen: false },
+    { label: "def check_V(V):", from: 9, to: 21, defaultOpen: false },
     { label: "def main():", from: 24, to: 34, defaultOpen: true },
   ],
 }

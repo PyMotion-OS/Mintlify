@@ -33,7 +33,7 @@ def main():
                     elif sensor_data.source == "line_tracker":
                         tracker_line_data = sensor_data               
 
-    print("\ndata_queue.read() 返回的超声波结构:")
+    print("\\ndata_queue.read() 返回的超声波结构:")
     pprint(
         {
             "source": ultrasonic_data.source,
@@ -51,7 +51,7 @@ def main():
         sort_dicts=False,                                   # 按上面的字段顺序显示
     )
 
-    print("\ndata_queue.read() 返回的五路循迹结构:")
+    print("\\ndata_queue.read() 返回的五路循迹结构:")
     pprint(
         {
             "source": tracker_line_data.source,

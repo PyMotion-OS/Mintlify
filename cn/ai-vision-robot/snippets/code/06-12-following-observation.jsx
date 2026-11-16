@@ -68,7 +68,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def choose_target():", from: 13, to: 25, defaultOpen: false },
+    { label: "def choose_target(tracks, selected_id, target_label):", from: 13, to: 25, defaultOpen: false },
     { label: "def main():", from: 27, to: 63, defaultOpen: true },
   ],
 }

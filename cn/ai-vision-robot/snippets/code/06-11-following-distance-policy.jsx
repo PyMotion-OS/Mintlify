@@ -72,8 +72,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def target_area_to_v():", from: 12, to: 20, defaultOpen: false },
-    { label: "def choose_follow_motion():", from: 22, to: 34, defaultOpen: false },
+    { label: "def target_area_to_v(area_ratio):", from: 12, to: 20, defaultOpen: false },
+    { label: "def choose_follow_motion(error_x, area_ratio, W=90):", from: 22, to: 34, defaultOpen: false },
     { label: "def main():", from: 36, to: 67, defaultOpen: true },
   ],
 }

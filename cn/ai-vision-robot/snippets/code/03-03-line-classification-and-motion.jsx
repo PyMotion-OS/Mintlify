@@ -82,7 +82,7 @@ def main():
                 # 只减少重复打印；传感数据仍会更新，本例程没有发送电机指令
                 if current_observation != last_observation:
                     print(
-                        f"五路: {tracker_line_data.is_detected}\n"
+                        f"五路: {tracker_line_data.is_detected}\\n"
                         f"分类: {PATTERN_NAMES[pattern_type]}  "
                         f"V: {v:>2} mm/s  W: {w:>5} °/s"
                     )
@@ -98,8 +98,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def classify_pattern():", from: 23, to: 52, defaultOpen: false },
-    { label: "def line_tracker_to_vw():", from: 55, to: 64, defaultOpen: false },
+    { label: "def classify_pattern(sensor_states):", from: 23, to: 52, defaultOpen: false },
+    { label: "def line_tracker_to_vw(sensor_states, v, k):", from: 55, to: 64, defaultOpen: false },
     { label: "def main():", from: 66, to: 93, defaultOpen: true },
   ],
 }

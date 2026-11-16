@@ -113,12 +113,12 @@ def save_feature_file(names, features):
     np.savez(FEATURE_FILE, names=np.asarray(names, dtype=str), features=feature_rows)`,
   folds: [
     { label: "def create_face_detector():", from: 16, to: 19, defaultOpen: false },
-    { label: "def check_face_quality():", from: 21, to: 50, defaultOpen: false },
-    { label: "def get_quality_face():", from: 52, to: 67, defaultOpen: false },
+    { label: "def check_face_quality(image, face):", from: 21, to: 50, defaultOpen: false },
+    { label: "def get_quality_face(detector, image):", from: 52, to: 67, defaultOpen: false },
     { label: "def create_face_recognizer():", from: 69, to: 77, defaultOpen: false },
-    { label: "def get_face_feature():", from: 79, to: 86, defaultOpen: false },
-    { label: "def compare_face_features():", from: 88, to: 92, defaultOpen: false },
-    { label: "def draw_faces():", from: 94, to: 102, defaultOpen: false },
-    { label: "def save_feature_file():", from: 104, to: 110, defaultOpen: false },
+    { label: "def get_face_feature(detector, recognizer, image):", from: 79, to: 86, defaultOpen: false },
+    { label: "def compare_face_features(recognizer, reference_feature, query_feature):", from: 88, to: 92, defaultOpen: false },
+    { label: "def draw_faces(image, person_name, score):", from: 94, to: 102, defaultOpen: false },
+    { label: "def save_feature_file(names, features):", from: 104, to: 110, defaultOpen: false },
   ],
 }

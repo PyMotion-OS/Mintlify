@@ -115,11 +115,11 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def load_image():", from: 17, to: 20, defaultOpen: false },
-    { label: "def center_to_error():", from: 22, to: 29, defaultOpen: false },
-    { label: "def find_target():", from: 31, to: 70, defaultOpen: false },
-    { label: "def draw_target_marks():", from: 72, to: 90, defaultOpen: false },
-    { label: "def show_image():", from: 92, to: 95, defaultOpen: false },
+    { label: "def load_image(path):", from: 17, to: 20, defaultOpen: false },
+    { label: "def center_to_error(center, image_shape):", from: 22, to: 29, defaultOpen: false },
+    { label: "def find_target(image, target_type=\"blue\"):", from: 31, to: 70, defaultOpen: false },
+    { label: "def draw_target_marks(image, target_data):", from: 72, to: 90, defaultOpen: false },
+    { label: "def show_image(title, image, x, y, scale):", from: 92, to: 95, defaultOpen: false },
     { label: "def main():", from: 97, to: 110, defaultOpen: true },
   ],
 }

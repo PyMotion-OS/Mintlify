@@ -59,7 +59,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def listen_keyboard():", from: 12, to: 23, defaultOpen: false },
+    { label: "def listen_keyboard(is_running):", from: 12, to: 23, defaultOpen: false },
     { label: "def main():", from: 25, to: 54, defaultOpen: true },
   ],
 }

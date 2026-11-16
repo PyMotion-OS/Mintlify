@@ -35,7 +35,7 @@ def vw_to_rpm(v, w):
     right_v = v + w * D / 2                                 # 右轮线速度，毫米/秒
     return limit_rpm(left_v * 60 / c, right_v * 60 / c)     # 线速度换成转速，再限幅`,
   folds: [
-    { label: "def limit_rpm():", from: 11, to: 18, defaultOpen: false },
-    { label: "def vw_to_rpm():", from: 21, to: 33, defaultOpen: false },
+    { label: "def limit_rpm(left, right):", from: 11, to: 18, defaultOpen: false },
+    { label: "def vw_to_rpm(v, w):", from: 21, to: 33, defaultOpen: false },
   ],
 }

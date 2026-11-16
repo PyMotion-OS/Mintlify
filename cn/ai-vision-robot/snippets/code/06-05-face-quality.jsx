@@ -93,7 +93,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def check_face_quality():", from: 12, to: 47, defaultOpen: false },
+    { label: "def check_face_quality(image, face):", from: 12, to: 47, defaultOpen: false },
     { label: "def main():", from: 49, to: 88, defaultOpen: true },
   ],
 }

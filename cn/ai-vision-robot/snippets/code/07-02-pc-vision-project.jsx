@@ -130,10 +130,10 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def observe_station():", from: 21, to: 29, defaultOpen: false },
-    { label: "def run_station_task():", from: 31, to: 39, defaultOpen: false },
-    { label: "def get_project_motion():", from: 41, to: 57, defaultOpen: false },
-    { label: "def run():", from: 59, to: 108, defaultOpen: false },
+    { label: "def observe_station(camera, task_state):", from: 21, to: 29, defaultOpen: false },
+    { label: "def run_station_task(model, image, commands, up_down_angle, left_right_angle, station_name):", from: 31, to: 39, defaultOpen: false },
+    { label: "def get_project_motion(tracker_event, ultrasonic_event, task_state, image):", from: 41, to: 57, defaultOpen: false },
+    { label: "def run(camera, data_queue, commands, up_down_angle, left_right_angle):", from: 59, to: 108, defaultOpen: false },
     { label: "def main():", from: 110, to: 125, defaultOpen: true },
   ],
 }

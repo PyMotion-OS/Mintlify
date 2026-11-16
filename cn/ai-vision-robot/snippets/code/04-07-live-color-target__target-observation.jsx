@@ -134,11 +134,11 @@ def draw_target_marks(image, target_data):
         cv2.arrowedLine(marked_image, (reference_x, reference_y), target_data["center"], (0, 176, 255), 4)
     return marked_image`,
   folds: [
-    { label: "def make_gray_mask():", from: 20, to: 25, defaultOpen: false },
-    { label: "def make_color_mask():", from: 27, to: 32, defaultOpen: false },
-    { label: "def find_target_contours():", from: 34, to: 62, defaultOpen: false },
-    { label: "def center_to_error():", from: 64, to: 71, defaultOpen: false },
-    { label: "def find_target():", from: 73, to: 112, defaultOpen: false },
-    { label: "def draw_target_marks():", from: 114, to: 132, defaultOpen: false },
+    { label: "def make_gray_mask(image, left, top, right, bottom):", from: 20, to: 25, defaultOpen: false },
+    { label: "def make_color_mask(image, left, top, right, bottom, target_color):", from: 27, to: 32, defaultOpen: false },
+    { label: "def find_target_contours(image, target_type=\"blue\"):", from: 34, to: 62, defaultOpen: false },
+    { label: "def center_to_error(center, image_shape):", from: 64, to: 71, defaultOpen: false },
+    { label: "def find_target(image, target_type=\"blue\"):", from: 73, to: 112, defaultOpen: false },
+    { label: "def draw_target_marks(image, target_data):", from: 114, to: 132, defaultOpen: false },
   ],
 }

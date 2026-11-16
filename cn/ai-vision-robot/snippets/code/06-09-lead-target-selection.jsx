@@ -73,7 +73,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def find_unique_target():", from: 10, to: 36, defaultOpen: false },
+    { label: "def find_unique_target(detections, image_shape, target_label):", from: 10, to: 36, defaultOpen: false },
     { label: "def main():", from: 38, to: 68, defaultOpen: true },
   ],
 }

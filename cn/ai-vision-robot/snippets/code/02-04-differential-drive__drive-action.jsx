@@ -77,9 +77,9 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def limit_rpm():", from: 28, to: 35, defaultOpen: false },
-    { label: "def vw_to_rpm():", from: 37, to: 49, defaultOpen: false },
-    { label: "def drive():", from: 51, to: 59, defaultOpen: false },
+    { label: "def limit_rpm(left, right):", from: 28, to: 35, defaultOpen: false },
+    { label: "def vw_to_rpm(v, w):", from: 37, to: 49, defaultOpen: false },
+    { label: "def drive(commands, v, w, valid_for=0.35):", from: 51, to: 59, defaultOpen: false },
     { label: "def main():", from: 61, to: 72, defaultOpen: true },
   ],
 }

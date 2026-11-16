@@ -60,7 +60,7 @@ def run(data_queue, commands):
         if current_motion != last_motion:                   # 状态或双轮转速变化时才打印
             print(
                 f"分类: {PATTERN_NAMES[pattern_type]}  "
-                f"避障: {OBSTACLE_NAMES[obstacle_state]}  距离: {distance_text}\n"
+                f"避障: {OBSTACLE_NAMES[obstacle_state]}  距离: {distance_text}\\n"
                 f"左轮: {left_rpm} RPM  右轮: {right_rpm} RPM"
             )
             last_motion = current_motion
@@ -85,8 +85,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def receive_sensors():", from: 14, to: 31, defaultOpen: false },
-    { label: "def run():", from: 33, to: 67, defaultOpen: false },
+    { label: "def receive_sensors(data_queue):", from: 14, to: 31, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 33, to: 67, defaultOpen: false },
     { label: "def main():", from: 69, to: 80, defaultOpen: true },
   ],
 }

@@ -88,8 +88,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def connect():", from: 12, to: 33, defaultOpen: false },
-    { label: "def set_disconnected():", from: 35, to: 45, defaultOpen: false },
+    { label: "def connect(camera):", from: 12, to: 33, defaultOpen: false },
+    { label: "def set_disconnected(camera):", from: 35, to: 45, defaultOpen: false },
     { label: "def main():", from: 47, to: 83, defaultOpen: true },
   ],
 }

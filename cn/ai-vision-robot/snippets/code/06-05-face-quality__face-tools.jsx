@@ -71,7 +71,7 @@ def draw_faces(image, faces):
   folds: [
     { label: "def load_image():", from: 10, to: 13, defaultOpen: false },
     { label: "def create_face_detector():", from: 15, to: 24, defaultOpen: false },
-    { label: "def observe_faces():", from: 26, to: 55, defaultOpen: false },
-    { label: "def draw_faces():", from: 57, to: 67, defaultOpen: false },
+    { label: "def observe_faces(detector, image):", from: 26, to: 55, defaultOpen: false },
+    { label: "def draw_faces(image, faces):", from: 57, to: 67, defaultOpen: false },
   ],
 }

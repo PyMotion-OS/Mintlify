@@ -65,7 +65,7 @@ def draw_detections(image, detections, detection_time):
     return marked_image`,
   folds: [
     { label: "def load_yolo_resources():", from: 14, to: 27, defaultOpen: false },
-    { label: "def detect_objects():", from: 29, to: 50, defaultOpen: false },
-    { label: "def draw_detections():", from: 52, to: 62, defaultOpen: false },
+    { label: "def detect_objects(model, image, confidence):", from: 29, to: 50, defaultOpen: false },
+    { label: "def draw_detections(image, detections, detection_time):", from: 52, to: 62, defaultOpen: false },
   ],
 }

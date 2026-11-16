@@ -92,8 +92,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def check_qr_state():", from: 17, to: 33, defaultOpen: false },
-    { label: "def run():", from: 35, to: 70, defaultOpen: false },
+    { label: "def check_qr_state(qr_data, target_text, last_detected_time, lost_seconds):", from: 17, to: 33, defaultOpen: false },
+    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 35, to: 70, defaultOpen: false },
     { label: "def main():", from: 72, to: 87, defaultOpen: true },
   ],
 }

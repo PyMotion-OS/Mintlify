@@ -41,8 +41,8 @@ def make_target_mask(image, target_type="blue"):
         return make_gray_mask(image, left, top, right, bottom)
     return make_color_mask(image, left, top, right, bottom, target_type)`,
   folds: [
-    { label: "def make_gray_mask():", from: 15, to: 20, defaultOpen: false },
-    { label: "def make_color_mask():", from: 22, to: 27, defaultOpen: false },
-    { label: "def make_target_mask():", from: 29, to: 39, defaultOpen: false },
+    { label: "def make_gray_mask(image, left, top, right, bottom):", from: 15, to: 20, defaultOpen: false },
+    { label: "def make_color_mask(image, left, top, right, bottom, target_color):", from: 22, to: 27, defaultOpen: false },
+    { label: "def make_target_mask(image, target_type=\"blue\"):", from: 29, to: 39, defaultOpen: false },
   ],
 }

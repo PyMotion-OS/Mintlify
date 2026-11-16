@@ -11,6 +11,7 @@ folds 用 ast 自动算行号，label 用完整签名行，def main 默认展开
 新增页面：在 JOBS 里加一行 (源码路径, snippet 文件名, 导出名, 标题)
 """
 import ast
+import json
 import re
 from pathlib import Path
 
@@ -50,15 +51,17 @@ def folds_of(code: str):
 for rel, fname, export, title in JOBS:
     code = transform((SDK / rel).read_text(encoding="utf-8"))
     assert "`" not in code and "${" not in code, f"{rel} 含反引号或 ${{，模板串不安全"
+    # 模板串里 \n、\t 等仍是转义符：反斜杠必须翻倍，否则 Python 字符串里的 \n 会变成真换行
+    code_js = code.replace("\\", "\\\\")
     lines = [
-        "// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联）；改代码请改源码后重跑脚本",
+        "// 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本",
         f"export const {export} = {{",
         f'  title: "{title}",',
-        "  code: `" + code + "`,",
+        "  code: `" + code_js + "`,",
         "  folds: [",
     ]
     for label, a, b, op in folds_of(code):
-        lines.append(f'    {{ label: "{label}", from: {a}, to: {b}, defaultOpen: {"true" if op else "false"} }},')
+        lines.append(f"    {{ label: {json.dumps(label, ensure_ascii=False)}, from: {a}, to: {b}, defaultOpen: {'true' if op else 'false'} }},")
     lines += ["  ],", "}"]
     (SNIP / fname).write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"OK {fname}: {len(code.splitlines())} 行, {len(folds_of(code))} 个 fold")

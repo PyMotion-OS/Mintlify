@@ -57,7 +57,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run():", from: 13, to: 36, defaultOpen: false },
+    { label: "def run(camera, temperature):", from: 13, to: 36, defaultOpen: false },
     { label: "def main():", from: 38, to: 52, defaultOpen: true },
   ],
 }

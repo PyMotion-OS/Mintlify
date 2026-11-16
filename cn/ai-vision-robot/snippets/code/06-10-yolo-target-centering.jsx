@@ -66,8 +66,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def follow_target():", from: 15, to: 21, defaultOpen: false },
-    { label: "def run():", from: 23, to: 44, defaultOpen: false },
+    { label: "def follow_target(commands, target_data, up_down_angle, left_right_angle):", from: 15, to: 21, defaultOpen: false },
+    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 23, to: 44, defaultOpen: false },
     { label: "def main():", from: 46, to: 61, defaultOpen: true },
   ],
 }

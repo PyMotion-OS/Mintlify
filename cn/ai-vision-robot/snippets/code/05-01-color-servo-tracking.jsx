@@ -65,8 +65,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def error_to_angle():", from: 15, to: 19, defaultOpen: false },
-    { label: "def run():", from: 21, to: 43, defaultOpen: false },
+    { label: "def error_to_angle(error, angle, K):", from: 15, to: 19, defaultOpen: false },
+    { label: "def run(camera, commands, up_down_angle, left_right_angle):", from: 21, to: 43, defaultOpen: false },
     { label: "def main():", from: 45, to: 60, defaultOpen: true },
   ],
 }
