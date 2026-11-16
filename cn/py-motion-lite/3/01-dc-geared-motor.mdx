@@ -283,8 +283,8 @@ motor.zero_position()
 <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '4px', color: '#1d4ed8', display: 'inline-block', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.78rem', fontWeight: 700, lineHeight: 1.2, margin: '0.7rem 0 0.25rem', padding: '0.22rem 0.45rem' }}>API 签名</div>
 
 ```python
-motor.move_to(angle, *, speed=20.0, tolerance=2.0, timeout=8.0)
-motor.move_by(angle, *, speed=20.0, tolerance=2.0, timeout=8.0)
+motor.move_to(angle, *, speed=50.0, tolerance=10.0, timeout=10.0)
+motor.move_by(angle, *, speed=50.0, tolerance=10.0, timeout=10.0)
 ```
 
 <div style={{ margin: '1.5rem 0', overflowX: 'auto', textAlign: 'center', width: '100%' }}>
@@ -313,21 +313,21 @@ motor.move_by(angle, *, speed=20.0, tolerance=2.0, timeout=8.0)
       <tr>
         <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>speed</td>
         <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>float</td>
-        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>20.0；0 \< speed ≤ 100</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>50.0；0 \< speed ≤ 100</td>
         <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>位置运动输出上限</td>
       </tr>
 
       <tr>
         <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>tolerance</td>
         <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>float</td>
-        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>2.0；0.1～30°</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>10.0；0.1～30°</td>
         <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>允许误差</td>
       </tr>
 
       <tr>
         <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>timeout</td>
         <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>float</td>
-        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>8.0；0.1～60 秒</td>
+        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>10.0；0.1～60 秒</td>
         <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem 0.7rem', verticalAlign: 'top' }}>等待动作完成的最长时间</td>
       </tr>
     </tbody>
