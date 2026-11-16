@@ -1,41 +1,46 @@
-// 由 .tmp_gen/batch_code_snippets.py 生成；改代码直接改本文件模板串
+// 由 .tmp_gen/sync_servo_snippets.py 从 SDK lessons 源码生成（connect 已内联）
 export const servoMove = {
   title: "servo_move.py",
   code: `import time
 
 import pymotion as pm
 
-PORT_UP_DOWN = 4                           # 上下舵机接 PWM 端口 4
-PORT_LEFT_RIGHT = 5                        # 左右舵机接 PWM 端口 5
+# --- 本例程可调整的参数 ---
+PORT_UP_DOWN = 4                           # 上下舵机接 PWM 端口 4（S4），可输入值范围 0~180
+PORT_LEFT_RIGHT = 5                        # 左右舵机接 PWM 端口 5（S5），可输入值范围 0~180
 
 
 def main():
-    """三个角度依次转过去，间隔 0.2s / 0.5s，最后打印总耗时。"""
+    """三个角度依次转过去，每次用 sleep 等它转完，最后打印脚本耗时。"""
     try:
         with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
-            with robot.control():                 # 舵机也是执行器，先拿控制权（1.6）
-                start = time.monotonic()          # 开始前记时间：只增不减，适合算耗时
+            with robot.control():                               # 舵机也是执行器，先拿控制权
 
-                robot.pwm_servos.move_to({PORT_UP_DOWN: 60, PORT_LEFT_RIGHT: 100})
-                print("移动: 上下 60°，左右 100°")
-                time.sleep(0.2)                   # 停 0.2 秒
+                start = time.monotonic()                        # 只增不减的计时，适合算时间间隔
 
-                robot.pwm_servos.move_to({PORT_UP_DOWN: 70, PORT_LEFT_RIGHT: 100})
-                print("移动: 上下 70°，左右 100°")
-                time.sleep(0.5)                   # 停 0.5 秒
+                # move_to 只把目标角度发出去就立刻返回，不会停下来等舵机转到位
+                robot.pwm_servos.move_to({PORT_UP_DOWN: 80, PORT_LEFT_RIGHT: 100})
+                time.sleep(1)                                   # 等舵机转过去（0° 在上方，80° 比居中更抬头）
 
-                robot.pwm_servos.move_to({PORT_UP_DOWN: 70, PORT_LEFT_RIGHT: 120})
-                print("复位: 上下 70°，左右 120°")
+                robot.pwm_servos.move_to({PORT_UP_DOWN: 90, PORT_LEFT_RIGHT: 100})
+                time.sleep(0.5)                                 # 上下先到居中高度，左右还停在 100°
 
-                print(f"执行时间: {time.monotonic() - start:.2f} 秒")
+                # 双 90° 约为居中；不同小车略有差异，可按实际情况微调，得到摄像头正前方的居中度数
+                robot.pwm_servos.move_to({PORT_UP_DOWN: 90, PORT_LEFT_RIGHT: 90})
+                time.sleep(0.2)                                
+
+                # 这个耗时只包含三次 sleep 和通信往返，不代表舵机真正到位的时间
+                print(f"脚本耗时: {time.monotonic() - start:.2f} 秒")
 
     except pm.lite.LiteError as exc:
         print(f"连接失败（{exc}）")
+    except KeyboardInterrupt:
+        print("Ctrl+C 主动结束；退出 control 时会关闭 PWM 输出")
 
 
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def main():", from: 9, to: 30, defaultOpen: true },
+    { label: "def main():", from: 10, to: 35, defaultOpen: true },
   ],
 }

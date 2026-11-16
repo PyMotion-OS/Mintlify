@@ -1,6 +1,6 @@
 ---
 title: "1.7 舵机移动"
-description: "上下、左右两路 PWM 舵机依次转到三个角度，结束时打印整套动作的耗时"
+description: "上下、左右两路 PWM 舵机依次转到三个角度，最后停在双 90° 居中，打印整套动作耗时"
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
@@ -26,7 +26,7 @@ import { servoMove } from "/cn/ai-vision-robot/snippets/code/01-07-servo-move.js
 
     <CodeFold
       docs={[
-      { label: "main", doc: "三个角度依次转过去\n间隔 0.2s / 0.5s\n最后打印总耗时" },
+      { label: "main", doc: "三个角度依次转过去\n每次 sleep 等转完\n最后打印脚本耗时" },
       { label: "move_to", doc: "批量发目标角度\n舵机自己转过去\n不会汇报到位" },
       { label: "time.monotonic", doc: "只增不减的时钟\n适合算一段动作耗时" },
       ]}
@@ -37,11 +37,10 @@ import { servoMove } from "/cn/ai-vision-robot/snippets/code/01-07-servo-move.js
   <Tab title="结果预览">
 
     ```text
-    移动: 上下 60°，左右 100°
-    移动: 上下 70°，左右 100°
-    复位: 上下 70°，左右 120°
-    执行时间: 0.73 秒
+    脚本耗时: 0.73 秒
     ```
+
+    最后停在双 90° 居中；不同小车略有差异，可按实际情况微调。
 
   </Tab>
 </Tabs>
@@ -56,6 +55,6 @@ python 07_servo_move.py
 
 | 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
-| `PORT_UP_DOWN` | int | 本例 4 | 上下舵机端口，角度范围 0～85°，70° 是水平 |
-| `PORT_LEFT_RIGHT` | int | 本例 5 | 左右舵机端口，角度范围 60～180°，120° 是居中 |
+| `PORT_UP_DOWN` | int | 本例 4 | 上下舵机端口，可输入 0～180°，90° 约为居中 |
+| `PORT_LEFT_RIGHT` | int | 本例 5 | 左右舵机端口，可输入 0～180°，90° 约为居中 |
 | `time.monotonic()` | float | 秒 | 只增不减的时钟，两次相减得到耗时 |
