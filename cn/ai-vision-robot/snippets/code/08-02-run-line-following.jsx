@@ -82,7 +82,7 @@ def main():
         with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():                           # 发送主动轮目标前取得控制权
                 # 打开实时控制会话
-                with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (3, 4)}, frequency="medium", data_queue_size=8) as session:
+                with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (3, 4)}) as session:
                     run(session.data, session.commands)
     except KeyboardInterrupt:
         print("结果: Ctrl+C 主动停机")

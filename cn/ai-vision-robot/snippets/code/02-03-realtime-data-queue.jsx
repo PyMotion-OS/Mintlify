@@ -6,8 +6,6 @@ from pprint import pprint                  # 让字典按结构换行显示
 
 import pymotion as pm
 
-TRANSPORT = "wifi"                         # Wi-Fi 连接模式
-TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
 
 def main():

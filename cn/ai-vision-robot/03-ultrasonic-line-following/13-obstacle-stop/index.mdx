@@ -17,8 +17,6 @@ import { obstaclePolicy } from "/cn/ai-vision-robot/snippets/code/03-01-obstacle
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `choose_rpm(ultrasonic_data)` | 按距离与状态返回 (转速, 说明) 二元组 |
-| `run(data_queue, commands)` | 主循环：读一条 → 选转速 → 发送 |
-| `session.data.read(timeout=…)` | 数据断流时靠它退出，不靠 `while True` 卡死 |
 
 ## 完整示例
 
@@ -63,10 +61,8 @@ python obstacle_stop.py
 | --- | --- | --- | --- |
 | `STOP_DISTANCE` | int | 350 毫米 | 小于等于它就停机 |
 | `SLOW_DISTANCE` | int | 500 毫米 | 进入该距离开始减速 |
-| `NORMAL_RPM` / `SLOW_RPM` | int | 30 / 15 | 两档速度 |
+| `NORMAL_RPM` | int | 30 | 正常双轮转速，减速区间取它的一半 |
 | `state` | str | `no_echo` / `valid` | `no_echo` 视为未测到障碍 |
-| `frequency` | str | `"high"` | 超声波读得更勤 |
-| `data_queue_size` | int | 1 | 队列只留最新一条，不堆旧数据 |
 
 > 分档边界：`< 350` 停、`350～500` 减速、`> 500` 全速；无回波不算障碍，但无效读数必须停。
 

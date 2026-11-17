@@ -69,8 +69,8 @@ def main():
         with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():
                 # 打开实时控制会话
-                with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (3, 4)}, frequency="medium", data_queue_size=8) as session:
-                    run(session.data, session.commands)     # 接收并执行策略；medium约10Hz更新，run按0.1秒刷新目标
+                with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (3, 4)}) as session:
+                    run(session.data, session.commands)     # 接收并执行策略
     except KeyboardInterrupt:
         print("结果: Ctrl+C 主动停机")
     except (ValueError, pm.lite.LiteError) as exc:

@@ -13,8 +13,6 @@ K = 25                                     # 转弯增益，每一格偏差增�
 
 # --- 共用配置（一般不用动）---
 PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮接 M3，右轮接 M4
-TRANSPORT = "wifi"                         # Wi-Fi 连接模式
-TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
 # 持续把最新五路数据换成 V/W 和双轮转速，再发送双轮目标
 def run(data_queue, commands):
@@ -33,7 +31,7 @@ def run(data_queue, commands):
 
         # 调用 2.4 的差速函数，把 V/W 换成左右轮转速
         left_rpm, right_rpm = vw_to_rpm(v, w)
-        # medium 约 0.1 秒更新一次；0.35 秒留有余量，断流时也会先自动停机
+        # 0.35 秒有效期，断流时也会先自动停机
         commands.motor_speeds.write({PORT_LEFT: left_rpm, PORT_RIGHT: right_rpm}, valid_for=0.35)
 
         current_motion = (pattern_type, left_rpm, right_rpm)
@@ -50,8 +48,8 @@ def main():
     try:
         with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():
-                # 打开实时控制会话；medium 约 10 Hz 更新五路循迹数据
-                with robot.realtime.open(data_sources=("line_tracker",), command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)}, frequency="medium", data_queue_size=1) as session:
+                # 打开实时控制会话，接收五路循迹数据
+                with robot.realtime.open(data_sources=("line_tracker",), command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)}) as session:
                     run(session.data, session.commands)
     except KeyboardInterrupt:
         print("Ctrl+C 主动停机")
@@ -62,6 +60,6 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run(data_queue, commands):", from: 17, to: 42, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 15, to: 40, defaultOpen: false },
   ],
 }

@@ -62,7 +62,7 @@ def main():
     try:
         with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             # 打开实时数据会话
-            with robot.realtime.open(data_sources=("ultrasonic", "line_tracker"), frequency="medium", data_queue_size=8) as session:
+            with robot.realtime.open(data_sources=("ultrasonic", "line_tracker")) as session:
                 with Camera() as camera:
                     run(camera, session.data)
     except KeyboardInterrupt:

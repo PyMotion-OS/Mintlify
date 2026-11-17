@@ -128,7 +128,7 @@ def main():
                 with robot.control():
                     up_down_angle, left_right_angle = reset_servos(robot)  # 复位并取得实际双角度，不在主文件重复配置
                     # 打开实时控制会话
-                    with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (3, 4), "pwm_position_servos": (4, 5)}, frequency="medium", data_queue_size=8) as session:
+                    with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (3, 4), "pwm_position_servos": (4, 5)}) as session:
                         run(camera, session.data, session.commands, up_down_angle, left_right_angle)
     except KeyboardInterrupt:
         log_message("INFO", "project", "Ctrl+C 主动停机")

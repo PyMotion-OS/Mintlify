@@ -62,3 +62,5 @@ python safe_stop.py
 | `valid_for` | float | 0.35 | 心跳间隔与失效时间，断网兜底 |
 | `is_running` | list | `[True]` | 单元素列表，线程与主程序共享 |
 | `daemon=True` | bool | — | 主程序退出时线程一起结束 |
+
+> `is_running` 必须用单元素列表 `[True]`，不能直接写 `True`：`True` 是不可变对象，线程里重新赋值只改变该函数内的名字，主程序的 `True` 不会变；列表是可变对象，两个线程拿到同一个列表后，改 `is_running[0]` 双方都能看到。

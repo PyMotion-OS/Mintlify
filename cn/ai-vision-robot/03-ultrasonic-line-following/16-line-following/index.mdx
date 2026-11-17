@@ -19,9 +19,7 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-04-line-
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `from line_control import PATTERN_NAMES, line_tracker_to_vw` | 直接用 3.3 的分类与偏差，不重写 |
-| `run(data_queue, commands)` | 主循环：读五路 → 算 V/W → 差速转 RPM → 发双轮 |
 | `data_queue.read(timeout=1.0)` | 断流时返回 `None`，V/W 归零 |
-| `frequency="medium"` | 约 10 Hz 更新五路，够循迹且不压网络 |
 
 ## 完整示例
 
@@ -33,7 +31,7 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-04-line-
 <CodeFold
           docs={[
           { label: "run", doc: "读 → 算 V/W → 差速\n→ 发双轮速度" },
-          { label: "main", doc: "控制权 → 会话\nmedium 约 10 Hz" },
+          { label: "main", doc: "控制权 → 会话\n接收五路数据" },
           ]}
           {...lineFollowing}
         />
@@ -89,6 +87,4 @@ python line_following.py
 | --- | --- | --- | --- |
 | `V` | int | 80 毫米/秒 | 基础前进速度，太快会冲出弯道 |
 | `K` | int | 25 | 转弯增益，先 15 试，画龙再加 |
-| `frequency` | str | `medium` | 约 10 Hz；`high` 更跟手但网络压力大 |
-| `data_queue_size` | int | 1 | 只要最新帧，避免用旧数据修正 |
 | `valid_for` | float | 0.35 秒 | 大于 `read` 等待时间，断流先自动停 |
