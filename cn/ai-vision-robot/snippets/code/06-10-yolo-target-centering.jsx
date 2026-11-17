@@ -12,7 +12,7 @@ from target_selection import find_unique_target  # 唯一目标观测函数，�
 from yolo_detection import detect_objects, draw_servo_tracking, load_yolo_resources
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 CONFIDENCE = 0.25                          # 检测置信度门槛
 K = 5                                      # 偏差为1时每轮调整5°
 

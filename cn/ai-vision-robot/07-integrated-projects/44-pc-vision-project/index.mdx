@@ -28,8 +28,12 @@ import { pcVisionProject } from "/cn/ai-vision-robot/snippets/code/07-02-pc-visi
   <Tab title="代码">
 
         <CodeFold
-          docs={[]}
-          {...pcVisionProject}
+          docs={[
+            { label: "observe_station", doc: "取得有效图片和二维码观测，非等待阶段显示实时标记" },
+            { label: "run_station_task", doc: "识别到站快照并点头两次，调用前须先停机" },
+            { label: "get_project_motion", doc: "结合站台阶段、图片和两种事件的时效，得到最终V/W与原因" },
+            { label: "run", doc: "循迹到站后静止识别、点头两次，等待空格确认再继续" },
+          ]}
         />
 
   </Tab>

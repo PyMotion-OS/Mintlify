@@ -38,7 +38,7 @@ def observe_faces(detector, image):
     # 创建检测器时的 320×320 只是初始值；检测前必须换成当前图片的真实尺寸
     image_height, image_width = image.shape[0], image.shape[1]
     detector.setInputSize((image_width, image_height))      # 匹配真实图片避免报错，返回坐标也直接对应原图像素
-    detection_result = detector.detect(image)               # 调用例程 34 的 YuNet 检测入口
+    detection_result = detector.detect(image)               # 调用 6.4 的 YuNet 检测入口
     raw_faces = detection_result[1]                         # 第 1 项是后面需要的人脸数组
     if raw_faces is None:
         return []                                           # 没有检测到人脸时返回空列表

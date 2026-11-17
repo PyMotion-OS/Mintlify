@@ -27,8 +27,10 @@ import { yoloTargetCentering } from "/cn/ai-vision-robot/snippets/code/06-10-yol
   <Tab title="代码">
 
         <CodeFold
-          docs={[]}
-          {...yoloTargetCentering}
+          docs={[
+            { label: "follow_target", doc: "把目标偏差换成双舵机角度，下发后返回两个安全角度" },
+            { label: "run", doc: "取图、检测唯一人物，再用双舵机追随并显示角度" },
+          ]}
         />
 
   </Tab>

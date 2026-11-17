@@ -28,15 +28,18 @@ import { faceGreetingProject } from "/cn/ai-vision-robot/snippets/code/06-08-fac
   <Tab title="代码">
 
         <CodeFold
-          docs={[]}
-          {...faceGreetingProject}
+          docs={[
+            { label: "track_face", doc: "把已登记人脸的位置换成双舵机角度，发送后返回两个安全角度" },
+            { label: "nod_camera", doc: "围绕当前上下角度点头两次，保持左右角度，最后回到当前姿态" },
+            { label: "run", doc: "持续对准已登记人脸，累计识别到user01达到次数后点头并结束" },
+          ]}
         />
 
   </Tab>
   <Tab title="结果预览">
 
     ```text
-    登记内容: 为空，请先用例程 36 准备 common/faces.npz
+    登记内容: 为空，请先用 6.6 准备 common/faces.npz
     ```
     或正常运行时，窗口显示代号、分数、人脸框、中心和画面对准标记；识别满 20 张 user01 新图后点头两次。
 

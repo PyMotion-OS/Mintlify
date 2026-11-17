@@ -8,7 +8,7 @@ from camera import Camera, log_message
 from yolo_detection import detect_objects, draw_target, load_yolo_resources
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 CONFIDENCE = 0.25                          # 检测置信度门槛
 
 

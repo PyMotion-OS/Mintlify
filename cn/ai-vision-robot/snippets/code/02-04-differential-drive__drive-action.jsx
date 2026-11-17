@@ -6,7 +6,7 @@ import time
 
 import pymotion as pm
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 ACTION = "spin_left"                         # 动作，名字见下面的 ACTIONS
 V = 175                                    # 前进速度，毫米/秒（175 对应直行 50 RPM）
 W = 60                                     # 转弯快慢，度/秒（50 对应原地转 20 RPM）
@@ -80,7 +80,7 @@ def main():
             with robot.realtime.open(command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)}) as session:
                 left, right = drive(session.commands, v, w, valid_for=1.7)
                 print(f"动作: {ACTION}  左轮: {left} RPM  右轮: {right} RPM")
-                time.sleep(1.5)                             # 只运行1.5秒
+                time.sleep(1.5)                             # 只运行 1.5 秒
                 session.commands.motor_speeds.stop()        # 主动停机，不等待命令自己过期
 
 

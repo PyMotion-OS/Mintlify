@@ -5,9 +5,9 @@ export const keyboardControl = {
 
 import pymotion as pm
 
-from differential_drive import PORT_LEFT, PORT_RIGHT, drive  # 引用例程 11 演示的差速能力
+from differential_drive import PORT_LEFT, PORT_RIGHT, drive  # 引用 2.4 演示的差速能力
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 V = 106                                    # 前后方向的线速度，单位毫米/秒
 W = 40                                     # 左右方向的角速度，单位度/秒
 

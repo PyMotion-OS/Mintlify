@@ -17,7 +17,7 @@ OBSTACLE_NAMES = {
 # 根据超声波状态和距离保持、减半或归零 V/W，并返回避障状态
 def ultrasonic_to_vw(ultrasonic_data, v, w):
     """根据超声波状态和距离保持、减半或归零 V/W，并返回避障状态。"""
-    if ultrasonic_data.state == "no_echo":                 # 本例程把无回波作为未测到障碍，保持原来的 V/W
+    if ultrasonic_data.state == "no_echo":                 # 本页把无回波作为未测到障碍，保持原来的 V/W
         return v, w, "clear"
 
     if not ultrasonic_data.valid:                           # 其他不可用状态把 V/W 归零

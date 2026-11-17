@@ -5,7 +5,7 @@ export const servoPosition = {
 
 import pymotion as pm
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 PORT_UP_DOWN = 4                           # 上下舵机接 PWM 端口 4（S4）
 PORT_LEFT_RIGHT = 5                        # 左右舵机接 PWM 端口 5（S5）
 UP_DOWN_HOME, LEFT_RIGHT_HOME = 90, 90    # 复位姿态：双 90° 约为居中，可以根据实际情况微调
@@ -47,7 +47,7 @@ def main():
         with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():                           # 舵机也是执行器，先拿控制权
 
-                # 第一步：move_to 复位。普通位置命令，不需要实时会话（例程 07 学过）
+                # 第一步：move_to 复位。普通位置命令，不需要实时会话（1.7 学过）
                 up_down_angle, left_right_angle = reset_servos(robot)
                 print(f"复位: 上下 {up_down_angle}°，左右 {left_right_angle}°")
 

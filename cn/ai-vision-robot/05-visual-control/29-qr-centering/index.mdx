@@ -29,16 +29,21 @@ import { qrObservation } from "/cn/ai-vision-robot/snippets/code/05-03-qr-center
   <Tab title="qr_centering.py">
 
         <CodeFold
-          docs={[]}
-          {...qrCentering}
+          docs={[
+            { label: "check_qr_state", doc: "连续检查指定二维码，返回识别状态和最近一次识别时刻" },
+            { label: "run", doc: "横向用双轮对准二维码，纵向用S4对准二维码" },
+          ]}
         />
 
   </Tab>
   <Tab title="qr_observation.py">
 
         <CodeFold
-          docs={[]}
-          {...qrObservation}
+          docs={[
+            { label: "create_qr", doc: "把文字生成二维码并保存为图片" },
+            { label: "find_qr", doc: "识别一个二维码，返回文字、四角、中心、面积比例和二维偏差" },
+            { label: "draw_qr_marks", doc: "复制原图，再标出二维码边框、中心和二维偏差" },
+          ]}
         />
 
   </Tab>

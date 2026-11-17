@@ -5,7 +5,7 @@ export const targetMask = {
 
 
 # --- 掩膜参数 ---
-ROI_LEFT, ROI_RIGHT = 0.15, 0.85           # 与例程 20/19 使用相同 ROI
+ROI_LEFT, ROI_RIGHT = 0.15, 0.85           # 与 4.3/4.2 使用相同 ROI
 ROI_TOP, ROI_BOTTOM = 0.15, 0.85           # 上下各忽略原图高度的 15%
 GRAY_LIMIT = 130                           # gray 选中灰度不高于 130 的暗色区域
 
@@ -17,18 +17,18 @@ COLOR_RANGES = {
 }
 
 
-# 吸收例程 20：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜
+# 吸收 4.3：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜
 def make_gray_mask(image, left, top, right, bottom):
-    """吸收例程 20：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜。"""
+    """吸收 4.3：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜。"""
     roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI
     gray_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY) # 把 BGR 颜色值合成一个亮度值
     _, gray_mask = cv2.threshold(gray_image, GRAY_LIMIT, 255, cv2.THRESH_BINARY_INV)
     return gray_mask
 
 
-# 吸收例程 21：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜
+# 吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜
 def make_color_mask(image, left, top, right, bottom, target_color):
-    """吸收例程 21：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜。"""
+    """吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜。"""
     roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI
     hsv_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2HSV)   # 把 BGR 转成颜色、浓淡和明暗分开的 HSV
     color_low, color_high = COLOR_RANGES[target_color]      # 根据名称取出这种颜色的 HSV 上下限

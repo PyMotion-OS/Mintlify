@@ -30,8 +30,14 @@ import { cameraBasics } from "/cn/ai-vision-robot/snippets/code/04-01-camera-bas
   <Tab title="代码">
 
         <CodeFold
-          docs={[]}
-          {...cameraBasics}
+          docs={[
+            { label: "log_message", doc: "按照“时间、级别、来源、说明”的本项目统一格式打印一条日志" },
+            { label: "save_image", doc: "把 OpenCV 图片编码后保存到指定路径" },
+            { label: "__init__", doc: "创建 Camera 对象时保存地址，此时还没有连接摄像头。" },
+            { label: "__enter__", doc: "进入 with 时自动执行，连接摄像头并返回当前对象。" },
+            { label: "get_image", doc: "取得一张图片。" },
+            { label: "__exit__", doc: "成功进入 with 后，结束或中途出错都会自动执行并释放摄像头。" },
+          ]}
         />
 
   </Tab>

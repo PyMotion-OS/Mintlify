@@ -10,7 +10,7 @@ from camera import Camera, log_message     # 沿用26的有效取图、后台重
 from yolo_detection import detect_objects, draw_detections, load_yolo_resources
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 CONFIDENCE = 0.25                          # 只保留置信度达到0.25的检测结果
 TEMP_WARN = 75.0                           # 处理器达到75℃时显示过热
 

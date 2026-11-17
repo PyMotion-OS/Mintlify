@@ -39,9 +39,9 @@ def vw_to_rpm(v, w):
     return limit_rpm(left_v * 60 / c, right_v * 60 / c)     # 线速度换成转速，再限幅
 
 
-# 沿用例程11的差速能力，把线速度和角速度设为左右主动轮转速
+# 沿用 2.4 的差速能力，把线速度和角速度设为左右主动轮转速
 def drive(commands, v, w, valid_for=0.35):
-    """沿用例程11的差速能力，把线速度和角速度设为左右主动轮转速。"""
+    """沿用 2.4 的差速能力，把线速度和角速度设为左右主动轮转速。"""
     # commands 是实时会话的命令入口；v 毫米/秒，w 度/秒，valid_for 是命令有效期
     left, right = vw_to_rpm(v, w)                           # 得到限幅取整后的左右轮转速
     commands.motor_speeds.write(                            # 选择其中的电机速度命令

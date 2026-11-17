@@ -11,7 +11,7 @@ from pathlib import Path
 import pymotion as pm
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 TEMP_WARN = 75.0                           # 温度达到 75℃ 时显示过热提醒
 MIN_FREE_GB = 2.0                          # 存储剩余不足 2GB 时显示空间不足
 
@@ -38,7 +38,7 @@ def main():
     else:
         print(f"虚拟环境: {sys.prefix}")
 
-    # 第二步：只列出系统已经发现的串口，本例程不连接机器人
+    # 第二步：只列出系统已经发现的串口，本页不连接机器人
     usb_devices = []
     for pattern in ("/dev/ttyACM*", "/dev/ttyUSB*"):
         usb_devices.extend(glob.glob(pattern))              # glob() 用 * 匹配串口文件，extend() 把找到的路径加入列表

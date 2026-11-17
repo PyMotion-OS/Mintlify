@@ -6,7 +6,7 @@ import time
 
 import pymotion as pm
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 RUN_SECONDS = 20.0                         # 最长运行时间，单位秒
 
 # --- 共用配置（一般不用动）---

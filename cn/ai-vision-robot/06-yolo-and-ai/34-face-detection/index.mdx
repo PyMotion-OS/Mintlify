@@ -26,8 +26,12 @@ YuNet 是比通用 YOLO 更轻的人脸专用检测器，先跑通人脸链路�
   <Tab title="代码">
 
         <CodeFold
-          docs={[]}
-          {...faceDetection}
+          docs={[
+            { label: "load_image", doc: "读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片" },
+            { label: "create_face_detector", doc: "读取本地 YuNet 文件，并返回 OpenCV 人脸检测器" },
+            { label: "observe_faces", doc: "检测人脸，再把原始数组整理成人脸框、landmarks（五个人脸关键点坐标）和置信度" },
+            { label: "draw_faces", doc: "给每张人脸画出检测框、五个关键点和置信度" },
+          ]}
         />
 
   </Tab>

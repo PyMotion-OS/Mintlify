@@ -27,8 +27,12 @@ import { roiAndGrayMask } from "/cn/ai-vision-robot/snippets/code/04-03-roi-and-
   <Tab title="代码">
 
         <CodeFold
-          docs={[]}
-          {...roiAndGrayMask}
+          docs={[
+            { label: "load_image", doc: "读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片" },
+            { label: "draw_roi", doc: "复制原图，在副本上画出 ROI 并返回" },
+            { label: "make_gray_mask", doc: "依次裁剪 ROI、转成灰度图，再得到按亮暗筛选的黑白掩膜" },
+            { label: "show_image", doc: "缩放图片副本，再在屏幕指定位置显示" },
+          ]}
         />
 
   </Tab>

@@ -4,10 +4,10 @@ export const lineFollowing = {
   code: `import pymotion as pm
 
 from differential_drive import vw_to_rpm
-from line_control import PATTERN_NAMES, line_tracker_to_vw  # 引用例程15产出的分类和运动计算
+from line_control import PATTERN_NAMES, line_tracker_to_vw  # 引用 3.3 产出的分类和运动计算
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 V = 80                                     # 基础前进速度，毫米/秒
 K = 25                                     # 转弯增益，每一格偏差增加 25 度/秒的 W
 
@@ -28,10 +28,10 @@ def run(data_queue, commands):
             v, w, pattern_type = 0, 0, "waiting"            # V/W 归零，使双轮目标也归零
         else:
             tracker_line_data = sensor_data.data            # 取得本次更新的五路循迹数据
-            # 调用例程 15 的函数，把五路状态换成 V、W 和图案分类
+            # 调用 3.3 的函数，把五路状态换成 V、W 和图案分类
             v, w, pattern_type = line_tracker_to_vw(tracker_line_data.is_detected, V, K)
 
-        # 调用例程 11 的差速函数，把 V/W 换成左右轮转速
+        # 调用 2.4 的差速函数，把 V/W 换成左右轮转速
         left_rpm, right_rpm = vw_to_rpm(v, w)
         # medium 约 0.1 秒更新一次；0.35 秒留有余量，断流时也会先自动停机
         commands.motor_speeds.write({PORT_LEFT: left_rpm, PORT_RIGHT: right_rpm}, valid_for=0.35)

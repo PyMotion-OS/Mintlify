@@ -17,7 +17,7 @@ from servo_control import nod_camera, reset_servos  # 复位返回双角度，�
 from yolo_detection import detect_objects, draw_detections, load_yolo_resources
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 V = 80                                     # 正常前进速度，单位毫米/秒
 SLOW_V = 40                                # 看到站台后的减速速度，单位毫米/秒
 K = 25                                     # 每格五路偏差对应的转向速度，单位度/秒

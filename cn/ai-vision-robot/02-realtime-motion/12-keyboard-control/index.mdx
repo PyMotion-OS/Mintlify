@@ -41,8 +41,11 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/02-05-keybo
     与 2.4 本页产出相同，复制到本页目录即可。
 
 <CodeFold
-          docs={[]}
-          {...differentialDrive}
+          docs={[
+            { label: "limit_rpm", doc: "同尺度限幅：超过单轮上限就两边一起缩小，弯道形状不变；返回值已取整" },
+            { label: "vw_to_rpm", doc: "差速映射：前进速度和转弯快慢 → 左右轮的转速（RPM）" },
+            { label: "drive", doc: "沿用 2.4 的差速能力，把线速度和角速度设为左右主动轮转速" },
+          ]}
         />
 
   </Tab>

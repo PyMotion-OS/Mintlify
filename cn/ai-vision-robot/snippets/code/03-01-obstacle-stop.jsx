@@ -3,7 +3,7 @@ export const obstacleStop = {
   title: "obstacle_stop.py",
   code: `import pymotion as pm
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 STOP_DISTANCE = 350                        # 停机距离，单位毫米
 SLOW_DISTANCE = 500                        # 减速距离，单位毫米
 NORMAL_RPM = 30                            # 正常双轮转速，单位转/分
@@ -18,7 +18,7 @@ TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 # 根据超声波状态和距离选择正常、减速或停机
 def choose_rpm(ultrasonic_data):
     """根据超声波状态和距离选择正常、减速或停机。"""
-    if ultrasonic_data.state == "no_echo":                 # 本例程把无回波作为未测到障碍，保持正常速度
+    if ultrasonic_data.state == "no_echo":                 # 本页把无回波作为未测到障碍，保持正常速度
         return NORMAL_RPM, "未测到障碍"
 
     if not ultrasonic_data.valid:                           # 其他不可用状态把速度设为 0

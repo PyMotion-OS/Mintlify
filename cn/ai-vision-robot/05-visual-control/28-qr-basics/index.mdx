@@ -26,8 +26,12 @@ import { qrBasics } from "/cn/ai-vision-robot/snippets/code/05-02-qr-basics.jsx"
   <Tab title="代码">
 
         <CodeFold
-          docs={[]}
-          {...qrBasics}
+          docs={[
+            { label: "create_qr", doc: "把文字生成二维码并保存为图片" },
+            { label: "load_image", doc: "读取图片文件，返回OpenCV使用的BGR图片" },
+            { label: "find_qr", doc: "识别一个二维码，返回文字、四角、中心、面积比例和二维偏差" },
+            { label: "draw_qr_marks", doc: "复制原图，再标出二维码边框、中心和二维偏差" },
+          ]}
         />
 
   </Tab>

@@ -9,7 +9,7 @@ from target_selection import find_unique_target  # 唯一目标观测函数，�
 from yolo_detection import detect_objects, draw_follow_motion, load_yolo_resources
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 CONFIDENCE = 0.25                          # 检测置信度门槛
 W = 90                                     # 原地对准时的转向速度，单位度/秒
 

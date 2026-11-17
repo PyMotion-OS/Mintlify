@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 ROI_LEFT, ROI_RIGHT = 0.15, 0.85            # ROI 使用原图中间 70% 的宽度
 ROI_TOP, ROI_BOTTOM = 0.15, 0.85            # ROI 使用原图中间 70% 的高度
 GRAY_LIMIT = 130                            # 灰度不高于 130 的像素在掩膜中变成白色

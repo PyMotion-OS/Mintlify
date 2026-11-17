@@ -6,13 +6,13 @@ export const qrCentering = {
 import cv2
 import pymotion as pm
 
-from camera import Camera, log_message     # 引用例程26的摄像头类和统一日志函数
-from differential_drive import vw_to_rpm   # 引用例程11的差速函数
-from qr_observation import draw_qr_marks, find_qr  # 吸收例程28的二维码观测和绘画函数
+from camera import Camera, log_message     # 引用 4.9 的摄像头类和统一日志函数
+from differential_drive import vw_to_rpm   # 引用 2.4 的差速函数
+from qr_observation import draw_qr_marks, find_qr  # 吸收 5.2 的二维码观测和绘画函数
 from servo_control import CENTER_ERROR, error_to_angle, move_servos, reset_servos  # 引用舵机控制函数
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 TARGET_TEXT = "GREETING"                   # 只对准文字与这里相同的二维码
 LOST_SECONDS = 0.5                         # 连续0.5秒未识别到目标，才确认识别中断
 W = 80                                     # 横向转动强度；左右轮转不动时增大这个值

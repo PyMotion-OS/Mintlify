@@ -7,10 +7,10 @@ import time                                # 使用单调时间计算图片收�
 
 import cv2
 
-from target_observation import draw_target_marks, find_target  # 吸收例程 23 的目标观测和结果标记函数
+from target_observation import draw_target_marks, find_target  # 吸收 4.6 的目标观测和结果标记函数
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 CAMERA_URL = "rtsp://192.168.43.226:554/11" # 填写 RTSP 摄像头地址
 MAX_AGE = 0.5                              # 图片收到后超过 0.5 秒就不再用于识别，单位秒
 
@@ -23,7 +23,7 @@ def log_message(level, source, message):
 
 
 class Camera:
-    """在例程 18 的基础上，使用后台线程持续更新最新图片。"""
+    """在 4.1 的基础上，使用后台线程持续更新最新图片。"""
 
     def __init__(self, camera_url):
         """保存摄像头地址，并准备最新图片、编号、接收时间和线程状态。"""

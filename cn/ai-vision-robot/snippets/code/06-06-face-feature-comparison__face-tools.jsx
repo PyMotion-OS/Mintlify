@@ -19,9 +19,9 @@ REFERENCE_PATH = DATA_DIR / "face_sample.png"
 QUERY_PATH = DATA_DIR / "face_sample_2.png"
 
 
-# 读取本例程的两张图片，返回登记图片和查询图片
+# 读取本页的两张图片，返回登记图片和查询图片
 def load_image():
-    """读取本例程的两张图片，返回登记图片和查询图片。"""
+    """读取本页的两张图片，返回登记图片和查询图片。"""
     reference_bytes = np.fromfile(REFERENCE_PATH, dtype=np.uint8)
     reference_image = cv2.imdecode(reference_bytes, cv2.IMREAD_COLOR)
     query_bytes = np.fromfile(QUERY_PATH, dtype=np.uint8)
@@ -69,9 +69,9 @@ def check_face_quality(image, face):
     return True, "人脸质量合格"
 
 
-# 吸收例程 34、34 的检测与质量判断，返回 SFace 需要的一行 YuNet 原始数据
+# 吸收 6.4/6.4 的检测与质量判断，返回 SFace 需要的一行 YuNet 原始数据
 def get_quality_face(detector, image):
-    """吸收例程 34、34 的检测与质量判断，返回 SFace 需要的一行 YuNet 原始数据。"""
+    """吸收 6.4/6.4 的检测与质量判断，返回 SFace 需要的一行 YuNet 原始数据。"""
     image_height, image_width = image.shape[0], image.shape[1]
     detector.setInputSize((image_width, image_height))
     detection_result = detector.detect(image)
