@@ -6,11 +6,13 @@ description: "循迹的同时叠加超声波避障，丢线就停车退出"
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 import { safeLineFollowing } from "/cn/ai-vision-robot/snippets/code/03-05-safe-line-following.jsx"
 import { obstaclePolicy } from "/cn/ai-vision-robot/snippets/code/03-05-safe-line-following__obstacle-policy.jsx"
+import { lineControl } from "/cn/ai-vision-robot/snippets/code/03-05-safe-line-following__line-control.jsx"
+import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-05-safe-line-following__differential-drive.jsx"
 
 ## 前置条件
 
 - Robot 通信正常（参考 [1.1 WIFI模式连接](../../01-python-basics/01-connect-wifi/index)，能打印出设备 ID）
-- 把 2.4 的产出 `differential_drive.py`、3.3 的产出 `line_control.py` 复制到本页目录
+- 把 2.4 的产出 `differential_drive.py`、3.1 的产出 `obstacle_policy.py`、3.3 的产出 `line_control.py` 复制到本页目录
 - 赛道上能摆障碍物
 
 ## 关键函数
@@ -41,11 +43,40 @@ import { obstaclePolicy } from "/cn/ai-vision-robot/snippets/code/03-05-safe-lin
   </Tab>
   <Tab title="obstacle_policy.py">
 
-        <CodeFold
+    与 3.1 产出的避障策略相同，复制到本页目录即可。
+
+<CodeFold
           docs={[
           { label: "ultrasonic_to_vw", doc: "根据超声波状态和距离保持、减半或归零 V/W，并返回避障状态" },
           ]}
           {...obstaclePolicy}
+        />
+
+  </Tab>
+  <Tab title="line_control.py">
+
+    与 3.3 产出的分类函数相同，复制到本页目录即可。
+
+<CodeFold
+          docs={[
+          { label: "classify_pattern", doc: "检查五路状态，找出探测位置，再返回图案分类和循迹线偏差" },
+          { label: "line_tracker_to_vw", doc: "传入五路状态、基础 V 和增益 K，返回 V、W 和图案分类" },
+          ]}
+          {...lineControl}
+        />
+
+  </Tab>
+  <Tab title="differential_drive.py">
+
+    与 2.4 产出的差速函数相同，复制到本页目录即可。
+
+<CodeFold
+          docs={[
+          { label: "limit_rpm", doc: "同尺度限幅：超过单轮上限就两边一起缩小，弯道形状不变；返回值已取整" },
+          { label: "vw_to_rpm", doc: "差速映射：前进速度和转弯快慢 → 左右轮的转速（RPM）" },
+          { label: "drive", doc: "沿用 2.4 的差速能力，把线速度和角速度设为左右主动轮转速" },
+          ]}
+          {...differentialDrive}
         />
 
   </Tab>
@@ -85,4 +116,4 @@ python safe_line_following.py
 | `data_queue_size` | int | 8 | 两路数据交替到达，队列要够放 |
 | `valid_for` | float | 0.35 秒 | 断流自动停 |
 
-> 本页产出 `obstacle_policy.py`（`ultrasonic_to_vw()`），7.1 会复用。
+> 本页复用 2.4、3.1、3.3 的三个产出文件（差速、避障、循迹），本页产出 `safe_line_following.py`；7.1 会复用 3.1 的 `obstacle_policy.py`。

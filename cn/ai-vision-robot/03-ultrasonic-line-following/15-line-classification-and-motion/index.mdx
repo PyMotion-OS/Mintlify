@@ -5,6 +5,7 @@ description: "五路状态先分类再算偏差，用比例控制把偏差换成
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 import { lineClassificationAndMotion } from "/cn/ai-vision-robot/snippets/code/03-03-line-classification-and-motion.jsx"
+import { lineControl } from "/cn/ai-vision-robot/snippets/code/03-03-line-classification-and-motion__line-control.jsx"
 
 ## 前置条件
 
@@ -65,4 +66,14 @@ python line_classification_and_motion.py
 | `SENSOR_POSITIONS` | tuple | (-2,-1,0,1,2) | 五路探头位置，决定偏差刻度 |
 | `line_offset` | float | -2～2 | 负=线偏左，0=居中，正=偏右 |
 
-> 本页产出 `classify_pattern()` 和 `line_tracker_to_vw()` 两个纯函数，3.4 会 import 它们。
+## 本页产出 · line_control.py
+
+本页把循迹分类与运动计算整理成一个可复用文件：包含 `classify_pattern()`、`line_tracker_to_vw()` 两个纯函数——输入五路状态，输出图案分类和循迹用的 V/W。不含 `main`、不连设备，只有分类与换算逻辑，供需要循迹的页面直接 import。3.4 与 3.5 都用它。
+
+<CodeFold
+  docs={[
+    { label: "classify_pattern", doc: "检查五路状态，找出探测位置，再返回图案分类和循迹线偏差" },
+    { label: "line_tracker_to_vw", doc: "传入五路状态、基础 V 和增益 K，返回 V、W 和图案分类" },
+  ]}
+  {...lineControl}
+/>

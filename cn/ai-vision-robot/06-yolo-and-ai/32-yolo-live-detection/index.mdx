@@ -29,6 +29,7 @@ import { yoloDetection } from "/cn/ai-vision-robot/snippets/code/06-02-yolo-live
         <CodeFold
           docs={[
           ]}
+  {...yoloLiveDetection}
         />
 
   </Tab>
@@ -40,6 +41,7 @@ import { yoloDetection } from "/cn/ai-vision-robot/snippets/code/06-02-yolo-live
             { label: "detect_objects", doc: "把模型输出整理为稳定检测字段，并返回处理毫秒数" },
             { label: "draw_detections", doc: "复制图片，再画出英文类别、置信度、检测框和处理耗时" },
           ]}
+  {...yoloDetection}
         />
 
   </Tab>

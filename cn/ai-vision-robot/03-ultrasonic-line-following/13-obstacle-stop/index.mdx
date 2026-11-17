@@ -5,6 +5,7 @@ description: "超声波读数分三档——远就全速、近了减速、太近
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 import { obstacleStop } from "/cn/ai-vision-robot/snippets/code/03-01-obstacle-stop.jsx"
+import { obstaclePolicy } from "/cn/ai-vision-robot/snippets/code/03-01-obstacle-stop__obstacle-policy.jsx"
 
 ## 前置条件
 
@@ -68,3 +69,14 @@ python obstacle_stop.py
 | `data_queue_size` | int | 1 | 队列只留最新一条，不堆旧数据 |
 
 > 分档边界：`< 350` 停、`350～500` 减速、`> 500` 全速；无回波不算障碍，但无效读数必须停。
+
+## 本页产出 · obstacle_policy.py
+
+本页把避障策略整理成一个可复用文件：包含 `ultrasonic_to_vw()` 一个函数——输入超声波数据和循迹算出的 V/W，输出避障后的 V/W 和状态（`stop` / `slow` / `normal` / `clear`）。不含 `main`、不连设备，只有分档判断逻辑，供需要避障的页面直接 import。策略文件的分档边界（`STOP_DISTANCE` 100 毫米 / `SLOW_DISTANCE` 300 毫米）比本页演示脚本（350/500）更保守，3.5 与 7.1 都用它。
+
+<CodeFold
+  docs={[
+    { label: "ultrasonic_to_vw", doc: "根据超声波状态和距离保持、减半或归零 V/W，并返回避障状态" },
+  ]}
+  {...obstaclePolicy}
+/>

@@ -33,6 +33,7 @@ import { camera } from "/cn/ai-vision-robot/snippets/code/04-08-camera-age-and-r
             { label: "connect", doc: "打开一次视频连接，清空上次图片，成功返回 True，失败返回 False" },
             { label: "set_disconnected", doc: "把状态改为 disconnected，并清空不能继续使用的旧图片" },
           ]}
+  {...cameraAgeAndReconnect}
         />
 
   </Tab>
@@ -48,6 +49,7 @@ import { camera } from "/cn/ai-vision-robot/snippets/code/04-08-camera-age-and-r
             { label: "latest", doc: "返回最新且没有过期的图片，默认有效期为 0.5 秒。" },
             { label: "__exit__", doc: "离开 with 时停止后台线程，并释放本次视频连接。" },
           ]}
+  {...camera}
         />
 
   </Tab>

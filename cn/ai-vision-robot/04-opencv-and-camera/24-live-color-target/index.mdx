@@ -37,6 +37,7 @@ import { targetObservation } from "/cn/ai-vision-robot/snippets/code/04-07-live-
             { label: "latest_data", doc: "返回后台线程最近一次取得的图片、编号和接收时间。" },
             { label: "__exit__", doc: "离开 with 时停止并等待后台线程，再释放摄像头。" },
           ]}
+  {...liveColorTarget}
         />
 
   </Tab>
@@ -51,6 +52,7 @@ import { targetObservation } from "/cn/ai-vision-robot/snippets/code/04-07-live-
             { label: "find_target", doc: "选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差" },
             { label: "draw_target_marks", doc: "复制原图，再用基础图形标出处理区域、参考中心和目标位置" },
           ]}
+  {...targetObservation}
         />
 
   </Tab>

@@ -34,6 +34,7 @@ SFace 把一张脸压缩成 128 个数值，相似度越大越像同一个人。
             { label: "compare_face_features", doc: "用 SFace 比较两组人脸特征，返回余弦相似度" },
             { label: "save_feature_file", doc: "把匿名代号和对应人脸特征保存为本地 NPZ 文件" },
           ]}
+  {...faceFeatureComparison}
         />
 
   </Tab>
@@ -46,6 +47,7 @@ SFace 把一张脸压缩成 128 个数值，相似度越大越像同一个人。
             { label: "check_face_quality", doc: "依次检查人脸完整度、尺寸、亮度和清晰度，再返回是否合格和原因" },
             { label: "get_quality_face", doc: "吸收 6.4/6.4 的检测与质量判断，返回 SFace 需要的一行 YuNet 原始数据" },
           ]}
+  {...faceTools}
         />
 
   </Tab>

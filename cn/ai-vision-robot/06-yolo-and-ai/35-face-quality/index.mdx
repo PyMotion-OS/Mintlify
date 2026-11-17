@@ -31,6 +31,7 @@ import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-05-face-quality_
           docs={[
             { label: "check_face_quality", doc: "依次检查人脸完整度、尺寸、亮度和清晰度，再返回检查数据和原因" },
           ]}
+  {...faceQuality}
         />
 
   </Tab>
@@ -43,6 +44,7 @@ import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-05-face-quality_
             { label: "observe_faces", doc: "检测人脸，再把原始数组整理成人脸框、landmarks（五个人脸关键点坐标）和置信度" },
             { label: "draw_faces", doc: "给每张人脸画出检测框、五个关键点和置信度" },
           ]}
+  {...faceTools}
         />
 
   </Tab>
