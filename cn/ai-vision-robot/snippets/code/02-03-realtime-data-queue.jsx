@@ -25,7 +25,7 @@ def main():
                 # while 在条件为真时会重复：当超声波数据为空或者五路数据为空时，继续进入循环
                 while ultrasonic_data is None or tracker_line_data is None:
                     # 主动取出持续进入队列的下一条数据；队列为空时最多等待 1 秒
-                    sensor_data = session.data.read(timeout=0.5)
+                    sensor_data = session.data.read(timeout=1.0)
                     if sensor_data is None:                 # 上一行读取的数据为空则返回报错
                         raise TimeoutError("没有收齐超声波和五路循迹数据")
 
