@@ -23,7 +23,6 @@ JOBS = [
     ("01_python_basics/07_servo_move.py", "01-07-servo-move.jsx", "servoMove", "servo_move.py"),
     ("02_realtime_motion/08_motor_speed/08_motor_speed.py", "02-01-motor-speed.jsx", "motorSpeed", "motor_speed.py"),
     ("02_realtime_motion/09_servo_position/09_servo_position.py", "02-02-servo-position.jsx", "servoPosition", "servo_position.py"),
-    ("02_realtime_motion/09_servo_position/servo_control.py", "02-02-servo-position__servo-control.jsx", "servoControl", "servo_control.py"),
     ("02_realtime_motion/10_realtime_data_queue/10_realtime_data_queue.py", "02-03-realtime-data-queue.jsx", "realtimeDataQueue", "realtime_data_queue.py"),
     ("02_realtime_motion/12_keyboard_control/differential_drive.py", "02-04-differential-drive.jsx", "differentialDrive", "differential_drive.py"),
     ("02_realtime_motion/11_differential_drive/11_differential_drive.py", "02-04-differential-drive__drive-action.jsx", "driveAction", "drive_action.py"),
