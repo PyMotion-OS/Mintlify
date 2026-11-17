@@ -18,7 +18,7 @@ import { lineClassificationAndMotion } from "/cn/ai-vision-robot/snippets/code/0
 | `classify_pattern(sensor_states)` | 五路状态 → `(图案分类, 偏差)`，先判无效/丢线，再判多段/宽线，最后质心求偏差 |
 | `line_tracker_to_vw(sensor_states, v, k)` | 把偏差乘增益变成 W，`W = k × (0 − 偏差)` |
 | `SENSOR_POSITIONS` | 五路探头从左到右的位置 `(-2,-1,0,1,2)`，决定偏差刻度 |
-| `robot.line_tracker(max_age=1.0)` | 取一次五路循迹数据，`is_detected` 是五路 True/False |
+| `robot.line_tracker()` | 取一次五路循迹数据，`is_detected` 是五路 True/False |
 
 ## 完整示例
 
@@ -29,9 +29,9 @@ import { lineClassificationAndMotion } from "/cn/ai-vision-robot/snippets/code/0
 
         <CodeFold
           docs={[
-          { label: "classify_pattern", doc: "五路状态 → 分类+偏差\\n先判无效、再判丢线\\n多段/宽线/质心" },
-          { label: "line_tracker_to_vw", doc: "只有单段线才动\\nW = K × (0 − 偏差)" },
-          { label: "main", doc: "读五路 → 算 V/W\\n只在结果变化时打印" },
+          { label: "classify_pattern", doc: "五路状态 → 分类+偏差\n先判无效、再判丢线\n多段/宽线/质心" },
+          { label: "line_tracker_to_vw", doc: "只有单段线才动\nW = K × (0 − 偏差)" },
+          { label: "main", doc: "读五路 → 算 V/W\n只在结果变化时打印" },
           ]}
           {...lineClassificationAndMotion}
         />
@@ -52,7 +52,7 @@ import { lineClassificationAndMotion } from "/cn/ai-vision-robot/snippets/code/0
 ### 运行方式
 
 ```bash
-python 15_line_classification_and_motion.py
+python line_classification_and_motion.py
 ```
 
 ## 参数说明
@@ -65,4 +65,4 @@ python 15_line_classification_and_motion.py
 | `SENSOR_POSITIONS` | tuple | (-2,-1,0,1,2) | 五路探头位置，决定偏差刻度 |
 | `line_offset` | float | -2～2 | 负=线偏左，0=居中，正=偏右 |
 
-> 本页产出 `classify_pattern()` 和 `line_tracker_to_vw()` 两个纯函数，3.2 会 import 它们。
+> 本页产出 `classify_pattern()` 和 `line_tracker_to_vw()` 两个纯函数，3.4 会 import 它们。

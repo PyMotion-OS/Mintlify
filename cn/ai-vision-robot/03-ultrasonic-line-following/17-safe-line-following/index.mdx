@@ -10,7 +10,7 @@ import { obstaclePolicy } from "/cn/ai-vision-robot/snippets/code/03-05-safe-lin
 ## 前置条件
 
 - Robot 通信正常（参考 [1.1 WIFI模式连接](../../01-python-basics/01-connect-wifi/index)，能打印出设备 ID）
-- 把 `differential_drive.py`、`line_control.py`、`obstacle_policy.py` 复制到本页目录
+- 把 2.4 的产出 `differential_drive.py`、3.3 的产出 `line_control.py` 复制到本页目录
 - 赛道上能摆障碍物
 
 ## 关键函数
@@ -31,9 +31,9 @@ import { obstaclePolicy } from "/cn/ai-vision-robot/snippets/code/03-05-safe-lin
 
         <CodeFold
           docs={[
-          { label: "receive_sensors", doc: "等五路+超声波\\n各更新一次" },
-          { label: "run", doc: "循迹 → 避障 → 差速\\n丢线发送 0 并退出" },
-          { label: "main", doc: "会话收两路数据\\nqueue_size=8" },
+          { label: "receive_sensors", doc: "等五路+超声波\n各更新一次" },
+          { label: "run", doc: "循迹 → 避障 → 差速\n丢线发送 0 并退出" },
+          { label: "main", doc: "会话收两路数据\nqueue_size=8" },
           ]}
           {...safeLineFollowing}
         />
@@ -43,7 +43,7 @@ import { obstaclePolicy } from "/cn/ai-vision-robot/snippets/code/03-05-safe-lin
 
         <CodeFold
           docs={[
-          ,
+          { label: "ultrasonic_to_vw", doc: "根据超声波状态和距离保持、减半或归零 V/W，并返回避障状态" },
           ]}
           {...obstaclePolicy}
         />
@@ -64,7 +64,7 @@ import { obstaclePolicy } from "/cn/ai-vision-robot/snippets/code/03-05-safe-lin
 ### 运行方式
 
 ```bash
-python 17_safe_line_following.py
+python safe_line_following.py
 ```
 
 ## 参数说明
@@ -85,4 +85,4 @@ python 17_safe_line_following.py
 | `data_queue_size` | int | 8 | 两路数据交替到达，队列要够放 |
 | `valid_for` | float | 0.35 秒 | 断流自动停 |
 
-> 本页产出 `obstacle_policy.py`（`ultrasonic_to_vw()`），模块 7 的综合项目会复用。
+> 本页产出 `obstacle_policy.py`（`ultrasonic_to_vw()`），7.1 会复用。
