@@ -18,7 +18,6 @@ import { safeStop } from "/cn/ai-vision-robot/snippets/code/03-02-safe-stop.jsx"
 | `threading.Thread(target=listen_keyboard, args=(is_running,), daemon=True)` | 后台线程等键盘输入，不阻塞主控循环 |
 | `input().strip().lower()` | 读一行、去空白、转小写，再和 `"stop"` 比 |
 | `commands.motor_speeds.stop()` | 主动停机，四条路径最终都走这一步 |
-| `EOFError` | Ctrl+C 后输入端关闭，`input()` 抛这个，捕获后安静退出线程 |
 
 ## 完整示例
 

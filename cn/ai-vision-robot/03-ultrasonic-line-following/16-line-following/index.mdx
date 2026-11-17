@@ -11,14 +11,14 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-04-line-
 ## 前置条件
 
 - Robot 通信正常（参考 [1.1 WIFI模式连接](../../01-python-basics/01-connect-wifi/index)，能打印出设备 ID）
-- 把 3.1 的产出 `line_control.py`、2.4 的产出 `differential_drive.py` 复制到本页目录
+- 把 3.3 的产出 `line_control.py`、2.4 的产出 `differential_drive.py` 复制到本页目录
 - 赛道：黑线宽 20 mm、转弯半径 ≥ 150 mm
 
 ## 关键函数
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `from line_control import PATTERN_NAMES, line_tracker_to_vw` | 直接用 3.1 的分类与偏差，不重写 |
+| `from line_control import PATTERN_NAMES, line_tracker_to_vw` | 直接用 3.3 的分类与偏差，不重写 |
 | `run(data_queue, commands)` | 主循环：读五路 → 算 V/W → 差速转 RPM → 发双轮 |
 | `data_queue.read(timeout=1.0)` | 断流时返回 `None`，V/W 归零 |
 | `frequency="medium"` | 约 10 Hz 更新五路，够循迹且不压网络 |
@@ -32,8 +32,8 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-04-line-
 
 <CodeFold
           docs={[
-          { label: "run", doc: "读 → 算 V/W → 差速\\n→ 发双轮速度" },
-          { label: "main", doc: "控制权 → 会话\\nmedium 约 10 Hz" },
+          { label: "run", doc: "读 → 算 V/W → 差速\n→ 发双轮速度" },
+          { label: "main", doc: "控制权 → 会话\nmedium 约 10 Hz" },
           ]}
           {...lineFollowing}
         />
@@ -41,11 +41,12 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-04-line-
   </Tab>
   <Tab title="line_control.py">
 
-    与 3.1 产出的分类函数相同，复制到本页目录即可。
+    与 3.3 产出的分类函数相同，复制到本页目录即可。
 
 <CodeFold
           docs={[
-          ,
+          { label: "classify_pattern", doc: "检查五路状态，找出探测位置，再返回图案分类和循迹线偏差" },
+          { label: "line_tracker_to_vw", doc: "传入五路状态、基础 V 和增益 K，返回 V、W 和图案分类" },
           ]}
           {...lineControl}
         />
@@ -57,7 +58,9 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-04-line-
 
 <CodeFold
           docs={[
-          ,
+          { label: "limit_rpm", doc: "同尺度限幅：超过单轮上限就两边一起缩小，弯道形状不变；返回值已取整" },
+          { label: "vw_to_rpm", doc: "差速映射：前进速度和转弯快慢 → 左右轮的转速（RPM）" },
+          { label: "drive", doc: "沿用 2.4 的差速能力，把线速度和角速度设为左右主动轮转速" },
           ]}
           {...differentialDrive}
         />
@@ -77,7 +80,7 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-04-line-
 ### 运行方式
 
 ```bash
-python 16_line_following.py
+python line_following.py
 ```
 
 ## 参数说明
