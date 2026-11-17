@@ -272,12 +272,14 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
   // 把一段行切片切成块序列：命中 fold 起点 → 整块 fold；否则普通行。
   // offset = ls[0] 的真实行号（1 基）。内嵌 fold 的区间落在外层区间内部，
   // 只有外层展开后才会被扫描到（折叠时随外层一起隐藏）。
-  const build = (ls, offset) => {
+  // exclude = 当前正在展开渲染的外层 fold 自身——它区间内的行会再次进入 build，
+  // 若不排除，它的 from 行号会命中它自己 → 无限递归 → React 卸载组件树（v9.1 修复）
+  const build = (ls, offset, exclude) => {
     const blocks = [];
     let i = 0;
     while (i < ls.length) {
       const no = offset + i;
-      const f = folds.find((x) => x.from === no);
+      const f = folds.find((x) => x.from === no && x !== exclude);
       if (f) {
         const len = f.to - f.from + 1;
         blocks.push({ type: "fold", f, text: ls.slice(i, i + len) });
@@ -366,7 +368,7 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
             style={{ fontFamily: "var(--font-paper-mono, ui-monospace, SFMono-Regular, Menlo, monospace)" }}
           >
             {(() => {
-              const renderBlocks = (blocks) =>
+              const renderBlocks = (blocks, exclude) =>
                 blocks.map((b, bi) =>
                   b.type === "line" ? (
                     <Line key={bi} n={b.n} text={b.text} w={w} docs={docs} nums={nums} />
@@ -374,7 +376,7 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
                     // 展开：递归渲染区间内全部行（内嵌 fold 会被再次扫描），
                     // ▾ 落在首行（def 行）箭头列，行号连续
                     <span key={bi}>
-                      {build(b.text, b.f.from).map((ib, ii) =>
+                      {build(b.text, b.f.from, b.f).map((ib, ii) =>
                         ii === 0 && ib.type === "line" ? (
                           <Line
                             key={ii}
@@ -387,7 +389,7 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
                             onFold={() => toggle(b.f)}
                           />
                         ) : (
-                          renderBlocks([ib])
+                          renderBlocks([ib], b.f)
                         )
                       )}
                     </span>
@@ -403,7 +405,7 @@ export const CodeFold = ({ title = "", code, folds = [], docs = [] }) => {
                     />
                   )
                 );
-              return renderBlocks(build(lines, 1));
+              return renderBlocks(build(lines, 1, null));
             })()}
           </div>
         </div>
