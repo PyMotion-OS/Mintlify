@@ -70,6 +70,15 @@ python servo_position.py
 
 ## 本页产出 · 舵机当前的方法和参数
 
-- 普通位置命令：`robot.pwm_servos.move_to({端口: 角度})` —— 发一次转到位，适合复位
-- 实时位置命令：`session.commands.pwm_position_servos.write({端口: 角度}, valid_for=0.3)` —— 会话内可反复发，命令过期角度仍保持
-- 角度范围：上下 0～105°（90° 居中 +15°）、左右 0～180°，双 90° 为居中姿态，可按实际情况微调
+```python
+# 普通位置命令：发一次转到位，适合复位
+robot.pwm_servos.move_to({PORT_UP_DOWN: 90, PORT_LEFT_RIGHT: 90})
+
+# 实时位置命令：会话内可反复发，命令过期角度仍保持
+session.commands.pwm_position_servos.write(
+    {PORT_UP_DOWN: 80, PORT_LEFT_RIGHT: 100},
+    valid_for=0.3,
+)
+
+# 角度范围：上下 0～105°（90° 居中 +15°）、左右 0～180°，双 90° 为居中姿态，可微调
+```
