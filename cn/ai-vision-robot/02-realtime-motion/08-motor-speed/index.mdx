@@ -67,5 +67,5 @@ python motor_speed.py
 | `PORT_MOTOR` | int | 3 / 4 | 选择主动轮，3 接 M3 左轮、4 接 M4 右轮 |
 | `RPM` | int | 本例 30 | 目标转速，正数正转、负数反转 |
 | `MAX_RPM` | int | 60 | 允许的最高转速（理论转速上限 360），超过被限幅 |
-| `valid_for` | float | 1.0 / 2.0 | 命令存活秒数，到期设备端自动停机 |
+| `valid_for` | float | 1.0 / 2.0（最大 2） | 命令存活秒数，到期设备端自动停机 |
 | `command_targets` | dict | `{"motor_speeds": (端口,)}` | 声明本会话给哪类执行器、哪几个端口发命令——本页是**电机**，2.2 里是舵机 |
