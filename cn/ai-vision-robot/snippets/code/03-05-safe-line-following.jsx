@@ -4,11 +4,11 @@ export const safeLineFollowing = {
   code: `import pymotion as pm
 
 from differential_drive import vw_to_rpm
-from line_control import PATTERN_NAMES, line_tracker_to_vw  # 引用例程16的循迹控制
+from line_control import PATTERN_NAMES, line_tracker_to_vw  # 引用 3.4 的循迹控制
 from obstacle_policy import OBSTACLE_NAMES, ultrasonic_to_vw  # 引用避障名称和距离策略
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 V = 80                                     # 基础前进速度，毫米/秒
 K = 25                                     # 转弯增益，每一格偏差增加 25 度/秒的 W
 
@@ -49,15 +49,15 @@ def run(data_queue, commands):
             v, w, pattern_type, obstacle_state = 0, 0, "waiting", "waiting"
             distance_text = "未收到"
         else:
-            # 第一步：调用例程 15 的函数，把五路状态换成 V、W 和图案分类
+            # 第一步：调用 3.3 的函数，把五路状态换成 V、W 和图案分类
             v, w, pattern_type = line_tracker_to_vw(tracker_line_data.is_detected, V, K)
-            # 第二步：使用例程 13 的规则，根据距离保持、减半或归零 V/W
+            # 第二步：使用 3.1 的规则，根据距离保持、减半或归零 V/W
             v, w, obstacle_state = ultrasonic_to_vw(ultrasonic_data, v, w)
             distance_text = "无回波"
             if ultrasonic_data.distance is not None:        # 有具体距离时显示数值和毫米单位
                 distance_text = f"{ultrasonic_data.distance} mm"
 
-        # 第三步：调用例程 11 的差速函数，把最终 V/W 换成左右轮转速
+        # 第三步：调用 2.4 的差速函数，把最终 V/W 换成左右轮转速
         left_rpm, right_rpm = vw_to_rpm(v, w)
         # medium 约 0.1 秒更新一次；0.35 秒留有余量，断流时也会先自动停机
         commands.motor_speeds.write({PORT_LEFT: left_rpm, PORT_RIGHT: right_rpm}, valid_for=0.35)

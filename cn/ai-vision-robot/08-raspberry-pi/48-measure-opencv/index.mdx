@@ -27,8 +27,10 @@ import { measureOpencv } from "/cn/ai-vision-robot/snippets/code/08-04-measure-o
   <Tab title="代码">
 
         <CodeFold
-          docs={[]}
-          {...measureOpencv}
+          docs={[
+            { label: "resize_image", doc: "按处理宽度等比例缩小图片，并返回缩小后的图片" },
+            { label: "run", doc: "显示颜色目标，并测量每张有效新图片的处理耗时" },
+          ]}
         />
 
   </Tab>

@@ -6,12 +6,12 @@ export const colorServoTracking = {
 import cv2
 import pymotion as pm
 
-from camera import Camera, log_message       # 引用例程26的摄像头类和统一日志函数
+from camera import Camera, log_message       # 引用 4.9 的摄像头类和统一日志函数
 from servo_control import move_servos, reset_servos # 引用舵机复位和安全执行函数
-from target_observation import draw_target_marks, find_target # 引用例程26的目标观测和结果标记
+from target_observation import draw_target_marks, find_target # 引用 4.9 的目标观测和结果标记
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 TARGET_TYPE = "blue"                         # 跟随蓝色目标，也可改为gray、green或yellow
 DEAD_ZONE = 0.10                             # 二维偏差进入中心10%后保持当前角度
 K = 5                                      # 偏差为1时调整10°，数值越大跟随动作越强

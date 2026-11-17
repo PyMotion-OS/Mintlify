@@ -5,12 +5,12 @@ export const sensorDecision = {
 
 import pymotion as pm
 
-from differential_drive import vw_to_rpm   # 吸收例程 11 的差速函数
-from line_control import line_tracker_to_vw  # 吸收例程 15 的五路分类与转向
-from obstacle_policy import ultrasonic_to_vw  # 吸收例程 17 的超声波保护
+from differential_drive import vw_to_rpm   # 吸收 2.4 的差速函数
+from line_control import line_tracker_to_vw  # 吸收 3.3 的五路分类与转向
+from obstacle_policy import ultrasonic_to_vw  # 吸收 3.5 的超声波保护
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 V = 60                                     # 循迹基础前进速度，单位毫米/秒
 K = 25                                     # 每格五路偏差对应的转向速度，单位度/秒
 
@@ -33,7 +33,7 @@ def run(data_queue, commands):
     next_send_at = time.monotonic()
     last_motion = None
     while True:
-        # 第一步：沿用例程 10，按来源保存完整事件；两种传感器分别更新
+        # 第一步：沿用 2.3，按来源保存完整事件；两种传感器分别更新
         sensor_data = data_queue.read(timeout=0.5)          # 有数据即返回；断流最多等0.5秒，旧命令先在0.35秒后失效
         if sensor_data is not None and sensor_data.source == "line_tracker":
             tracker_event = sensor_data

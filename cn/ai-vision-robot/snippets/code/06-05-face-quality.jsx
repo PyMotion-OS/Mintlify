@@ -3,11 +3,11 @@ export const faceQuality = {
   title: "face_quality.py",
   code: `import cv2
 
-# face_tools.py 吸收例程 34 已经学过的人脸检测和绘制，本文件只展开质量判断
+# face_tools.py 吸收 6.4 已经学过的人脸检测和绘制，本文件只展开质量判断
 from face_tools import create_face_detector, draw_faces, load_image, observe_faces
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 MIN_FACE_SIZE = 80                         # 人脸框的宽和高都至少为 80 像素
 MIN_BRIGHTNESS = 45                        # 平均亮度低于 45 时认为人脸区域过暗
 MAX_BRIGHTNESS = 210                       # 平均亮度高于 210 时认为人脸区域过亮
@@ -55,9 +55,9 @@ def check_face_quality(image, face):
 
 def main():
     """检测图片中的人脸，再判断数量、完整度、尺寸、亮度和清晰度是否适合后续使用。"""
-    image = load_image()                                    # 图片路径随例程 34 的读取函数放在 face_tools.py
+    image = load_image()                                    # 图片路径随 6.4 的读取函数放在 face_tools.py
     detector = create_face_detector()
-    faces = observe_faces(detector, image)                  # 引用例程 34 的三个稳定字段
+    faces = observe_faces(detector, image)                  # 引用 6.4 的三个稳定字段
     marked_image = draw_faces(image, faces)
 
     # 后续人脸特征只能对应一个人，因此图片中必须恰好检测到一张人脸

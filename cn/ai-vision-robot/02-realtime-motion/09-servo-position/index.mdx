@@ -74,6 +74,8 @@ python servo_position.py
 本页把舵机的复位与限幅发送整理成一个可复用文件：包含 `reset_servos()`、`move_servos()` 两个函数——输入目标角度，输出限幅后的双舵机角度并下发。不含 `main`、不连设备，只有复位与实时位置命令逻辑，供需要双舵机运动的页面直接 import。
 
 <CodeFold
-  docs={[]}
-  {...servoControl}
+  docs={[
+    { label: "reset_servos", doc: "用普通位置命令复位双舵机，并返回两个复位角度" },
+    { label: "move_servos", doc: "限制双舵机角度并发送实时命令，返回实际发送的两个角度" },
+  ]}
 />

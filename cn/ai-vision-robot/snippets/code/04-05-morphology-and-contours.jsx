@@ -6,10 +6,10 @@ export const morphologyAndContours = {
 import cv2
 import numpy as np
 
-from target_mask import make_target_mask    # 吸收例程 20/19，按选择返回灰度或 HSV 黑白掩膜
+from target_mask import make_target_mask    # 吸收 4.3/4.2，按选择返回灰度或 HSV 黑白掩膜
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 TARGET_TYPE = "blue"                       # 可选 gray、blue、green 或 yellow
 
 # 形态学核是在掩膜上逐块移动的小方格；边长越大，每次参与运算的周围像素越多，清理效果越强

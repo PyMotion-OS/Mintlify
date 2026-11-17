@@ -27,8 +27,9 @@ import { checkPi } from "/cn/ai-vision-robot/snippets/code/08-01-check-pi.jsx"
   <Tab title="代码">
 
         <CodeFold
-          docs={[]}
-          {...checkPi}
+          docs={[
+            { label: "read_temperature", doc: "读取树莓派处理器温度，读取不到时返回 None" },
+          ]}
         />
 
   </Tab>

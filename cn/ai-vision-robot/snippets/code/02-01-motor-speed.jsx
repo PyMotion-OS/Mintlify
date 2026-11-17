@@ -5,7 +5,7 @@ export const motorSpeed = {
 
 import pymotion as pm
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 PORT_MOTOR = 4                             # 选择主动轮：3 接 M3 左轮，4 接 M4 右轮
 RPM = 30                                   # 目标转速，单位转/分；正数正转，负数反转
 

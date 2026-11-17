@@ -29,8 +29,10 @@ import { colorServoTracking } from "/cn/ai-vision-robot/snippets/code/05-01-colo
   <Tab title="代码">
 
         <CodeFold
-          docs={[]}
-          {...colorServoTracking}
+          docs={[
+            { label: "error_to_angle", doc: "把一个方向的归一化偏差换成新的舵机角度" },
+            { label: "run", doc: "持续把颜色目标偏差换成舵机角度并发送实时命令" },
+          ]}
         />
 
   </Tab>

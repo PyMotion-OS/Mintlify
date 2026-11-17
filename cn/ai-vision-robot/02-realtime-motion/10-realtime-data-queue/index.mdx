@@ -15,7 +15,7 @@ import { realtimeDataQueue } from "/cn/ai-vision-robot/snippets/code/02-03-realt
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `robot.realtime.open(data_sources=("ultrasonic", "line_tracker"))` | 声明本会话要收哪几种数据（与 `command_targets` 是同一次 `open()` 的两个方向） |
-| `session.data.read(timeout=0.5)` | 从数据队列取走一条；`timeout` 秒内没等到新数据就返回 `None` |
+| `session.data.read(timeout=1.0)` | 从数据队列取走一条；`timeout` 秒内没等到新数据就返回 `None` |
 | `pprint(…, width=120, sort_dicts=False)` | 按字段顺序、限宽打印嵌套结构 |
 
 ## 完整示例
@@ -76,7 +76,7 @@ python realtime_data_queue.py
 | 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
 | `data_sources` | tuple | 可多选 | 声明本会话要收哪几种数据 |
-| `timeout` | float | 0.5 | `read()` 最多等待的秒数，超时返回 `None` |
+| `timeout` | float | 1.0 | `read()` 最多等待的秒数，超时返回 `None` |
 | `sequence` | int | 只增 | 第几条数据，可判断是否丢包 |
 | `received_monotonic` | float | 只增时钟 | 收到这条数据的时刻 |
 | `age` | float | 秒 | 这条数据从采集到取出多旧 |

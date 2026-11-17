@@ -7,14 +7,14 @@ import cv2
 import numpy as np
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 MIN_CONFIDENCE = 0.85                      # YuNet 只保留置信度达到 0.85 的人脸
 
 # --- 共用配置（一般不用动）---
 COMMON_DIR = Path(__file__).parents[1] / "common"
 # YuNet 是 OpenCV Zoo 提供的现成人脸检测模型；模型和 MIT 许可证都放在 common
 MODEL_PATH = COMMON_DIR / "face_detection_yunet_2023mar.onnx"
-IMAGE_PATH = Path(__file__).with_name("face_sample.png")  # 例程 18 拍摄并放入本文件夹的授权肖像
+IMAGE_PATH = Path(__file__).with_name("face_sample.png")  # 4.1 拍摄并放入本文件夹的授权肖像
 
 
 # 读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片
@@ -28,7 +28,7 @@ def load_image():
 def create_face_detector():
     """读取本地 YuNet 文件，并返回 OpenCV 人脸检测器。"""
     model_bytes = np.fromfile(MODEL_PATH, dtype=np.uint8)   # 模型字节写法支持 Windows 中文路径
-    # FaceDetectorYN 是 OpenCV 自带的 YuNet 使用入口；本例程调用成熟模型，不展开网络结构
+    # FaceDetectorYN 是 OpenCV 自带的 YuNet 使用入口；本页调用成熟模型，不展开网络结构
     return cv2.FaceDetectorYN.create(
         "onnx",                                             # 告诉 OpenCV 传入的是 ONNX 模型内容
         model_bytes,                                        # 从上方本地文件读取的模型内容

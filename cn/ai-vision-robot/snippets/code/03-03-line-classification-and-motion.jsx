@@ -6,7 +6,7 @@ export const lineClassificationAndMotion = {
 import pymotion as pm
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 V = 80                                     # 基础前进速度，毫米/秒
 K = 25                                     # 转弯增益，每一格偏差增加 25 度/秒的 W
 MAX_LINE_SENSORS = 3                       # 正常循迹线最多连续触发三个探头
@@ -84,7 +84,7 @@ def main():
                 # 把五路状态、分类、V 和 W 组成一轮完整观测，便于和上一轮比较
                 current_observation = (tracker_line_data.is_detected, pattern_type, v, w)
 
-                # 只减少重复打印；传感数据仍会更新，本例程没有发送电机指令
+                # 只减少重复打印；传感数据仍会更新，本页没有发送电机指令
                 if current_observation != last_observation:
                     print(
                         f"五路: {tracker_line_data.is_detected}\\n"

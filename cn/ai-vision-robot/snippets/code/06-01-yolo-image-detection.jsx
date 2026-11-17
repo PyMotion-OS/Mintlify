@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 # 置信度是模型对当前结果的评分，不是物体类别一定正确的概率
 CONFIDENCE = 0.25                          # 只保留置信度达到 0.25 的检测结果
 
@@ -93,7 +93,7 @@ def draw_detections(image, detections, detection_time):
 
 def main():
     """使用固定图片认识本地 YOLO 模型、检测字段和绘图流程。"""
-    image = load_image()                                    # 复用例程 22 的固定图片读取函数
+    image = load_image()                                    # 复用 4.5 的固定图片读取函数
     labels, model = load_yolo_resources()                   # 得到中英文标签表和可调用的模型对象
     detections, detection_time = detect_objects(model, image, CONFIDENCE, image_size=640)
 

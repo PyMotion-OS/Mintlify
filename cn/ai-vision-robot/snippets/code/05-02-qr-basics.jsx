@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 QR_TEXT = "GREETING"                       # 这段文字会被写入二维码
 QR_SCALE = 32                              # 生成约900像素的大图，方便手机展示和摄像头识别
 TEST_IMAGE_NAME = "01_GREETING_LEFT_TOP.png" # 选择一张偏移图片，方便观察二维偏差
@@ -92,14 +92,14 @@ def draw_qr_marks(image, qr_data):
 
 def main():
     """生成一张二维码，再用偏移图片观察识别与标记结果。"""
-    create_qr(QR_TEXT)                                     # 调用本例程函数，生成可打印的二维码图片
-    test_image = load_image(TEST_IMAGE_PATH)               # 调用本例程函数，读取选择的偏移测试图片
-    qr_data = find_qr(test_image)                          # 调用本例程函数，返回文字、位置和二维偏差
+    create_qr(QR_TEXT)                                     # 调用本页函数，生成可打印的二维码图片
+    test_image = load_image(TEST_IMAGE_PATH)               # 调用本页函数，读取选择的偏移测试图片
+    qr_data = find_qr(test_image)                          # 调用本页函数，返回文字、位置和二维偏差
 
     print(f"识别文字: {qr_data['text']}")
     print(f"中心坐标: {qr_data['center']}")
     print(f"二维偏差: X={qr_data['error_x']:.3f}, Y={qr_data['error_y']:.3f}")
-    marked_image = draw_qr_marks(test_image, qr_data)      # 调用本例程函数，返回画好边框和偏差的图片
+    marked_image = draw_qr_marks(test_image, qr_data)      # 调用本页函数，返回画好边框和偏差的图片
     cv2.imshow("QR basics - press any key to close", marked_image)
     cv2.waitKey(0)                                         # 等待任意按键，再继续关闭窗口
     cv2.destroyAllWindows()

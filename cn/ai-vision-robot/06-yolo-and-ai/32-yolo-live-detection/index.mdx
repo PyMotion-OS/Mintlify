@@ -27,16 +27,19 @@ import { yoloDetection } from "/cn/ai-vision-robot/snippets/code/06-02-yolo-live
   <Tab title="yolo_live_detection.py">
 
         <CodeFold
-          docs={[]}
-          {...yoloLiveDetection}
+          docs={[
+          ]}
         />
 
   </Tab>
   <Tab title="yolo_detection.py">
 
         <CodeFold
-          docs={[]}
-          {...yoloDetection}
+          docs={[
+            { label: "load_yolo_resources", doc: "读取 common 中的类别标签和本地模型，返回标签表与模型对象" },
+            { label: "detect_objects", doc: "把模型输出整理为稳定检测字段，并返回处理毫秒数" },
+            { label: "draw_detections", doc: "复制图片，再画出英文类别、置信度、检测框和处理耗时" },
+          ]}
         />
 
   </Tab>

@@ -7,7 +7,7 @@ from pathlib import Path                   # 导入用于组合文件夹和文�
 import cv2                                 # 使用 OpenCV 连接摄像头和显示图片
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 CAMERA_URL = "rtsp://192.168.43.226:554/11" # 填写 RTSP 摄像头地址
 
 # --- 共用配置（一般不用动）---
@@ -76,7 +76,7 @@ class Camera:
     def __exit__(self, exc_type, exc_value, traceback):
         """成功进入 with 后，结束或中途出错都会自动执行并释放摄像头。
 
-        exc_type、exc_value 和 traceback 是 Python 自动传入的出错信息，本例程不需要使用。
+        exc_type、exc_value 和 traceback 是 Python 自动传入的出错信息，本页不需要使用。
         """
         self.capture.release()                              # release() 关闭连接并释放摄像头资源
 

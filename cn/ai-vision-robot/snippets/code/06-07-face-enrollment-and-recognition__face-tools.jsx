@@ -81,7 +81,7 @@ def get_quality_face(detector, image):
 def create_face_recognizer():
     """读取本地 SFace 文件，并返回 OpenCV 人脸特征模型。"""
     model_bytes = np.fromfile(RECOGNITION_MODEL, dtype=np.uint8)
-    # FaceRecognizerSF 是 OpenCV 自带的 SFace 使用入口；本例程调用成熟模型，不展开网络结构
+    # FaceRecognizerSF 是 OpenCV 自带的 SFace 使用入口；本页调用成熟模型，不展开网络结构
     return cv2.FaceRecognizerSF.create(
         "onnx",                                             # 告诉 OpenCV 传入的是 ONNX 模型内容
         model_bytes,                                        # 从本地文件读取的 SFace 模型内容
@@ -92,7 +92,7 @@ def create_face_recognizer():
 # 提取合格人脸的 128 个特征；没有合格人脸时返回 None
 def get_face_feature(detector, recognizer, image):
     """提取合格人脸的 128 个特征；没有合格人脸时返回 None。"""
-    raw_face = get_quality_face(detector, image)            # 吸收例程 35，返回 SFace 需要的 YuNet 原始数据
+    raw_face = get_quality_face(detector, image)            # 吸收 6.5，返回 SFace 需要的 YuNet 原始数据
     if raw_face is None:
         return None                                         # 36 起实时识别用返回值跳过普通无效画面
     aligned_face = recognizer.alignCrop(image, raw_face)    # alignCrop() 根据五个关键点摆正并裁剪人脸

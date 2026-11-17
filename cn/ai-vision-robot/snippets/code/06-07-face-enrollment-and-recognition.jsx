@@ -7,10 +7,10 @@ import cv2
 import numpy as np
 
 from camera import Camera, log_message
-from face_tools import compare_face_features, create_face_detector, create_face_recognizer, draw_faces, get_face_feature  # 吸收例程 36 的特征能力，显示结果交给 draw_faces
+from face_tools import compare_face_features, create_face_detector, create_face_recognizer, draw_faces, get_face_feature  # 吸收 6.6 的特征能力，显示结果交给 draw_faces
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 MATCH_THRESHOLD = 0.50                     # 最佳相似度不足此值时显示 unknown
 
 # --- 共用配置（一般不用动）---
@@ -52,7 +52,7 @@ def main():
         recognizer = create_face_recognizer()
         names, features = load_feature_file()
         if not names:
-            print("登记内容: 为空，请先用例程 36 准备 common/faces.npz")
+            print("登记内容: 为空，请先用 6.6 准备 common/faces.npz")
             return                                          # 结束 main，随后执行 finally 关闭窗口
 
         last_name = None
@@ -76,7 +76,7 @@ def main():
                     print(message)                          # 第一次和代号变化时打印，不逐帧刷屏
                     last_name = person_name
 
-                # 第四步：在水印下方显示识别结果；本例程只读共用特征文件
+                # 第四步：在水印下方显示识别结果；本页只读共用特征文件
                 cv2.imshow("Face recognition - Esc to close", draw_faces(image, person_name, score))
     except KeyboardInterrupt:
         log_message("INFO", "face", "Ctrl+C 主动结束")

@@ -6,13 +6,13 @@ export const qrStation = {
 import cv2
 import pymotion as pm
 
-from camera import Camera, log_message     # 引用例程26的摄像头类和统一日志函数
-from differential_drive import vw_to_rpm   # 引用例程11的差速函数
-from line_control import line_tracker_to_vw  # 引用例程15的五路分类和转向函数
-from qr_observation import check_qr_state, draw_qr_marks, find_qr  # 引用例程29的连续识别和绘画
+from camera import Camera, log_message     # 引用 4.9 的摄像头类和统一日志函数
+from differential_drive import vw_to_rpm   # 引用 2.4 的差速函数
+from line_control import line_tracker_to_vw  # 引用 3.3 的五路分类和转向函数
+from qr_observation import check_qr_state, draw_qr_marks, find_qr  # 引用 5.3 的连续识别和绘画
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 V = 100                                     # 默认循迹速度，单位毫米/秒
 SLOW_V = 60                                # 站台任务中的减速速度，单位毫米/秒
 K = 25                                     # 五路偏差每增加一格，W增加25度/秒
@@ -26,10 +26,10 @@ def run(camera, data_queue, commands):
     while True:
         # 第一步：等待五路新数据，再取得最新图片
         sensor_data = data_queue.read(timeout=0.2)          # 约0.1秒收到一条新数据，断流时最多等待0.2秒
-        image = camera.latest()                             # 调用例程26的类方法，无有效图片时返回None
+        image = camera.latest()                             # 调用 4.9 的类方法，无有效图片时返回None
         qr_data = None
         if image is not None:
-            qr_data = find_qr(image)                        # 调用例程28的二维码识别函数
+            qr_data = find_qr(image)                        # 调用 5.2 的二维码识别函数
             cv2.imshow("QR station - Esc to close", draw_qr_marks(image, qr_data))
 
         # 第二步：处理正常和减速两个阶段
@@ -39,7 +39,7 @@ def run(camera, data_queue, commands):
             state = "slow"                                  # 识别到站台，本轮开始减速
             log_message("INFO", "station", f"站台: {station_name}  状态: slow")
         elif state == "slow":
-            # 调用例程29演化出的函数，只检查当前站台是否连续消失
+            # 调用 5.3 演化出的函数，只检查当前站台是否连续消失
             qr_state, last_detected_time = check_qr_state(qr_data, station_name, last_detected_time, 1)
             if qr_state == "lost":
                 log_message("INFO", "station", f"站台: {station_name}  状态: stop")
@@ -53,11 +53,11 @@ def run(camera, data_queue, commands):
         if sensor_data is None:
             v, w, line_state = 0, 0, "waiting"              # 五路超时时归零，不使用上一轮的数据
         else:
-            v, w, line_state = line_tracker_to_vw(sensor_data.data.is_detected, speed, K)  # 复用例程15的循迹计算
+            v, w, line_state = line_tracker_to_vw(sensor_data.data.is_detected, speed, K)  # 复用 3.3 的循迹计算
         if image is None:
             v, w = 0, 0                                     # 无图时同时归零V/W，偏离线中心也不转动
 
-        left_rpm, right_rpm = vw_to_rpm(v, w)               # 调用例程11的差速函数，得到左右轮转速
+        left_rpm, right_rpm = vw_to_rpm(v, w)               # 调用 2.4 的差速函数，得到左右轮转速
         # M3左轮、M4右轮；每轮只发送一次，0.35秒内未续发则旧命令自动失效
         commands.motor_speeds.write({3: left_rpm, 4: right_rpm}, valid_for=0.35)
 

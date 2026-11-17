@@ -28,16 +28,21 @@ import { targetMask } from "/cn/ai-vision-robot/snippets/code/04-05-morphology-a
   <Tab title="morphology_and_contours.py">
 
         <CodeFold
-          docs={[]}
-          {...morphologyAndContours}
+          docs={[
+            { label: "load_image", doc: "读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片" },
+            { label: "show_image", doc: "缩放图片副本，再在屏幕指定位置显示" },
+          ]}
         />
 
   </Tab>
   <Tab title="target_mask.py">
 
         <CodeFold
-          docs={[]}
-          {...targetMask}
+          docs={[
+            { label: "make_gray_mask", doc: "吸收 4.3：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜" },
+            { label: "make_color_mask", doc: "吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
+            { label: "make_target_mask", doc: "按目标类型返回灰度或 HSV 方式得到的黑白掩膜" },
+          ]}
         />
 
   </Tab>

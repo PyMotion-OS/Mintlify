@@ -29,16 +29,25 @@ import { camera } from "/cn/ai-vision-robot/snippets/code/04-08-camera-age-and-r
   <Tab title="camera_age_and_reconnect.py">
 
         <CodeFold
-          docs={[]}
-          {...cameraAgeAndReconnect}
+          docs={[
+            { label: "connect", doc: "打开一次视频连接，清空上次图片，成功返回 True，失败返回 False" },
+            { label: "set_disconnected", doc: "把状态改为 disconnected，并清空不能继续使用的旧图片" },
+          ]}
         />
 
   </Tab>
   <Tab title="camera.py">
 
         <CodeFold
-          docs={[]}
-          {...camera}
+          docs={[
+            { label: "log_message", doc: "按照时间、级别、来源和说明打印一条规范化日志" },
+            { label: "__init__", doc: "def __init__(self)" },
+            { label: "__enter__", doc: "进入 with 时启动后台线程，为当前连接持续取图。" },
+            { label: "update_image", doc: "持续更新图片；连续五次失败后结束当前连接会话。" },
+            { label: "latest_data", doc: "返回当前连接状态、最新图片、帧编号和图片年龄。" },
+            { label: "latest", doc: "返回最新且没有过期的图片，默认有效期为 0.5 秒。" },
+            { label: "__exit__", doc: "离开 with 时停止后台线程，并释放本次视频连接。" },
+          ]}
         />
 
   </Tab>

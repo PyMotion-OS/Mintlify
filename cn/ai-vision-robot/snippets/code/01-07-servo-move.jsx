@@ -5,7 +5,7 @@ export const servoMove = {
 
 import pymotion as pm
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 PORT_UP_DOWN = 4                           # 上下舵机接 PWM 端口 4（S4），可输入值范围 0~180
 PORT_LEFT_RIGHT = 5                        # 左右舵机接 PWM 端口 5（S5），可输入值范围 0~180
 

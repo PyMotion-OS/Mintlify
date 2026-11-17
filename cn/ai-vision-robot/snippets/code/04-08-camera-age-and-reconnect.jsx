@@ -5,11 +5,11 @@ export const cameraAgeAndReconnect = {
 
 import cv2
 
-from camera import Camera, log_message     # 提取例程 24 的摄像头类和日志；latest() 吸收图片有效性判断
-from target_observation import draw_target_marks, find_target  # 引用例程 24 的目标观测和结果标记
+from camera import Camera, log_message     # 提取 4.7 的摄像头类和日志；latest() 吸收图片有效性判断
+from target_observation import draw_target_marks, find_target  # 引用 4.7 的目标观测和结果标记
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 MAX_AGE = 0.5                              # 图片收到超过 0.5 秒就不再用于当前处理
 RECONNECT_SECONDS = 1.0                    # 断流后等待 1 秒再建立下一次连接
 
@@ -63,7 +63,7 @@ def main():
             if cv2.waitKey(20) == 27:
                 break                                       # 结束外层重连循环，随后执行 finally 关闭窗口
 
-            # 本例程在主线程连接，最多等待 3 秒，期间窗口消息会暂停处理
+            # 本页在主线程连接，最多等待 3 秒，期间窗口消息会暂停处理
             if not connect(camera):                         # 调用上面的普通函数，False 表示本次连接失败
                 set_disconnected(camera)                    # 调用上面的普通函数，记录断开并清空旧图片
                 time.sleep(RECONNECT_SECONDS)               # 等待 1 秒，避免连接失败时快速反复重试

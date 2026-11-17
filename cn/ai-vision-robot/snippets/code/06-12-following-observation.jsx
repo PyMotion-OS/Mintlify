@@ -10,7 +10,7 @@ from target_selection import choose_follow_motion, find_unique_target
 from yolo_detection import draw_follow_tracking, load_yolo_resources, track_objects
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 CONFIDENCE = 0.25                          # 检测置信度门槛
 W = 90                                     # 原地对准时的转向速度，单位度/秒
 
@@ -18,7 +18,7 @@ W = 90                                     # 原地对准时的转向速度，�
 # 首次只选择唯一指定类别，之后只寻找同一个跟踪编号
 def choose_target(tracks, selected_id, target_label):
     """首次只选择唯一指定类别，之后只寻找同一个跟踪编号。"""
-    # 演化例程 33 的 choose_target：第一次由选最大人物改为只接受唯一人物
+    # 演化 6.3 的 choose_target：第一次由选最大人物改为只接受唯一人物
     candidates = []
     for track in tracks:
         if track["label"] == target_label:

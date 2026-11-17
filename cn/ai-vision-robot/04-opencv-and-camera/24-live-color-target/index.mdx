@@ -29,16 +29,28 @@ import { targetObservation } from "/cn/ai-vision-robot/snippets/code/04-07-live-
   <Tab title="live_color_target.py">
 
         <CodeFold
-          docs={[]}
-          {...liveColorTarget}
+          docs={[
+            { label: "log_message", doc: "按照时间、级别、来源和说明打印一条规范化日志" },
+            { label: "__init__", doc: "保存摄像头地址，并准备最新图片、编号、接收时间和线程状态。" },
+            { label: "__enter__", doc: "进入 with 时连接摄像头，并启动后台取图线程。" },
+            { label: "update_image", doc: "在线程中持续取得图片，并替换当前 Camera 保存的最新图片。" },
+            { label: "latest_data", doc: "返回后台线程最近一次取得的图片、编号和接收时间。" },
+            { label: "__exit__", doc: "离开 with 时停止并等待后台线程，再释放摄像头。" },
+          ]}
         />
 
   </Tab>
   <Tab title="target_observation.py">
 
         <CodeFold
-          docs={[]}
-          {...targetObservation}
+          docs={[
+            { label: "make_gray_mask", doc: "吸收 4.3：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜" },
+            { label: "make_color_mask", doc: "吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
+            { label: "find_target_contours", doc: "按目标类型生成掩膜，完成开闭运算，再返回清理后掩膜、有效轮廓和 ROI" },
+            { label: "center_to_error", doc: "吸收 4.6：计算目标中心相对画面指定位置的横向和纵向偏差" },
+            { label: "find_target", doc: "选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差" },
+            { label: "draw_target_marks", doc: "复制原图，再用基础图形标出处理区域、参考中心和目标位置" },
+          ]}
         />
 
   </Tab>

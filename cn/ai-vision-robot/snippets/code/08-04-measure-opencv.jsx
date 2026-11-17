@@ -6,10 +6,10 @@ export const measureOpencv = {
 import cv2
 
 from camera import Camera, log_message     # 沿用26的有效取图、后台重连与日志
-from target_observation import draw_target_marks, find_target  # 原样吸收例程 26 的颜色观测与二维标记
+from target_observation import draw_target_marks, find_target  # 原样吸收 4.9 的颜色观测与二维标记
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 PROCESS_WIDTH = 640                        # 处理宽度越小，通常处理越快、细节越少
 
 
@@ -41,7 +41,7 @@ def run(camera):
         # 第一步：把新画面等比例缩小；固定像素面积的过滤规则也会随缩图影响可见目标
         start_time = time.monotonic()
         image = resize_image(image)
-        # 第二步：复用例程 26 的完整算法，计时包含缩图、观测和结果标记
+        # 第二步：复用 4.9 的完整算法，计时包含缩图、观测和结果标记
         target_data = find_target(image)
         marked_image = draw_target_marks(image, target_data)
         processing_time = (time.monotonic() - start_time) * 1000  # 秒乘 1000，得到本轮处理毫秒数

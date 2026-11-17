@@ -27,16 +27,26 @@ import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-07-face-enrollme
   <Tab title="face_enrollment_and_recognition.py">
 
         <CodeFold
-          docs={[]}
-          {...faceEnrollmentAndRecognition}
+          docs={[
+            { label: "load_feature_file", doc: "读取本地 NPZ 中的匿名代号和人脸特征；文件不存在时返回空列表" },
+            { label: "identify_face", doc: "逐一比较查询特征与已登记特征，返回最高分代号和相似度" },
+          ]}
         />
 
   </Tab>
   <Tab title="face_tools.py">
 
         <CodeFold
-          docs={[]}
-          {...faceTools}
+          docs={[
+            { label: "create_face_detector", doc: "读取本地 YuNet 文件，并返回 OpenCV 人脸检测器" },
+            { label: "check_face_quality", doc: "依次检查人脸完整度、尺寸、亮度和清晰度，再返回是否合格和原因" },
+            { label: "get_quality_face", doc: "返回合格人脸的 YuNet 原始数据；实时画面不合格时返回 None" },
+            { label: "create_face_recognizer", doc: "读取本地 SFace 文件，并返回 OpenCV 人脸特征模型" },
+            { label: "get_face_feature", doc: "提取合格人脸的 128 个特征；没有合格人脸时返回 None" },
+            { label: "compare_face_features", doc: "用 SFace 比较两组人脸特征，返回余弦相似度" },
+            { label: "draw_faces", doc: "复制图片，在水印下方显示识别代号和相似度" },
+            { label: "save_feature_file", doc: "把匿名代号和对应人脸特征保存为本地 NPZ 文件" },
+          ]}
         />
 
   </Tab>

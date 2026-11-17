@@ -19,7 +19,7 @@ from face_tools import create_face_detector, create_face_recognizer, draw_face_t
 from servo_control import error_to_angle, move_servos, reset_servos  # 复用26的偏差调角、角度限制和舵机执行
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 K = 5                                      # 偏差为1时每轮调整5°，数值越大跟随动作越强
 REQUIRED_MATCHES = 50                      # 累计识别到user01满20张新图片后点头并结束
 
@@ -63,7 +63,7 @@ def run(camera, commands, up_down_angle, left_right_angle):
     recognizer = create_face_recognizer()                   # 初始化特征识别器，用于提取和比较人脸特征
     names, features = load_feature_file()                   # 读取登记文件，得到代号和特征，沿用37
     if not names:
-        print("登记内容: 为空，请先用例程 36 准备 common/faces.npz")
+        print("登记内容: 为空，请先用 6.6 准备 common/faces.npz")
         return                                              # 结束run，外层with随后释放会话和连接
 
     last_image = None

@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 
-# 吸收例程28的二维码生成能力和配置，本例程未调用时也保留
+# 吸收 5.2 的二维码生成能力和配置，本页未调用时也保留
 QR_TEXT = "GREETING"                       # 这段文字会被写入二维码
 QR_SCALE = 32                              # 生成约900像素的大图，方便手机展示和摄像头识别
 OUTPUT_DIR = Path(__file__).parent / "cards"

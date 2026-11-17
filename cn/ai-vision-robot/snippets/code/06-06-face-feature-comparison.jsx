@@ -6,10 +6,10 @@ export const faceFeatureComparison = {
 import cv2
 import numpy as np
 
-from face_tools import create_face_detector, get_quality_face, load_image  # 吸收例程 35 的检测与质量判断
+from face_tools import create_face_detector, get_quality_face, load_image  # 吸收 6.5 的检测与质量判断
 
 
-# --- 本例程可调整的参数 ---
+# --- 本页可调整的参数 ---
 MATCH_THRESHOLD = 0.50                     # 余弦相似度达到此值时，判断为同一个人
 PERSON_NAME = "user01"                     # 人为设置的登记代号，匹配到这组特征后返回它，不是模型猜出的姓名
 
@@ -23,7 +23,7 @@ FEATURE_FILE = COMMON_DIR / "faces.npz"     # 直接写入 common，后续例程
 def create_face_recognizer():
     """读取本地 SFace 文件，并返回 OpenCV 人脸特征模型。"""
     model_bytes = np.fromfile(RECOGNITION_MODEL, dtype=np.uint8)
-    # FaceRecognizerSF 是 OpenCV 自带的 SFace 使用入口；本例程调用成熟模型，不展开网络结构
+    # FaceRecognizerSF 是 OpenCV 自带的 SFace 使用入口；本页调用成熟模型，不展开网络结构
     return cv2.FaceRecognizerSF.create(
         "onnx",                                             # 告诉 OpenCV 传入的是 ONNX 模型内容
         model_bytes,                                        # 从本地文件读取的 SFace 模型内容
@@ -34,7 +34,7 @@ def create_face_recognizer():
 # 检测一张质量合格的人脸，完成对齐，再返回 SFace 提取的 128 个特征
 def get_face_feature(detector, recognizer, image):
     """检测一张质量合格的人脸，完成对齐，再返回 SFace 提取的 128 个特征。"""
-    raw_face = get_quality_face(detector, image)            # 吸收例程 35，返回 SFace 需要的 YuNet 原始数据
+    raw_face = get_quality_face(detector, image)            # 吸收 6.5，返回 SFace 需要的 YuNet 原始数据
     aligned_face = recognizer.alignCrop(image, raw_face)    # alignCrop() 根据五个关键点摆正并裁剪人脸
     feature_row = recognizer.feature(aligned_face)          # feature() 把对齐图片转换成一行 128 个特征数值
     return feature_row.reshape(-1)                          # reshape(-1) 把一行数组整理成一维数组，仍保留 128 个数
