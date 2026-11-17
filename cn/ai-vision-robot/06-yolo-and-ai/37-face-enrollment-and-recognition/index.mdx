@@ -31,6 +31,7 @@ import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-07-face-enrollme
             { label: "load_feature_file", doc: "读取本地 NPZ 中的匿名代号和人脸特征；文件不存在时返回空列表" },
             { label: "identify_face", doc: "逐一比较查询特征与已登记特征，返回最高分代号和相似度" },
           ]}
+  {...faceEnrollmentAndRecognition}
         />
 
   </Tab>
@@ -47,6 +48,7 @@ import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-07-face-enrollme
             { label: "draw_faces", doc: "复制图片，在水印下方显示识别代号和相似度" },
             { label: "save_feature_file", doc: "把匿名代号和对应人脸特征保存为本地 NPZ 文件" },
           ]}
+  {...faceTools}
         />
 
   </Tab>

@@ -32,6 +32,7 @@ import { sensorDecision } from "/cn/ai-vision-robot/snippets/code/07-01-sensor-d
             { label: "decide_motion", doc: "先检查循迹意图和测距输入，再由超声波保持、减半或归零 V/W" },
             { label: "run", doc: "独立更新两种事件，计算最终策略，并按0.1秒节拍下发双轮目标" },
           ]}
+  {...sensorDecision}
         />
 
   </Tab>

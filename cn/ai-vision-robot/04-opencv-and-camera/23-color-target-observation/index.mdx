@@ -35,6 +35,7 @@ import { targetContours } from "/cn/ai-vision-robot/snippets/code/04-06-color-ta
             { label: "draw_target_marks", doc: "复制原图，再用基础图形标出处理区域、参考中心和目标位置" },
             { label: "show_image", doc: "缩放图片副本，再在屏幕指定位置显示" },
           ]}
+  {...colorTargetObservation}
         />
 
   </Tab>
@@ -46,6 +47,7 @@ import { targetContours } from "/cn/ai-vision-robot/snippets/code/04-06-color-ta
             { label: "make_color_mask", doc: "吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
             { label: "find_target_contours", doc: "按目标类型生成掩膜，完成开闭运算，再返回清理后掩膜、有效轮廓和 ROI" },
           ]}
+  {...targetContours}
         />
 
   </Tab>
