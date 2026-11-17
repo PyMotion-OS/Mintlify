@@ -5,6 +5,7 @@ description: "双舵机先复位到双 90° 居中，再用实时命令各偏 10
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 import { servoPosition } from "/cn/ai-vision-robot/snippets/code/02-02-servo-position.jsx"
+import { servoControl } from "/cn/ai-vision-robot/snippets/code/02-02-servo-position__servo-control.jsx"
 
 ## 前置条件
 
@@ -68,17 +69,11 @@ python servo_position.py
 
 > 本页是 1.7 的对照页：1.7 讲「怎么转到某个角度」，本页讲「实时命令与角度保持」——电机命令过期就停，舵机命令过期角度还在。
 
-## 本页产出 · 舵机当前的方法和参数
+## 本页产出 · servo_control.py
 
-```python
-# 普通位置命令：发一次转到位，适合复位
-robot.pwm_servos.move_to({PORT_UP_DOWN: 90, PORT_LEFT_RIGHT: 90})
+本页把舵机的复位与限幅发送整理成一个可复用文件：包含 `reset_servos()`、`move_servos()` 两个函数——输入目标角度，输出限幅后的双舵机角度并下发。不含 `main`、不连设备，只有复位与实时位置命令逻辑，供需要双舵机运动的页面直接 import。
 
-# 实时位置命令：会话内可反复发，命令过期角度仍保持
-session.commands.pwm_position_servos.write(
-    {PORT_UP_DOWN: 80, PORT_LEFT_RIGHT: 100},
-    valid_for=0.3,
-)
-
-# 角度范围：上下 0～105°（90° 居中 +15°）、左右 0～180°，双 90° 为居中姿态，可微调
-```
+<CodeFold
+  docs={[]}
+  {...servoControl}
+/>
