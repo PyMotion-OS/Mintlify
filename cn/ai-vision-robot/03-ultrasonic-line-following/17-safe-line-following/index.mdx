@@ -22,7 +22,6 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-05-safe-
 | `receive_sensors(data_queue)` | 等五路和超声波各更新一次，按 `source` 分派到各自变量 |
 | `ultrasonic_to_vw(ultrasonic_data, v, w)` | 按距离保持/减半/归零 V/W，返回避障状态 |
 | `data_sources=("line_tracker", "ultrasonic")` | 一个会话同时收两路数据 |
-| `data_queue_size=8` | 两路数据交替到达，队列要够放 |
 
 ## 完整示例
 
@@ -35,7 +34,7 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-05-safe-
           docs={[
           { label: "receive_sensors", doc: "等五路+超声波\n各更新一次" },
           { label: "run", doc: "循迹 → 避障 → 差速\n丢线发送 0 并退出" },
-          { label: "main", doc: "会话收两路数据\nqueue_size=8" },
+          { label: "main", doc: "会话收两路数据" },
           ]}
           {...safeLineFollowing}
         />
@@ -113,7 +112,6 @@ python safe_line_following.py
 | --- | --- | --- | --- |
 | `STOP_DISTANCE` | int | 100 毫米 | 小于等于就停机 |
 | `SLOW_DISTANCE` | int | 300 毫米 | 进入该距离开始减速 |
-| `data_queue_size` | int | 8 | 两路数据交替到达，队列要够放 |
 | `valid_for` | float | 0.35 秒 | 断流自动停 |
 
-> 本页复用 2.4、3.1、3.3 的三个产出文件（差速、避障、循迹），本页产出 `safe_line_following.py`；7.1 会复用 3.1 的 `obstacle_policy.py`。
+> 本页复用 2.4、3.1、3.3 的三个产出文件（差速、避障、循迹）；7.1 会复用 3.1 的 `obstacle_policy.py`。

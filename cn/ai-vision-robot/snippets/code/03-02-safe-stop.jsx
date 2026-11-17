@@ -11,8 +11,6 @@ RUN_SECONDS = 20.0                         # 最长运行时间，单位秒
 
 # --- 共用配置（一般不用动）---
 PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮接 M3，右轮接 M4
-TRANSPORT = "wifi"                         # Wi-Fi 连接模式
-TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
 
 # 输入 stop 后把列表中的运行标记改为 False
@@ -65,6 +63,6 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def listen_keyboard(is_running):", from: 16, to: 27, defaultOpen: false },
+    { label: "def listen_keyboard(is_running):", from: 14, to: 25, defaultOpen: false },
   ],
 }

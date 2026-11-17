@@ -4,7 +4,7 @@ export const safeLineFollowing = {
   code: `import pymotion as pm
 
 from differential_drive import vw_to_rpm
-from line_control import PATTERN_NAMES, line_tracker_to_vw  # 引用 3.4 的循迹控制
+from line_control import PATTERN_NAMES, line_tracker_to_vw  # 引用 3.3 的循迹分类与运动计算
 from obstacle_policy import OBSTACLE_NAMES, ultrasonic_to_vw  # 引用避障名称和距离策略
 
 
@@ -14,8 +14,6 @@ K = 25                                     # 转弯增益，每一格偏差增�
 
 # --- 共用配置（一般不用动）---
 PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮接 M3，右轮接 M4
-TRANSPORT = "wifi"                         # Wi-Fi 连接模式
-TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
 # 等待五路和超声波各更新一次，并返回两种最新数据
 def receive_sensors(data_queue):
@@ -59,7 +57,7 @@ def run(data_queue, commands):
 
         # 第三步：调用 2.4 的差速函数，把最终 V/W 换成左右轮转速
         left_rpm, right_rpm = vw_to_rpm(v, w)
-        # medium 约 0.1 秒更新一次；0.35 秒留有余量，断流时也会先自动停机
+        # 0.35 秒有效期，断流时也会先自动停机
         commands.motor_speeds.write({PORT_LEFT: left_rpm, PORT_RIGHT: right_rpm}, valid_for=0.35)
 
         current_motion = (pattern_type, obstacle_state, left_rpm, right_rpm)
@@ -81,8 +79,8 @@ def main():
     try:
         with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             with robot.control():
-                # 打开实时控制会话；medium 约 10 Hz 更新五路和超声波数据
-                with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)}, frequency="medium", data_queue_size=8) as session:
+                # 打开实时控制会话，同时收五路和超声波数据
+                with robot.realtime.open(data_sources=("line_tracker", "ultrasonic"), command_targets={"motor_speeds": (PORT_LEFT, PORT_RIGHT)}) as session:
                     run(session.data, session.commands)
     except KeyboardInterrupt:
         print("Ctrl+C 主动停机")
@@ -93,7 +91,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def receive_sensors(data_queue):", from: 18, to: 35, defaultOpen: false },
-    { label: "def run(data_queue, commands):", from: 39, to: 73, defaultOpen: false },
+    { label: "def receive_sensors(data_queue):", from: 16, to: 33, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 37, to: 71, defaultOpen: false },
   ],
 }

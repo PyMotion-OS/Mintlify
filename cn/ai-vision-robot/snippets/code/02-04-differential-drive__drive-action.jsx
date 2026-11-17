@@ -18,8 +18,6 @@ D = 172.0                                  # 左右轮间距，毫米
 # --- 共用配置（一般不用动）---
 PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮 M3、右轮 M4
 MAX_RPM = 60                               # 单轮转速上限（理论转速上限 360）
-TRANSPORT = "wifi"                         # Wi-Fi 连接模式
-TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
 ACTIONS = {                                # 动作表：名字 → (前进速度, 转弯快慢)
     "forward": (V, 0),                     # 直行向前
@@ -87,8 +85,8 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def limit_rpm(left, right):", from: 32, to: 39, defaultOpen: false },
-    { label: "def vw_to_rpm(v, w):", from: 43, to: 55, defaultOpen: false },
-    { label: "def drive(commands, v, w, valid_for=0.35):                  # 不填valid_for则默认取值0.35", from: 59, to: 67, defaultOpen: false },
+    { label: "def limit_rpm(left, right):", from: 30, to: 37, defaultOpen: false },
+    { label: "def vw_to_rpm(v, w):", from: 41, to: 53, defaultOpen: false },
+    { label: "def drive(commands, v, w, valid_for=0.35):                  # 不填valid_for则默认取值0.35", from: 57, to: 65, defaultOpen: false },
   ],
 }

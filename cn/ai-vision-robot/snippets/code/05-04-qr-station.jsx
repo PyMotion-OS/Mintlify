@@ -74,8 +74,8 @@ def main():
         with Camera() as camera:
             with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
                 with robot.control():
-                    # 打开实时控制会话；M3左轮、M4右轮，frequency只决定五路约10Hz更新
-                    with robot.realtime.open(data_sources=("line_tracker",), command_targets={"motor_speeds": (3, 4)}, frequency="medium", data_queue_size=1) as session:
+                    # 打开实时控制会话；M3左轮、M4右轮
+                    with robot.realtime.open(data_sources=("line_tracker",), command_targets={"motor_speeds": (3, 4)}) as session:
                         run(camera, session.data, session.commands)
     except (ValueError, pm.lite.LiteError) as exc:
         log_message("ERROR", "station", f"{type(exc).__name__}: {exc}")

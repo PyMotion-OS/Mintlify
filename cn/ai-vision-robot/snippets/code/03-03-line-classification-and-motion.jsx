@@ -13,8 +13,6 @@ MAX_LINE_SENSORS = 3                       # 正常循迹线最多连续触发�
 
 # --- 共用配置（一般不用动）---
 SENSOR_POSITIONS = (-2, -1, 0, 1, 2)       # 五个探头从左到右的位置
-TRANSPORT = "wifi"                         # Wi-Fi 连接模式
-TIMEOUT = 15.0                             # Wi-Fi 连接最大超时时间
 
 # --- 分类结果 ---
 PATTERN_NAMES = {
@@ -77,14 +75,13 @@ def main():
     try:
         with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
             while True:
-                # max_age 同时要求数据不超过 1 秒，并允许本次获取最多等待 1 秒
-                tracker_line_data = robot.line_tracker(max_age=1.0)
+                tracker_line_data = robot.line_tracker()
                 # 传入真实五路状态、基础 V 和增益 K，得到计算后的 V、W 和分类
                 v, w, pattern_type = line_tracker_to_vw(tracker_line_data.is_detected, V, K)
                 # 把五路状态、分类、V 和 W 组成一轮完整观测，便于和上一轮比较
                 current_observation = (tracker_line_data.is_detected, pattern_type, v, w)
 
-                # 只减少重复打印；传感数据仍会更新，本页没有发送电机指令
+                # 图案变化一次就打印
                 if current_observation != last_observation:
                     print(
                         f"五路: {tracker_line_data.is_detected}\\n"
@@ -104,7 +101,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def classify_pattern(sensor_states):", from: 26, to: 55, defaultOpen: false },
-    { label: "def line_tracker_to_vw(sensor_states, v, k):", from: 59, to: 68, defaultOpen: false },
+    { label: "def classify_pattern(sensor_states):", from: 24, to: 53, defaultOpen: false },
+    { label: "def line_tracker_to_vw(sensor_states, v, k):", from: 57, to: 66, defaultOpen: false },
   ],
 }
