@@ -1,6 +1,6 @@
 ---
 title: "2.2 舵机位置与实时命令"
-description: "双舵机先复位到双 90° 居中，再用实时命令各偏 10°"
+description: "双舵机先复位居中，再用实时命令各偏 10°"
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
@@ -15,7 +15,7 @@ import { servoControl } from "/cn/ai-vision-robot/snippets/code/02-02-servo-posi
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `reset_servos(robot)` | 本页定义：用普通位置命令让双舵机到达复位姿态（90°/90°），返回两个复位角度 |
+| `reset_servos(robot)` | 本页定义：用普通位置命令让双舵机到达复位姿态，返回两个复位角度 |
 | `robot.pwm_servos.move_to({端口: 角度, ...})` | 普通位置命令：发一次角度，让双舵机转到指定角度（1.7 学过） |
 | `move_servos(commands, up_down_angle=90, left_right_angle=90)` | 本页定义：先限幅再发实时角度命令，返回实际发送的角度；省略参数时停在复位姿态 |
 | `commands.pwm_position_servos.write({端口: 角度}, valid_for=0.3)` | 实时位置命令：走会话通道发角度，可带有效期 |
