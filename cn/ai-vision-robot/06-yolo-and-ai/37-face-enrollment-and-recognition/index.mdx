@@ -21,7 +21,7 @@ import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-07-face-enrollme
 
 ## 完整示例
 
-6.6 只是比对两张图，6.7 把登记库放进实时视频做 1:N 识别。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="face_enrollment_and_recognition.py">
@@ -36,6 +36,8 @@ import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-07-face-enrollme
 
   </Tab>
   <Tab title="face_tools.py">
+
+    与 6.4～6.6 的 face_tools.py 是同一个文件（含检测、质量、特征），复制到本页目录即可。
 
         <CodeFold
           docs={[
@@ -77,4 +79,4 @@ python 37_face_enrollment_and_recognition.py
 | `MATCH_THRESHOLD` | float | 0.50 | 不足此值显示 `unknown` |
 | `allow_pickle` | bool | `False` | 只读文字和数字数组 |
 
-> 本页产出 `load_feature_file` / `identify_face`，6.8 吸收并加舵机打招呼。
+> 本页产出 `load_feature_file()`、`identify_face()`。

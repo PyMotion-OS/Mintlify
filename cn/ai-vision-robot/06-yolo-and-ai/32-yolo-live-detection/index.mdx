@@ -21,19 +21,22 @@ import { yoloDetection } from "/cn/ai-vision-robot/snippets/code/06-02-yolo-live
 
 ## 完整示例
 
-6.1 的三个 YOLO 函数吸收进 `yolo_detection.py`，主文件只剩取图循环。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="yolo_live_detection.py">
 
         <CodeFold
           docs={[
+            { label: "main", doc: "取最新有效图片交给 YOLO，逐帧画框显示" },
           ]}
   {...yoloLiveDetection}
         />
 
   </Tab>
   <Tab title="yolo_detection.py">
+
+    与 6.1 产出的 YOLO 函数相同，复制到本页目录即可。
 
         <CodeFold
           docs={[
@@ -68,6 +71,5 @@ python 32_yolo_live_detection.py
 | --- | --- | --- | --- |
 | `CONFIDENCE` | float | 0.25 | 检测置信度门槛 |
 | `IMAGE_SIZE` | int | 320 | 实时检测用更小输入换取速度 |
-| `camera.latest()` 的 `max_age` | float | 0.5 秒 | 图片有效期 |
 
-> 本页产出 `yolo_detection.py`，成为后续所有 YOLO 例程的共用工具模块。
+> 本页产出 `yolo_live_detection.py`。

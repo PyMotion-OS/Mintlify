@@ -16,13 +16,12 @@ import { sensorDecision } from "/cn/ai-vision-robot/snippets/code/07-01-sensor-d
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `decide_motion(line_motion, ultrasonic_data)` | 合并循迹意图和测距保护，返回唯一允许的 V/W |
-| `line_tracker_to_vw(...)` | 3.1 产出，五路状态转循迹意图 |
-| `ultrasonic_to_vw(...)` | 2.5 产出，按距离保持/减半/归零 V/W |
-| `received_monotonic` | 事件收到时刻，超 0.3 秒视为过期 |
+| `line_tracker_to_vw(...)` | 3.3 产出，五路状态转循迹意图 |
+| `ultrasonic_to_vw(...)` | 3.1 产出，按距离保持/减半/归零 V/W |
 
 ## 完整示例
 
-多源数据同时到达，先判断"该听谁的"再决定动作：循迹状态非 `line` 时直接停机，测距保护再叠加。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -63,4 +62,4 @@ python 43_sensor_decision.py
 | `K` | int | 25 度/秒 | 每格五路偏差的转向增益 |
 | `valid_for` | float | 0.35 秒 | 命令有效期，断流后自动失效 |
 
-> 本页产出 `decide_motion`，7.2 吸收进 `obstacle_policy.py` 复用。
+> 本页产出 `decide_motion()`。

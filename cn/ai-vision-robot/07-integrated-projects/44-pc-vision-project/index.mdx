@@ -15,14 +15,15 @@ import { pcVisionProject } from "/cn/ai-vision-robot/snippets/code/07-02-pc-visi
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `task_state` | `normal` 循迹 / `slow` 减速 / `wait` 停机确认 三态 |
-| `check_qr_state(...)` | 5.5 产出，连续消失 1 秒判定离站 |
+| `check_qr_state(...)` | 5.3 产出，连续消失 1 秒判定离站 |
 | `run_station_task(...)` | 到站快照识别 + 点头两次 |
 | `get_project_motion(...)` | 合并站台阶段、图片时效与测距保护 |
 
+任务的三个阶段在 `run` 里由 `task_state` 记录：`normal` 循迹、`slow` 减速、`wait` 停机确认。
+
 ## 完整示例
 
-把循迹、二维码、YOLO、舵机串成一条状态机流程：正常循迹 → 看到站台减速 → 离站停机识别并点头 → 空格确认继续。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">

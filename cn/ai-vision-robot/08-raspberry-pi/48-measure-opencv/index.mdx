@@ -15,13 +15,12 @@ import { measureOpencv } from "/cn/ai-vision-robot/snippets/code/08-04-measure-o
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `resize_image(image)` | 按处理宽度等比例缩小图片 |
-| `find_target(image)` | 模块四产出，颜色目标观测 |
+| `find_target(image)` | 4.6 产出，颜色目标观测 |
 | `time.monotonic()` | 计时，算整轮处理毫秒数 |
-| `PROCESS_WIDTH` | 处理宽度，越小越快、细节越少 |
 
 ## 完整示例
 
-先测基线再调参，缩图是性能最大的杠杆之一。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -60,4 +59,4 @@ python 48_measure_opencv.py
 | `PROCESS_WIDTH` | int | 640 | 处理宽度，越小越快 |
 | `target_type` | str | `blue`（默认） | 颜色目标类型 |
 
-> 本页先测 OpenCV 基线，8.5 用同样思路测 YOLO。
+> 本页测 OpenCV 基线，同一思路可复用到 YOLO。

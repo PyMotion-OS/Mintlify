@@ -1,6 +1,6 @@
 ---
 title: "6.8 人脸问候项目"
-description: "认出登记人脸后舵机跟随，累计识别满 20 张点头打招呼"
+description: "认出登记人脸后舵机跟随，累计识别满 50 张点头打招呼"
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
@@ -16,13 +16,13 @@ import { faceGreetingProject } from "/cn/ai-vision-robot/snippets/code/06-08-fac
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `track_face(...)` | 把已登记人脸的位置换成双舵机角度并发送 |
-| `error_to_angle(error, angle, K)` | 5.2 产出，偏差换角度 |
+| `error_to_angle(error, angle, K)` | 5.1 产出，偏差换角度 |
 | `nod_camera(...)` | 围绕当前角度点头两次再回位 |
 | `get_face_feature(..., raw_face=raw_face)` | 复用已检测结果，不重复检测 |
 
 ## 完整示例
 
-把前面五步（检测→质量→特征→录入→识别）合成一个可演示项目。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -42,7 +42,8 @@ import { faceGreetingProject } from "/cn/ai-vision-robot/snippets/code/06-08-fac
     ```text
     登记内容: 为空，请先用 6.6 准备 common/faces.npz
     ```
-    或正常运行时，窗口显示代号、分数、人脸框、中心和画面对准标记；识别满 20 张 user01 新图后点头两次。
+
+    正常运行时窗口显示代号、分数、人脸框、中心和画面对准标记，累计识别满 50 张 user01 新图后点头两次。
 
   </Tab>
 </Tabs>
@@ -58,7 +59,6 @@ python 38_face_greeting_project.py
 | 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
 | `K` | int | 5 | 偏差为 1 时每轮调整 5° |
-| `REQUIRED_MATCHES` | int | 20 | 累计识别 user01 满此数后点头 |
-| 点头偏移 | int | ±10° | 每次抬头/低头幅度 |
+| `REQUIRED_MATCHES` | int | 50 | 累计识别 user01 满此数后点头 |
 
 > 本页是人脸链路的收口，串起 YuNet 检测、SFace 特征和双舵机执行。

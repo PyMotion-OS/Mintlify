@@ -22,7 +22,7 @@ import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-06-face-feature-
 
 ## 完整示例
 
-SFace 把一张脸压缩成 128 个数值，相似度越大越像同一个人。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="face_feature_comparison.py">
@@ -40,12 +40,14 @@ SFace 把一张脸压缩成 128 个数值，相似度越大越像同一个人。
   </Tab>
   <Tab title="face_tools.py">
 
+    与 6.4 产出的 face_tools.py 相同（多一个 `get_quality_face`），复制到本页目录即可。
+
         <CodeFold
           docs={[
             { label: "load_image", doc: "读取本页的两张图片，返回登记图片和查询图片" },
             { label: "create_face_detector", doc: "读取本地 YuNet 文件，并返回 OpenCV 人脸检测器" },
             { label: "check_face_quality", doc: "依次检查人脸完整度、尺寸、亮度和清晰度，再返回是否合格和原因" },
-            { label: "get_quality_face", doc: "吸收 6.4/6.4 的检测与质量判断，返回 SFace 需要的一行 YuNet 原始数据" },
+            { label: "get_quality_face", doc: "吸收 6.4、6.5 的检测与质量判断，返回 SFace 需要的一行 YuNet 原始数据" },
           ]}
   {...faceTools}
         />
@@ -78,4 +80,4 @@ python 36_face_feature_comparison.py
 | `PERSON_NAME` | str | `user01` | 人为设置的登记代号 |
 | 相似度 | float | 0~1 | 越大越像，但不是概率 |
 
-> 本页产出 `create_face_recognizer` / `get_face_feature` / `compare_face_features` / `save_feature_file`，6.7 吸收。
+> 本页产出 `create_face_recognizer()`、`get_face_feature()`、`compare_face_features()`、`save_feature_file()`。

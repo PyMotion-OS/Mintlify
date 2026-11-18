@@ -5,6 +5,7 @@ description: "用本地 YOLO 模型检测一张固定图片，认识统一检测
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 import { yoloImageDetection } from "/cn/ai-vision-robot/snippets/code/06-01-yolo-image-detection.jsx"
+import { yoloDetection } from "/cn/ai-vision-robot/snippets/code/06-01-yolo-image-detection__yolo-detection.jsx"
 
 ## 前置条件
 
@@ -21,7 +22,7 @@ import { yoloImageDetection } from "/cn/ai-vision-robot/snippets/code/06-01-yolo
 
 ## 完整示例
 
-先用一张固定图片 `street.jpg` 认识模型、检测字段和绘图，不接摄像头。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -71,4 +72,17 @@ python 31_yolo_image_detection.py
 | `image_size` | int | 640 | 模型输入尺寸，越大细节越多、越慢 |
 | `device` | str | `"cpu"` | 电脑和树莓派都能运行的设备选择 |
 
-> 本页产出 `load_yolo_resources` / `detect_objects` / `draw_detections`，6.2 吸收进 `yolo_detection.py` 复用。
+> 本页产出 `yolo_detection.py`（`load_yolo_resources`、`detect_objects`、`draw_detections`）。
+
+## 本页产出 · yolo_detection.py
+
+本页把三个 YOLO 函数整理成一个可复用文件：`load_yolo_resources()` 读本地标签表和模型，`detect_objects()` 把模型输出整理成 `class_id` / `label` / `confidence` / `box` 四个稳定字段（含处理毫秒数），`draw_detections()` 画出类别、置信度、检测框和耗时。不含 `main`、不取图，供实时检测、跟踪和跟随的页面直接 import。
+
+<CodeFold
+  docs={[
+    { label: "load_yolo_resources", doc: "读取 common 中的类别标签和本地模型，返回标签表与模型对象" },
+    { label: "detect_objects", doc: "把模型输出整理为稳定检测字段，并返回处理毫秒数" },
+    { label: "draw_detections", doc: "复制图片，再画出英文类别、置信度、检测框和处理耗时" },
+  ]}
+  {...yoloDetection}
+/>

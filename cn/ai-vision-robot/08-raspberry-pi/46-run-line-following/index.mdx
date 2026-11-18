@@ -15,13 +15,12 @@ import { runLineFollowing } from "/cn/ai-vision-robot/snippets/code/08-02-run-li
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `receive_sensors(data_queue)` | 0.3 秒内收齐五路和超声波两种读数 |
-| `line_tracker_to_vw(...)` | 3.1 产出，五路状态转循迹意图 |
-| `ultrasonic_to_vw(...)` | 2.5 产出，测距保护 |
-| `valid_for` | 0.35 秒，断流旧命令自动失效 |
+| `line_tracker_to_vw(...)` | 3.3 产出，五路状态转循迹意图 |
+| `ultrasonic_to_vw(...)` | 3.1 产出，测距保护 |
 
 ## 完整示例
 
-循迹不依赖视觉，是树莓派上最快能跑起来的完整动作。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -59,6 +58,6 @@ python 46_run_line_following.py
 | --- | --- | --- | --- |
 | `V` | int | 60 mm/s | 基础前进速度 |
 | `K` | int | 25 度/秒 | 转弯增益 |
-| 传输 | str | `usb` | 树莓派用 USB 连接模式 |
+| `transport` | str | `"usb"` | 树莓派用 USB 连接模式 |
 
 > 本页验证树莓派"能动"，先不碰视觉，排除算力干扰。

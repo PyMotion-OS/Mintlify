@@ -1,41 +1,42 @@
 ---
-title: "6 YOLO 与 AI"
-description: "从目标检测到人脸识别再到视觉跟随：12 个例程走完一条完整的 AI 视觉链"
+title: "YOLO 与 AI"
+description: "从目标检测到人脸识别再到视觉跟随：一条完整的 AI 视觉链"
 ---
-
-# 6 YOLO 与 AI
 
 ## 模块目标
 
 这是全课程最长的一段，三条主线并行推进：
 
-1. **通用目标检测**（YOLO）：先把图里的物体框出来，再让框跨帧跟着同一物体走
-2. **人脸链路**（检测 → 质量 → 特征 → 录入 → 识别 → 交互）：一套完整的人脸应用
-3. **视觉跟随**（选主目标 → 居中 → 控距 → 观测）：把检测结果变成底盘动作
+1. **通用目标检测**：先把图里的物体框出来，再让框跨帧跟着同一物体走
+2. **人脸链路**：检测 → 质量 → 特征 → 录入 → 识别 → 交互，一套完整的人脸应用
+3. **视觉跟随**：选主目标 → 居中 → 控距 → 观测，把检测结果变成底盘动作
 
 ## 例程顺序
 
-| 例程 | 内容 | 关键点 |
+| 例程 | 内容 | 学完能做什么 |
 | --- | --- | --- |
-| 6.1 YOLO 图片检测 | 单张图检测并画框 | `YOLO_OFFLINE` 必须在 import 前设置 |
-| 6.2 YOLO 实时检测 | 摄像头逐帧检测 | 抽帧检测 + 缓存结果，不每帧都跑模型 |
-| 6.3 目标跟踪 | 给检测框分配 ID，跨帧保持同一目标 | 按 IoU 关联，丢失后保留若干帧 |
-| 6.4 人脸检测 | 独立的人脸检测器 | 比通用 YOLO 更轻，先跑通这条链路 |
-| 6.5 人脸质量评估 | 判断这张脸能不能用 | 模糊度、亮度、角度、尺寸四维打分 |
-| 6.6 人脸特征比对 | 两张脸是不是同一个人 | 特征向量余弦相似度 + 阈值 |
-| 6.7 人脸录入与识别 | 建库 → 识别 | 阈值松会认错人，紧则认不出 |
-| 6.8 人脸问候项目 | 认出人 → 舵机转向 + 打招呼 | 把前面五步合成可演示项目 |
-| 6.9 主目标选择 | 画面里多人多物时选谁 | 面积优先 + 中心优先 + 切换滞后 |
-| 6.10 YOLO 目标居中 | 目标框居中 | 与 5.4 同一套偏差算法，换检测源 |
-| 6.11 跟随距离策略 | 远了追、近了停 | 用 `area_ratio` 估距离，不是真实米数 |
-| 6.12 跟随观测 | 输出完整跟随状态 | 一页看全：目标、偏差、距离档、动作 |
+| <a href="./31-yolo-image-detection/index" target="_blank">6.1 YOLO 图片检测</a> | 单张图检测并画框 | 用本地模型测一张图片，拿到 `class_id` / `label` / `confidence` / `box` |
+| <a href="./32-yolo-live-detection/index" target="_blank">6.2 YOLO 实时检测</a> | 摄像头逐帧检测 | 把最新有效图片交给模型，逐帧画框显示 |
+| <a href="./33-object-tracking/index" target="_blank">6.3 目标跟踪</a> | 跨帧保持同一目标 | 用 ByteTrack 给检测框分配持续编号，锁定同一个人 |
+| <a href="./34-face-detection/index" target="_blank">6.4 人脸检测</a> | YuNet 检测人脸 | 拿到人脸框、五个关键点和置信度 |
+| <a href="./35-face-quality/index" target="_blank">6.5 人脸质量评估</a> | 判断这张脸能不能用 | 按完整度、尺寸、亮度、清晰度判断是否合格 |
+| <a href="./36-face-feature-comparison/index" target="_blank">6.6 人脸特征比对</a> | 两张脸是不是同一个人 | 用 SFace 提 128 维特征，比出余弦相似度 |
+| <a href="./37-face-enrollment-and-recognition/index" target="_blank">6.7 人脸录入与识别</a> | 建库 + 实时 1:N 识别 | 读登记库，在视频里显示匹配代号 |
+| <a href="./38-face-greeting-project/index" target="_blank">6.8 人脸问候项目</a> | 认出人就转过来打招呼 | 把前五步合成一个可演示项目 |
+| <a href="./39-lead-target-selection/index" target="_blank">6.9 主目标选择</a> | 多人多物时选谁 | 只接受唯一 person，多于一个就报 `ambiguous` |
+| <a href="./40-yolo-target-centering/index" target="_blank">6.10 YOLO 目标居中</a> | 目标框居中 | 用双舵机把唯一人物对准画面中心 |
+| <a href="./41-following-distance-policy/index" target="_blank">6.11 跟随距离策略</a> | 远了追、近了停 | 用框占比分三档，算出跟随的 V/W |
+| <a href="./42-following-observation/index" target="_blank">6.12 跟随观测</a> | 输出完整跟随状态 | 跟踪 + 选主 + 控距合成一份跟随意图 |
 
-## 三个高频坑
+## 前置条件
 
-> - `YOLO_OFFLINE = "1"` 必须在 `import ultralytics` **之前**设置，否则启动时联网拉权重会卡住
-> - 帧去重：用 `last_image` 判断是否新帧，否则同一个框被重复累计，角度会一路累加跑飞
-> - `valid_for` 必须大于循环周期，否则指令还没执行就过期，表现为"车一顿一顿"
+- 完成模块 5（舵机控制与偏差算法）、模块 4（取帧与 ROI）
+- `ultralytics` 与本地模型（`yolo11n.pt`、`coco_labels.json`）、YuNet 与 SFace 的 onnx 文件
 
-## 前置
+## 学习建议
 
-完成模块 5（舵机控制与偏差算法）、模块 4（取帧与 ROI）。本模块算力要求最高，先在 PC 上跑通再上树莓派（模块 8 有实测数据）。
+1. `YOLO_OFFLINE` 必须在 `import ultralytics` **之前**设置，否则启动时联网拉权重会卡住
+2. 帧去重：用 `last_image` 判断是否新帧，否则同一张图被重复累计，角度会一路累加
+3. `valid_for` 必须大于循环周期，否则指令还没执行就过期，表现为车身一顿一顿
+4. 例程有演化关系，建议按顺序完成——6.1 产出 `yolo_detection.py`，6.4 产出 `face_tools.py`，6.9 产出 `target_selection.py`，后面的页面直接 import
+5. 本模块算力要求最高，先在 PC 上跑通再上树莓派

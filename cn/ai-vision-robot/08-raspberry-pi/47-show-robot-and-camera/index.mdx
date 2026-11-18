@@ -20,7 +20,7 @@ import { showRobotAndCamera } from "/cn/ai-vision-robot/snippets/code/08-03-show
 
 ## 完整示例
 
-检查供电与带宽是否够控制器和摄像头同时工作，只显示不动。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -55,7 +55,7 @@ python 47_show_robot_and_camera.py
 
 | 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
-| 数据源 | str | `ultrasonic` + `line_tracker` | 联合显示的两种读数 |
-| 无图回退 | — | 800x360 黑底 | 断流时继续显示读数 |
+| `data_sources` | tuple | `("ultrasonic", "line_tracker")` | 一个会话同时收两种读数 |
+| `read(timeout=0.5)` | float | 0.5 秒 | 每轮取一条事件的最长等待时间 |
 
-> 本页验证控制器 + 摄像头协同，是后续性能实测的输入基础。
+> 本页验证控制器 + 摄像头协同，只显示不动。
