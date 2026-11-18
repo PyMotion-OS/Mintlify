@@ -90,7 +90,7 @@ def main():
                     )
                     last_observation = current_observation  # 把本轮观测留到下一轮比较
 
-                time.sleep(0.35)                            # 每 0.35 秒观察一次计算结果
+                time.sleep(0.1)                             # 控制循环间隔0.1秒
 
     except KeyboardInterrupt:
         print("Ctrl+C 结束观察")
