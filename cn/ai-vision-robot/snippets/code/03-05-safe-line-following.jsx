@@ -1,9 +1,10 @@
 // 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const safeLineFollowing = {
   title: "safe_line_following.py",
-  code: `import pymotion as pm
+  code: `import time
+import pymotion as pm
 
-from differential_drive import vw_to_rpm
+from differential_drive import drive               # 复用 2.4 产出的差速封装
 from line_control import PATTERN_NAMES, line_tracker_to_vw  # 引用 3.3 的循迹分类与运动计算
 from obstacle_policy import OBSTACLE_NAMES, ultrasonic_to_vw  # 引用避障名称和距离策略
 
@@ -15,34 +16,34 @@ K = 25                                     # 转弯增益，每一格偏差增�
 # --- 共用配置（一般不用动）---
 PORT_LEFT, PORT_RIGHT = 3, 4               # 左轮接 M3，右轮接 M4
 
-# 等待五路和超声波各更新一次，并返回两种最新数据
-def receive_sensors(data_queue):
-    """等待五路和超声波各更新一次，并返回两种最新数据。"""
-    tracker_line_data = None                                # 准备保存本轮五路循迹数据
-    ultrasonic_data = None                                  # 准备保存本轮超声波数据
-
-    # 两种数据有一种为空时继续获取，直到两种数据都收到
-    while tracker_line_data is None or ultrasonic_data is None:
-        # read() 会等待下一条新数据，所以 while 不会一直快速循环；最多等待 1 秒
-        sensor_data = data_queue.read(timeout=1.0)
-        if sensor_data is None:                             # 任一种数据等待超时，本轮返回空
-            return None, None
-        if sensor_data.source == "line_tracker":            # 保存最新五路循迹数据
-            tracker_line_data = sensor_data.data
-        # no_echo 也会收到超声波对象，只是对象中的 distance 为 None
-        elif sensor_data.source == "ultrasonic":
-            ultrasonic_data = sensor_data.data
-
-    return tracker_line_data, ultrasonic_data
+# 事件超过 0.5 秒没更新，就当作这一路没收到
+def fresh_data(event, max_age=0.5):
+    """事件未过期就返回其中的数据；没有事件或已过期时返回 None。"""
+    if event is None:                                       # 这一路还没收到过任何数据
+        return None
+    if time.monotonic() - event.received_monotonic > max_age:
+        return None                                         # 太久了，不能再用这个旧值
+    return event.data
 
 
 # 依次进行循迹、避障和差速计算，丢线时发送双轮 0 并结束
 def run(data_queue, commands):
     """依次进行循迹、避障和差速计算，丢线时发送双轮 0 并结束。"""
     last_motion = None
+    tracker_event, ultrasonic_event = None, None            # 两路各自保存最近一条事件
 
     while True:                                             # 条件一直为真，所以持续进行安全循迹
-        tracker_line_data, ultrasonic_data = receive_sensors(data_queue)
+        # 每轮只取一条事件，按来源更新对应那一路；两路互不等待，一路坏了另一路照常工作
+        sensor_data = data_queue.read(timeout=1.0)
+        if sensor_data is not None and sensor_data.source == "line_tracker":
+            tracker_event = sensor_data
+        elif sensor_data is not None and sensor_data.source == "ultrasonic":
+            ultrasonic_event = sensor_data
+
+        # 两路各自检查新鲜度：超过 0.5 秒没更新，就当作这一路没收到
+        tracker_line_data = fresh_data(tracker_event)
+        ultrasonic_data = fresh_data(ultrasonic_event)
+
         if tracker_line_data is None or ultrasonic_data is None:
             v, w, pattern_type, obstacle_state = 0, 0, "waiting", "waiting"
             distance_text = "未收到"
@@ -55,10 +56,8 @@ def run(data_queue, commands):
             if ultrasonic_data.distance is not None:        # 有具体距离时显示数值和毫米单位
                 distance_text = f"{ultrasonic_data.distance} mm"
 
-        # 第三步：调用 2.4 的差速函数，把最终 V/W 换成左右轮转速
-        left_rpm, right_rpm = vw_to_rpm(v, w)
-        # 0.35 秒有效期，断流时也会先自动停机
-        commands.motor_speeds.write({PORT_LEFT: left_rpm, PORT_RIGHT: right_rpm}, valid_for=0.35)
+        # 第三步：调用 2.4 的差速函数，把最终 V/W 换成左右轮转速并发送
+        left_rpm, right_rpm = drive(commands, v, w)
 
         current_motion = (pattern_type, obstacle_state, left_rpm, right_rpm)
         if current_motion != last_motion:                   # 状态或双轮转速变化时才打印
@@ -68,6 +67,8 @@ def run(data_queue, commands):
                 f"左轮: {left_rpm} RPM  右轮: {right_rpm} RPM"
             )
             last_motion = current_motion
+
+        time.sleep(0.1)                                     # 控制循环间隔0.1秒
 
         if pattern_type == "lost":                          # 前面已经发送双轮 0，结束 run() 后三个 with 会依次退出
             print("丢失循迹线，程序结束")
@@ -91,7 +92,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def receive_sensors(data_queue):", from: 16, to: 33, defaultOpen: false },
-    { label: "def run(data_queue, commands):", from: 37, to: 71, defaultOpen: false },
+    { label: "def fresh_data(event, max_age=0.5):", from: 17, to: 23, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 27, to: 72, defaultOpen: false },
   ],
 }

@@ -1,9 +1,10 @@
 // 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const lineFollowing = {
   title: "line_following.py",
-  code: `import pymotion as pm
+  code: `import time
+import pymotion as pm
 
-from differential_drive import vw_to_rpm
+from differential_drive import drive               # 复用 2.4 产出的差速封装
 from line_control import PATTERN_NAMES, line_tracker_to_vw  # 引用 3.3 产出的分类和运动计算
 
 
@@ -29,10 +30,8 @@ def run(data_queue, commands):
             # 调用 3.3 的函数，把五路状态换成 V、W 和图案分类
             v, w, pattern_type = line_tracker_to_vw(tracker_line_data.is_detected, V, K)
 
-        # 调用 2.4 的差速函数，把 V/W 换成左右轮转速
-        left_rpm, right_rpm = vw_to_rpm(v, w)
-        # 0.35 秒有效期，断流时也会先自动停机
-        commands.motor_speeds.write({PORT_LEFT: left_rpm, PORT_RIGHT: right_rpm}, valid_for=0.35)
+        # 调用 2.4 的差速函数，把 V/W 换成左右轮转速并发送双轮目标
+        left_rpm, right_rpm = drive(commands, v, w)
 
         current_motion = (pattern_type, left_rpm, right_rpm)
         if current_motion != last_motion:                   # 状态或双轮转速变化时才打印
@@ -41,6 +40,8 @@ def run(data_queue, commands):
                 f"左轮: {left_rpm} RPM  右轮: {right_rpm} RPM"
             )
             last_motion = current_motion
+
+        time.sleep(0.1)                                     # 控制循环间隔0.1秒
 
 
 def main():
@@ -60,6 +61,6 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run(data_queue, commands):", from: 15, to: 40, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 16, to: 41, defaultOpen: false },
   ],
 }
