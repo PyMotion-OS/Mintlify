@@ -9,7 +9,7 @@ import { targetContours } from "/cn/ai-vision-robot/snippets/code/04-06-color-ta
 
 ## 前置条件
 
-- 把 `target_contours.py` 复制到本页目录
+- 同目录放一张 `camera_frame.jpg`（用 4.1 拍的即可）
 
 ## 关键函数
 
@@ -69,7 +69,7 @@ import { targetContours } from "/cn/ai-vision-robot/snippets/code/04-06-color-ta
 ### 运行方式
 
 ```bash
-python 23_color_target_observation.py
+python color_target_observation.py
 ```
 
 ## 参数说明
@@ -81,4 +81,4 @@ python 23_color_target_observation.py
 | `error_x / error_y` | float | -1~+1 | 归一化偏差，左/上为负 |
 | `target_data` | dict | 8 个字段 | state/center/area/error_x/error_y/mask/contour/roi |
 
-> 本页产出 `target_contours.py`，4.7 会把它吸收进 `target_observation.py`。
+> 本页产出 `target_contours.py`。

@@ -24,7 +24,7 @@ import { cameraBasics } from "/cn/ai-vision-robot/snippets/code/04-01-camera-bas
 
 ## 完整示例
 
-本页产出 `Camera` 类和 `log_message()`，后面所有视觉例程都靠它取图。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -57,7 +57,7 @@ import { cameraBasics } from "/cn/ai-vision-robot/snippets/code/04-01-camera-bas
 ### 运行方式
 
 ```bash
-python 18_camera_basics.py
+python camera_basics.py
 ```
 
 ## 参数说明
@@ -66,6 +66,5 @@ python 18_camera_basics.py
 | --- | --- | --- | --- |
 | `CAMERA_URL` | str | `rtsp://...` | RTSP 摄像头地址，改成你自己的 |
 | `OUTPUT_PATH` | Path | `output/camera_image.jpg` | 保存位置，自动建 `output` 目录 |
-| `__enter__` / `__exit__` | 方法 | — | `with` 进入连接、退出释放 |
 
-> 本页产出 `Camera` 类和 `log_message()`，是模块四后续所有页面的取图入口。
+> 本页产出 `Camera` 类和 `log_message()`。

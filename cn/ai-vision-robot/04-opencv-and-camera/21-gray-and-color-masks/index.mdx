@@ -8,7 +8,7 @@ import { grayAndColorMasks } from "/cn/ai-vision-robot/snippets/code/04-04-gray-
 
 ## 前置条件
 
-
+- 同目录放一张 `camera_frame.jpg`（用 4.1 拍的即可）
 ## 关键函数
 
 | 函数 / 语法 | 说明 |
@@ -46,7 +46,7 @@ import { grayAndColorMasks } from "/cn/ai-vision-robot/snippets/code/04-04-gray-
 ### 运行方式
 
 ```bash
-python 21_gray_and_color_masks.py
+python gray_and_color_masks.py
 ```
 
 ## 参数说明
@@ -57,4 +57,4 @@ python 21_gray_and_color_masks.py
 | `BLUE_HIGH` | tuple | (135, 255, 255) | 蓝色 HSV 上限 |
 | `color_mask` | 数组 | 0/255 | 颜色掩膜，白色=选中颜色 |
 
-> 本页产出 `make_color_mask()`，4.6 会把它吸收进统一掩膜函数。
+> 本页产出 `make_color_mask()`。

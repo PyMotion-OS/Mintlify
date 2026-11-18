@@ -1,9 +1,7 @@
 ---
-title: "4 OpenCV 与摄像头"
+title: "OpenCV 与摄像头"
 description: "从取一帧图到认出颜色目标：ROI、灰度、掩膜、轮廓的完整链路"
 ---
-
-# 4 OpenCV 与摄像头
 
 ## 模块目标
 
@@ -11,20 +9,25 @@ description: "从取一帧图到认出颜色目标：ROI、灰度、掩膜、轮
 
 ## 例程顺序
 
-| 例程 | 内容 | 关键点 |
+| 例程 | 内容 | 学完能做什么 |
 | --- | --- | --- |
-| 4.1 摄像头基础 | RTSP 取图、保存、显示 | `with Camera()` 资源管理 |
-| 4.2 图像像素与绘制 | 像素坐标、BGR、画点框线 | OpenCV 坐标原点在左上 |
-| 4.3 ROI 与灰度掩膜 | 裁剪 + 灰度阈值 | ROI 越小算得越快 |
-| 4.4 灰度与颜色掩膜 | HSV 选蓝色、`inRange` | 颜色用 HSV 不用 BGR |
-| 4.5 形态学与轮廓 | 去噪、找轮廓、取面积与中心 | 面积过滤掉小噪点 |
-| 4.6 颜色目标观测 | 封装成 `TargetObservation` | 把图像处理变成结构化观测 |
-| 4.7 实时颜色目标 | 连续帧观测 | 帧年龄与延迟 |
-| 4.8 摄像头延迟与重连 | `age`、断流重连 | 判据是帧新鲜度 |
-| 4.9 视觉观测 | 一次拿到完整观测包 | 完整数据结构 |
+| <a href="./18-camera-basics/index" target="_blank">4.1 摄像头基础</a> | RTSP 取图、保存、显示 | 用 `with Camera()` 取一帧图并存成文件 |
+| <a href="./19-image-pixels-and-drawing/index" target="_blank">4.2 图像像素与绘制</a> | 像素坐标、BGR、画点框线 | 按 `[Y, X]` 读像素值，在图上画标记 |
+| <a href="./20-roi-and-gray-mask/index" target="_blank">4.3 ROI 与灰度掩膜</a> | 裁剪 + 灰度阈值 | 裁出小区域算得快，按亮暗选出目标 |
+| <a href="./21-gray-and-color-masks/index" target="_blank">4.4 灰度与颜色掩膜</a> | HSV 选蓝色、`inRange` | 按颜色范围生成掩膜，颜色不受光照明暗干扰 |
+| <a href="./22-morphology-and-contours/index" target="_blank">4.5 形态学与轮廓</a> | 去噪、找轮廓、取面积与中心 | 清理掩膜噪点，筛出面积够大的有效轮廓 |
+| <a href="./23-color-target-observation/index" target="_blank">4.6 颜色目标观测</a> | 封装成 `TargetObservation` | 一次算出目标中心、面积和二维偏差 |
+| <a href="./24-live-color-target/index" target="_blank">4.7 实时颜色目标</a> | 连续帧观测 | 后台线程持续取图，只识别没过期的新帧 |
+| <a href="./25-camera-age-and-reconnect/index" target="_blank">4.8 摄像头延迟与重连</a> | `age`、断流重连 | 断流自动清空旧图并重连，拿到的图都不过期 |
+| <a href="./26-visual-observation/index" target="_blank">4.9 视觉观测</a> | 一次拿到完整观测包 | 稳定输出目标状态和偏差，只在变化时打印 |
 
 ## 前置条件
 
 - 一个 RTSP 摄像头（或手机 IP 摄像头 App），地址形如 `rtsp://IP:554/11`
 - `pip install opencv-python numpy`
 - 电脑与摄像头在同一网段
+
+## 学习建议
+
+1. 每个例程先跑通再改参数，改完再运行一次，观察输出变化
+2. 例程有演化关系，建议按顺序完成——4.1 产出 `Camera` 类与 `log_message()`，4.2 产出 `load_image()`，4.3/4.4 的掩膜在 4.5 合并成 `target_mask.py`、4.6 扩成 `target_contours.py`、4.7 收拢成 `target_observation.py`，4.8 产出最终版 `camera.py`，4.9 把两者合成完整观测

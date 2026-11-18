@@ -8,7 +8,7 @@ import { roiAndGrayMask } from "/cn/ai-vision-robot/snippets/code/04-03-roi-and-
 
 ## 前置条件
 
-
+- 同目录放一张 `camera_frame.jpg`（用 4.1 拍的即可）
 ## 关键函数
 
 | 函数 / 语法 | 说明 |
@@ -47,7 +47,7 @@ import { roiAndGrayMask } from "/cn/ai-vision-robot/snippets/code/04-03-roi-and-
 ### 运行方式
 
 ```bash
-python 20_roi_and_gray_mask.py
+python roi_and_gray_mask.py
 ```
 
 ## 参数说明
@@ -58,4 +58,4 @@ python 20_roi_and_gray_mask.py
 | `GRAY_LIMIT` | int | 130 | 灰度不高于此值变白（暗色目标） |
 | `gray_mask` | 数组 | 0/255 | 黑白掩膜，白色=选中 |
 
-> 本页产出 `make_gray_mask()`，4.6 会把它吸收进统一掩膜函数。
+> 本页产出 `make_gray_mask()`。

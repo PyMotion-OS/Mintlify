@@ -9,7 +9,7 @@ import { targetObservation } from "/cn/ai-vision-robot/snippets/code/04-07-live-
 
 ## 前置条件
 
-- 把 `target_observation.py` 复制到本页目录
+- 已知摄像头 RTSP 地址（参考 4.1 前置条件），手机/摄像头与电脑同一 Wi-Fi
 
 ## 关键函数
 
@@ -23,7 +23,7 @@ import { targetObservation } from "/cn/ai-vision-robot/snippets/code/04-07-live-
 
 ## 完整示例
 
-本页把 4.6 的静态观测变成实时循环。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="live_color_target.py">
@@ -66,7 +66,7 @@ import { targetObservation } from "/cn/ai-vision-robot/snippets/code/04-07-live-
 ### 运行方式
 
 ```bash
-python 24_live_color_target.py
+python live_color_target.py
 ```
 
 ## 参数说明
@@ -78,4 +78,4 @@ python 24_live_color_target.py
 | `frame_number` | int | 只增 | 判断是否重复处理 |
 | `received_at` | float | 单调时间 | 算年龄 |
 
-> 本页产出 `target_observation.py`（实时目标观测），4.8/4.9 及模块五都复用。
+> 本页产出 `target_observation.py`（实时目标观测）。

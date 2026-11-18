@@ -8,7 +8,7 @@ import { visualObservation } from "/cn/ai-vision-robot/snippets/code/04-09-visua
 
 ## 前置条件
 
-- 把 `camera.py`、`target_observation.py` 复制到本页目录
+- 把 4.7 的产出 `target_observation.py`、4.8 的产出 `camera.py` 复制到本页目录
 
 ## 关键函数
 
@@ -21,13 +21,14 @@ import { visualObservation } from "/cn/ai-vision-robot/snippets/code/04-09-visua
 
 ## 完整示例
 
-模块四的收口页——稳定的实时观测。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
 
         <CodeFold
           docs={[
+          { label: "main", doc: "使用最终 Camera 连续输出不过期的视觉观测" },
           ]}
   {...visualObservation}
         />
@@ -48,7 +49,7 @@ import { visualObservation } from "/cn/ai-vision-robot/snippets/code/04-09-visua
 ### 运行方式
 
 ```bash
-python 26_visual_observation.py
+python visual_observation.py
 ```
 
 ## 参数说明
@@ -59,4 +60,4 @@ python 26_visual_observation.py
 | `target_data["state"]` | str | target/lost | 目标状态 |
 | `error_x / error_y` | float | -1~+1 | 二维偏差 |
 
-> 本页是模块四的收口，`camera.py` + `target_observation.py` 成为模块五~八的视觉基础。
+> 本页不产出新文件——`camera.py` 与 `target_observation.py` 组合出稳定的实时观测。

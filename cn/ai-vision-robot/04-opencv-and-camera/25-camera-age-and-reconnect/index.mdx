@@ -9,7 +9,7 @@ import { camera } from "/cn/ai-vision-robot/snippets/code/04-08-camera-age-and-r
 
 ## 前置条件
 
-- 把 `camera.py`、`target_observation.py` 复制到本页目录
+- 把 4.7 的产出 `target_observation.py` 复制到本页目录
 
 ## 关键函数
 
@@ -42,7 +42,7 @@ import { camera } from "/cn/ai-vision-robot/snippets/code/04-08-camera-age-and-r
         <CodeFold
           docs={[
             { label: "log_message", doc: "按照时间、级别、来源和说明打印一条规范化日志" },
-            { label: "__init__", doc: "def __init__(self)" },
+            { label: "__init__", doc: "保存摄像头地址，并准备图片状态、线程状态等字段" },
             { label: "__enter__", doc: "进入 with 时启动后台线程，为当前连接持续取图。" },
             { label: "update_image", doc: "持续更新图片；连续五次失败后结束当前连接会话。" },
             { label: "latest_data", doc: "返回当前连接状态、最新图片、帧编号和图片年龄。" },
@@ -69,7 +69,7 @@ import { camera } from "/cn/ai-vision-robot/snippets/code/04-08-camera-age-and-r
 ### 运行方式
 
 ```bash
-python 25_camera_age_and_reconnect.py
+python camera_age_and_reconnect.py
 ```
 
 ## 参数说明
@@ -81,4 +81,4 @@ python 25_camera_age_and_reconnect.py
 | `CAP_PROP_OPEN_TIMEOUT_MSEC` | int | 3000 | 打开超时毫秒 |
 | `CAP_PROP_READ_TIMEOUT_MSEC` | int | 1000 | 取图超时毫秒 |
 
-> 本页产出 `camera.py`（最终版 Camera），4.9 及后续模块复用。
+> 本页产出 `camera.py`（最终版 Camera）。
