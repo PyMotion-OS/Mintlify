@@ -19,11 +19,10 @@ import { qrObservation } from "/cn/ai-vision-robot/snippets/code/05-03-qr-center
 | `check_qr_state(qr_data, target_text, last, lost_seconds)` | 连续检查二维码，区分 detected/missing/lost |
 | `vw_to_rpm(0, -error_x * W)` | 横向偏差转双轮原地转动 |
 | `error_to_angle(error_y, up, SERVO_K)` | 上下偏差只调 S4 |
-| `CENTER_ERROR` | 横向进入中心范围停止双轮 |
 
 ## 完整示例
 
-横向用双轮、纵向用 S4，双舵机+双轮协同对准。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="qr_centering.py">
@@ -38,6 +37,8 @@ import { qrObservation } from "/cn/ai-vision-robot/snippets/code/05-03-qr-center
 
   </Tab>
   <Tab title="qr_observation.py">
+
+    与 5.2 产出的二维码函数相同，复制到本页目录即可。
 
         <CodeFold
           docs={[
@@ -76,4 +77,4 @@ python 29_qr_centering.py
 | `W` | int | 80 | 横向转动强度 |
 | `SERVO_K` | int | 5 | 纵向偏差增益 |
 
-> 本页把 `check_qr_state` 吸收进 `qr_observation.py`，5.5 复用。
+> 本页产出 `check_qr_state()`。

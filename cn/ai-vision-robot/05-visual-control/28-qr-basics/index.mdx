@@ -8,8 +8,8 @@ import { qrBasics } from "/cn/ai-vision-robot/snippets/code/05-02-qr-basics.jsx"
 
 ## 前置条件
 
-
-## 关键函数
+- 同目录 `cards/` 下放一张二维码测试图 `01_GREETING_LEFT_TOP.png`（打印本页生成的二维码后拍摄，或复用 4.2 拍的照片）
+- `pip install opencv-python numpy`## 关键函数
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
@@ -64,4 +64,4 @@ python 28_qr_basics.py
 | `area_ratio` | float | 0~1 | 二维码面积占比 |
 | `error_x / error_y` | float | -1~+1 | 二维偏差 |
 
-> 本页产出 `find_qr`/`draw_qr_marks`，5.4 吸收进 `qr_observation.py`。
+> 本页产出 `create_qr()`、`find_qr()`、`draw_qr_marks()`。

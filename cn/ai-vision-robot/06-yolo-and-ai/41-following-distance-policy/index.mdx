@@ -15,12 +15,11 @@ import { followingDistancePolicy } from "/cn/ai-vision-robot/snippets/code/06-11
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `target_area_to_v(area_ratio)` | 占比分三档：前进 / 减速 / 停止 |
-| `choose_follow_motion(error_x, area_ratio, W)` | 先看远近，再原地对准，返回 V/W |
-| `error_x` 死区 | 偏差超出中心 10% 才原地转向 |
+| `choose_follow_motion(error_x, area_ratio, W)` | 先看远近，再原地对准，返回 V/W；偏差在中心 10% 内不转向 |
 
 ## 完整示例
 
-框占比 `area_ratio` 是远近的近似，不是真实米数。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -60,8 +59,6 @@ python 41_following_distance_policy.py
 | --- | --- | --- | --- |
 | `CONFIDENCE` | float | 0.25 | 检测置信度门槛 |
 | `W` | int | 90 度/秒 | 原地对准转向速度 |
-| 前进档 | int | 70 mm/s | `area < 0.04` |
-| 减速档 | int | 40 mm/s | `0.04 ≤ area < 0.10` |
-| 停止档 | int | 0 | `area ≥ 0.10` |
+| `area_ratio` 分档 | float | 小于 0.04 前进 70 mm/s；0.04～0.10 减速 40 mm/s；达到 0.10 停止 | 三档由 `target_area_to_v` 内的阈值决定 |
 
-> 本页产出 `target_area_to_v` / `choose_follow_motion`，6.12 吸收进 `target_selection.py`。
+> 本页产出 `target_area_to_v()`、`choose_follow_motion()`。

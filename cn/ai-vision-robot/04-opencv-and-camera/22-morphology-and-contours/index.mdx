@@ -1,21 +1,21 @@
 ---
-title: "4.5 形态学与轮廓"
+title: "4.6 形态学与轮廓"
 description: "用开闭运算清理掩膜噪点，再筛出面积够大的有效轮廓"
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
-import { morphologyAndContours } from "/cn/ai-vision-robot/snippets/code/04-05-morphology-and-contours.jsx"
-import { targetMask } from "/cn/ai-vision-robot/snippets/code/04-05-morphology-and-contours__target-mask.jsx"
+import { morphologyAndContours } from "/cn/ai-vision-robot/snippets/code/04-06-morphology-and-contours.jsx"
+import { targetMask } from "/cn/ai-vision-robot/snippets/code/04-06-morphology-and-contours__target-mask.jsx"
 
 ## 前置条件
 
-- 把 `target_mask.py` 复制到本页目录
+- 同目录放一张 `camera_frame.jpg`（用 4.2 拍的即可）
 
 ## 关键函数
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `make_target_mask(image, target_type)` | 吸收 4.3/4.4，按类型返回灰度或 HSV 掩膜 |
+| `make_target_mask(image, target_type)` | 吸收 4.4/4.5，按类型返回灰度或 HSV 掩膜 |
 | `cv2.morphologyEx(..., MORPH_OPEN)` | 开运算：先腐蚀去噪点 |
 | `cv2.morphologyEx(..., MORPH_CLOSE)` | 闭运算：填小缺口 |
 | `cv2.contourArea(contour)` | 轮廓面积，小于 `MIN_AREA` 的忽略 |
@@ -40,8 +40,8 @@ import { targetMask } from "/cn/ai-vision-robot/snippets/code/04-05-morphology-a
 
         <CodeFold
           docs={[
-            { label: "make_gray_mask", doc: "吸收 4.3：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜" },
-            { label: "make_color_mask", doc: "吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
+            { label: "make_gray_mask", doc: "吸收 4.4：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜" },
+            { label: "make_color_mask", doc: "吸收 4.5：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
             { label: "make_target_mask", doc: "按目标类型返回灰度或 HSV 方式得到的黑白掩膜" },
           ]}
   {...targetMask}
@@ -63,7 +63,7 @@ import { targetMask } from "/cn/ai-vision-robot/snippets/code/04-05-morphology-a
 ### 运行方式
 
 ```bash
-python 22_morphology_and_contours.py
+python morphology_and_contours.py
 ```
 
 ## 参数说明
@@ -74,4 +74,4 @@ python 22_morphology_and_contours.py
 | `KERNEL_SIZE` | int | 3 | 形态学核边长，越大清理越强 |
 | `MIN_AREA` | int | 500 | 有效轮廓最小面积 |
 
-> 本页产出 `target_mask.py`（统一掩膜函数），4.6 会把它进一步吸收。
+> 本页产出 `target_mask.py`（统一掩膜函数）。

@@ -5,8 +5,8 @@ export const cameraAgeAndReconnect = {
 
 import cv2
 
-from camera import Camera, log_message     # 提取 4.7 的摄像头类和日志；latest() 吸收图片有效性判断
-from target_observation import draw_target_marks, find_target  # 引用 4.7 的目标观测和结果标记
+from camera import Camera, log_message     # 提取 4.8 的摄像头类和日志；latest() 吸收图片有效性判断
+from target_observation import draw_target_marks, find_target  # 引用 4.8 的目标观测和结果标记
 
 
 # --- 本页可调整的参数 ---

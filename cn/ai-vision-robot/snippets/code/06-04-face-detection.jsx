@@ -14,7 +14,7 @@ MIN_CONFIDENCE = 0.85                      # YuNet 只保留置信度达到 0.85
 COMMON_DIR = Path(__file__).parents[1] / "common"
 # YuNet 是 OpenCV Zoo 提供的现成人脸检测模型；模型和 MIT 许可证都放在 common
 MODEL_PATH = COMMON_DIR / "face_detection_yunet_2023mar.onnx"
-IMAGE_PATH = Path(__file__).with_name("face_sample.png")  # 4.1 拍摄并放入本文件夹的授权肖像
+IMAGE_PATH = Path(__file__).with_name("face_sample.png")  # 4.2 拍摄并放入本文件夹的授权肖像
 
 
 # 读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片

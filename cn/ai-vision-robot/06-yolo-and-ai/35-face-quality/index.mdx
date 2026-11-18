@@ -22,7 +22,7 @@ import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-05-face-quality_
 
 ## 完整示例
 
-后续特征提取只能对应一个人，先保证这张脸能用。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="face_quality.py">
@@ -36,6 +36,8 @@ import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-05-face-quality_
 
   </Tab>
   <Tab title="face_tools.py">
+
+    与 6.4 产出的 face_tools.py 相同，复制到本页目录即可。
 
         <CodeFold
           docs={[
@@ -78,4 +80,4 @@ python 35_face_quality.py
 | `MAX_BRIGHTNESS` | int | 210 | 平均亮度上限 |
 | `MIN_SHARPNESS` | float | 100.0 | 清晰度下限 |
 
-> 本页产出 `check_face_quality`，6.6 吸收进 `face_tools.py` 并扩展 `get_quality_face`。
+> 本页产出 `check_face_quality()`。

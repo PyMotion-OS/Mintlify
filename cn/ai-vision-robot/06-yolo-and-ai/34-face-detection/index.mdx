@@ -5,6 +5,7 @@ description: "用 YuNet 检测人脸，提取框、五个关键点和置信度"
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 import { faceDetection } from "/cn/ai-vision-robot/snippets/code/06-04-face-detection.jsx"
+import { faceTools } from "/cn/ai-vision-robot/snippets/code/06-04-face-detection__face-tools.jsx"
 
 ## 前置条件
 
@@ -20,7 +21,7 @@ import { faceDetection } from "/cn/ai-vision-robot/snippets/code/06-04-face-dete
 
 ## 完整示例
 
-YuNet 是比通用 YOLO 更轻的人脸专用检测器，先跑通人脸链路。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -61,4 +62,18 @@ python 34_face_detection.py
 | `landmarks` | list | 5 个 `[x, y]` | 右眼/左眼/鼻尖/右嘴角/左嘴角 |
 | `confidence` | float | 0~1 | 人脸置信度 |
 
-> 本页产出 `load_image` / `create_face_detector` / `observe_faces` / `draw_faces`，6.5 吸收进 `face_tools.py`。
+> 本页产出 `face_tools.py`（`load_image`、`create_face_detector`、`observe_faces`、`draw_faces`）。
+
+## 本页产出 · face_tools.py
+
+本页把 YuNet 检测链路整理成一个可复用文件：`load_image()` 读本地图片，`create_face_detector()` 加载本地 YuNet 模型，`observe_faces()` 把检测器返回的 15 个数整理成 `box` / `landmarks` / `confidence` 三个字段，`draw_faces()` 画框、五个关键点和置信度。不含 `main`，供质量判断、特征比对、识别和问候的页面直接 import。
+
+<CodeFold
+  docs={[
+    { label: "load_image", doc: "读取图片文件，再转换成 OpenCV 可以处理的 BGR 图片" },
+    { label: "create_face_detector", doc: "读取本地 YuNet 文件，并返回 OpenCV 人脸检测器" },
+    { label: "observe_faces", doc: "检测人脸，再把原始数组整理成人脸框、landmarks（五个人脸关键点坐标）和置信度" },
+    { label: "draw_faces", doc: "给每张人脸画出检测框、五个关键点和置信度" },
+  ]}
+  {...faceTools}
+/>

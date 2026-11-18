@@ -15,13 +15,12 @@ import { leadTargetSelection } from "/cn/ai-vision-robot/snippets/code/06-09-lea
 | 函数 / 语法 | 说明 |
 | --- | --- |
 | `find_unique_target(detections, shape, label)` | 筛指定类别，只接受唯一候选 |
-| `error_x / error_y` | 归一化二维偏差，左负右正、上负下正 |
-| `area_ratio` | 检测框占全图比例，不是实际距离 |
-| `state` | `lost` / `ambiguous` / `target` 三种状态 |
+
+返回值的 `state` 有三种：`target` 唯一命中、`ambiguous` 多于一个、`lost` 没有候选；`error_x` / `error_y` 是归一化偏差（左负右正、上负下正），`area_ratio` 是检测框占全图比例，不是实际距离。
 
 ## 完整示例
 
-多人时 `ambiguous`、无人时 `lost`，都不猜目标，避免后续误动作。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -58,7 +57,5 @@ python 39_lead_target_selection.py
 | 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
 | `CONFIDENCE` | float | 0.25 | 检测置信度门槛 |
-| `target_label` | str | `"person"` | 只筛选 person 类别 |
-| `error_x / error_y` | float | -1~+1 | 归一化偏差 |
 
-> 本页产出 `find_unique_target`，6.10~6.12 复用这份标准观测。
+> 本页产出 `target_selection.py`（`find_unique_target()`）。

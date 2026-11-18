@@ -21,7 +21,7 @@ import { checkPi } from "/cn/ai-vision-robot/snippets/code/08-01-check-pi.jsx"
 
 ## 完整示例
 
-上车前先"体检"：确认依赖装全、相机能开、串口能认，再跑后面的例程。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -62,6 +62,5 @@ python 45_check_pi.py
 | --- | --- | --- | --- |
 | `TEMP_WARN` | float | 75.0 ℃ | 达到此温度显示过热提醒 |
 | `MIN_FREE_GB` | float | 2.0 GB | 剩余不足此值提示空间不足 |
-| 温度文件 | path | `/sys/class/thermal/thermal_zone0/temp` | 系统温度，千分之一℃ |
 
-> 本页不连接机器人，只做环境体检，为后续上车做准备。
+> 本页不连接机器人，只做环境体检。

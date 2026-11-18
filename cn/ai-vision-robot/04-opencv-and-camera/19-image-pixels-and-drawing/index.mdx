@@ -1,14 +1,14 @@
 ---
-title: "4.2 图像像素与绘制"
+title: "4.3 图像像素与绘制"
 description: "读一张图片，看像素的 BGR 值，再画点、矩形和坐标轴"
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
-import { imagePixelsAndDrawing } from "/cn/ai-vision-robot/snippets/code/04-02-image-pixels-and-drawing.jsx"
+import { imagePixelsAndDrawing } from "/cn/ai-vision-robot/snippets/code/04-03-image-pixels-and-drawing.jsx"
 
 ## 前置条件
 
-- 同目录放一张 `camera_frame.jpg`（用 4.1 拍的即可）
+- 同目录放一张 `camera_frame.jpg`（用 4.2 拍的即可）
 
 ## 关键函数
 
@@ -50,7 +50,7 @@ import { imagePixelsAndDrawing } from "/cn/ai-vision-robot/snippets/code/04-02-i
 ### 运行方式
 
 ```bash
-python 19_image_pixels_and_drawing.py
+python image_pixels_and_drawing.py
 ```
 
 ## 参数说明
@@ -61,4 +61,4 @@ python 19_image_pixels_and_drawing.py
 | `pixel` | list | `[B, G, R]` | 该像素的 BGR 值 |
 | `image.shape` | tuple | (高, 宽, 通道) | NumPy 数组形状 |
 
-> 本页产出 `load_image()`，模块四后续读图都用它。
+> 本页产出 `load_image()`。

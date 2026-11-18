@@ -5,6 +5,7 @@ description: "循迹遇到站台减速，二维码离开后停机 8 秒再恢复
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
 import { qrStation } from "/cn/ai-vision-robot/snippets/code/05-04-qr-station.jsx"
+import { qrObservation } from "/cn/ai-vision-robot/snippets/code/05-04-qr-station__qr-observation.jsx"
 
 ## 前置条件
 
@@ -16,23 +17,38 @@ import { qrStation } from "/cn/ai-vision-robot/snippets/code/05-04-qr-station.js
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `check_qr_state(...)` | 5.4 产出，判断站台二维码是否连续消失 |
-| `line_tracker_to_vw(...)` | 3.1 产出，五路循迹算 V/W |
+| `check_qr_state(...)` | 5.3 产出，判断站台二维码是否连续消失 |
+| `line_tracker_to_vw(...)` | 3.3 产出，五路循迹算 V/W |
 | `vw_to_rpm(...)` | 2.4 产出，V/W 转双轮转速 |
-| `SLOW_V` | 站台任务中的减速速度 |
+| `run(camera, commands)` | 循环：循迹 → 遇站台减速 → 离站停机 → 恢复循迹 |
 
 ## 完整示例
 
-把循迹、二维码、减速停机串成一个完整任务。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
-  <Tab title="代码">
+  <Tab title="qr_station.py">
 
         <CodeFold
           docs={[
             { label: "run", doc: "循迹遇到站台时减速，二维码离开后停机8秒，再恢复循迹" },
           ]}
   {...qrStation}
+        />
+
+  </Tab>
+  <Tab title="qr_observation.py">
+
+    与 5.3 的 qr_observation.py 相同，多了 `check_qr_state`，复制到本页目录即可。
+
+        <CodeFold
+          docs={[
+            { label: "create_qr", doc: "把文字生成二维码并保存为图片" },
+            { label: "find_qr", doc: "识别一个二维码，返回文字、四角、中心、面积比例和二维偏差" },
+            { label: "check_qr_state", doc: "连续检查指定二维码，返回识别状态和最近一次识别时刻" },
+            { label: "draw_qr_marks", doc: "复制原图，再标出二维码边框、中心和二维偏差" },
+          ]}
+  {...qrObservation}
         />
 
   </Tab>
@@ -64,4 +80,4 @@ python 30_qr_station.py
 | `K` | int | 25 | 五路偏差增益 |
 | `STATION_A/B` | str | — | 站台二维码文字 |
 
-> 本页是模块五的收口，串起循迹 + 二维码 + 减速停机。
+> 本页复用 2.4、3.3、5.3 的产出文件（差速、循迹、二维码观测）。

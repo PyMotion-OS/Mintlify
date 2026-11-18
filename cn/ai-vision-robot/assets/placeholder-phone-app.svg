@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640" viewBox="0 0 360 640">
+  <!-- 占位图：摄像头 App 界面截图（真机界面待补充） -->
+  <rect x="0" y="0" width="360" height="640" rx="26" fill="#F3F7F5"/>
+  <rect x="0" y="0" width="360" height="640" rx="26" fill="none" stroke="#CBD1CE" stroke-width="1"/>
+  <rect x="132" y="14" width="96" height="10" rx="5" fill="#DDE3E0"/>
+  <text x="180" y="300" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="16" fill="#3F4340">App 界面占位图</text>
+  <text x="180" y="330" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#6E7781">真机界面截图待补充</text>
+  <text x="180" y="354" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#6E7781">（应显示软件首页与加号按钮位置）</text>
+  <circle cx="180" cy="560" r="26" fill="none" stroke="#C7D0CC" stroke-width="2"/>
+  <text x="180" y="568" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#8A938F">+</text>
+</svg>

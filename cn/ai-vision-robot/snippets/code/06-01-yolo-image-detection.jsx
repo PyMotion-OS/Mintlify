@@ -93,7 +93,7 @@ def draw_detections(image, detections, detection_time):
 
 def main():
     """使用固定图片认识本地 YOLO 模型、检测字段和绘图流程。"""
-    image = load_image()                                    # 复用 4.5 的固定图片读取函数
+    image = load_image()                                    # 复用 4.6 的固定图片读取函数
     labels, model = load_yolo_resources()                   # 得到中英文标签表和可调用的模型对象
     detections, detection_time = detect_objects(model, image, CONFIDENCE, image_size=640)
 

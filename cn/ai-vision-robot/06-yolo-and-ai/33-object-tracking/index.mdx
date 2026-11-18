@@ -20,7 +20,7 @@ import { objectTracking } from "/cn/ai-vision-robot/snippets/code/06-03-object-t
 
 ## 完整示例
 
-在 6.2 检测基础上增加 ByteTrack 跟踪，红框锁定目标、橘框是其他候选。代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
+代码比较长，可以按住 Ctrl 滚动鼠标滚轮左右查看。
 
 <Tabs>
   <Tab title="代码">
@@ -61,4 +61,4 @@ python 33_object_tracking.py
 | `CONFIDENCE` | float | 0.25 | 跟踪置信度门槛 |
 | `track_id` | int | 模型分配 | 同一目标的跨帧持续编号 |
 
-> 本页产出 `track_objects` / `choose_target` / `draw_tracks`，6.12 会演化成"只接受唯一人物"的选主规则。
+> 本页产出 `track_objects()`、`choose_target()`、`draw_tracks()`。
