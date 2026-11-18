@@ -17,21 +17,17 @@ description: "超声波避障 + 五路循迹：先能停、再会循线，最后
 
 ## 例程顺序
 
-| 例程 | 内容 | 关键点 |
+| 例程 | 内容 | 学完能做什么 |
 | --- | --- | --- |
-| <a href="./13-obstacle-stop/index" target="_blank">3.1 避障停车</a> | 超声波距离分档 | 远全速、近减速、太近停，断流也停 |
-| <a href="./14-safe-stop/index" target="_blank">3.2 安全停车</a> | 线程 + 指令有效期 | 输入 stop / 超时 / Ctrl+C / 断网都能停 |
-| <a href="./15-line-classification-and-motion/index" target="_blank">3.3 循迹分类与运动计算</a> | 五路 → 图案分类 + V/W | 质心法算偏差、比例控制 |
-| <a href="./16-line-following/index" target="_blank">3.4 循迹控制</a> | 接上实时数据真正跑起来 | 实时队列 + 0.35 秒有效期 |
-| <a href="./17-safe-line-following/index" target="_blank">3.5 安全循迹</a> | 循迹 + 避障叠加 | 两个策略函数串起来，丢线即停 |
+| <a href="./13-obstacle-stop/index" target="_blank">3.1 避障停车</a> | 超声波距离分档 | 让车看到障碍自动减速、停下，断流也停 |
+| <a href="./14-safe-stop/index" target="_blank">3.2 安全停车</a> | 线程 + 指令有效期 | 输入 stop / 超时 / Ctrl+C / 断网都能把车停住 |
+| <a href="./15-line-classification-and-motion/index" target="_blank">3.3 循迹分类与运动计算</a> | 五路 → 图案分类 + V/W | 把五路 `True/False` 分类成图案、算出偏差 |
+| <a href="./16-line-following/index" target="_blank">3.4 循迹控制</a> | 接上实时数据真正跑起来 | 用比例控制把偏差转成双轮转速，跟着线走 |
+| <a href="./17-safe-line-following/index" target="_blank">3.5 安全循迹</a> | 循迹 + 避障叠加 | 丢线即停、遇障即躲，两个策略叠加运行 |
 
-## 关键概念
+## 学习建议
 
-| 概念 | 含义 |
-| --- | --- |
-| 距离分档 | 无回波不算障碍、无效必须停，`<350` 停、`350~500` 减速、`>500` 全速 |
-| 图案分类 | `line` 正常单段线、`lost` 丢线、`wide` 线太宽、`multiple` 多段 |
-| 偏差 `line_offset` | 触发探头的平均位置，负=线偏左，正=线偏右 |
-| 增益 `K` | 每单位偏差增加多少 °/s 的 W，太大画龙、太小拐不过弯 |
-
-> 地面光线、轮胎打滑都会影响效果。先在直线上把 `K` 调到不抖，再上弯道。
+1. 每个例程先跑通再改参数，改完再运行一次，观察输出变化
+2. 所有电机命令都带 `valid_for`，断网会自己停
+3. 例程有演化关系，建议按顺序完成——3.1 产出 `obstacle_policy.py`、3.3 产出 `line_control.py`，3.5 连同 2.4 的 `differential_drive.py` 一起 import
+4. 地面光线、轮胎打滑都会影响循迹效果，先在直线上把 `K` 调到不抖，再上弯道

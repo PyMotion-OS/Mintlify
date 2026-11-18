@@ -1,9 +1,7 @@
 // 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const lineClassificationAndMotion = {
   title: "line_classification_and_motion.py",
-  code: `import time
-
-import pymotion as pm
+  code: `import pymotion as pm
 
 
 # --- 本页可调整的参数 ---
@@ -90,8 +88,6 @@ def main():
                     )
                     last_observation = current_observation  # 把本轮观测留到下一轮比较
 
-                time.sleep(0.1)                             # 控制循环间隔0.1秒
-
     except KeyboardInterrupt:
         print("Ctrl+C 结束观察")
     except pm.lite.LiteError as exc:
@@ -101,7 +97,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def classify_pattern(sensor_states):", from: 24, to: 53, defaultOpen: false },
-    { label: "def line_tracker_to_vw(sensor_states, v, k):", from: 57, to: 66, defaultOpen: false },
+    { label: "def classify_pattern(sensor_states):", from: 22, to: 51, defaultOpen: false },
+    { label: "def line_tracker_to_vw(sensor_states, v, k):", from: 55, to: 64, defaultOpen: false },
   ],
 }

@@ -1,8 +1,7 @@
 // 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const lineFollowing = {
   title: "line_following.py",
-  code: `import time
-import pymotion as pm
+  code: `import pymotion as pm
 
 from differential_drive import drive               # 复用 2.4 产出的差速封装
 from line_control import PATTERN_NAMES, line_tracker_to_vw  # 引用 3.3 产出的分类和运动计算
@@ -41,8 +40,6 @@ def run(data_queue, commands):
             )
             last_motion = current_motion
 
-        time.sleep(0.1)                                     # 控制循环间隔0.1秒
-
 
 def main():
     """连接机器人，根据五路循迹数据持续调整双轮转速。"""
@@ -61,6 +58,6 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def run(data_queue, commands):", from: 16, to: 41, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 15, to: 38, defaultOpen: false },
   ],
 }

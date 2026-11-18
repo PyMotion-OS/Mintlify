@@ -1,8 +1,7 @@
 // 由 scripts/sync_snippets.py 从 SDK lessons 源码生成（connect 已内联，反斜杠已转义）；改代码请改源码后重跑脚本
 export const obstacleStop = {
   title: "obstacle_stop.py",
-  code: `import time
-import pymotion as pm
+  code: `import pymotion as pm
 
 # --- 本页可调整的参数 ---
 STOP_DISTANCE = 350                        # 停机距离，单位毫米
@@ -53,8 +52,6 @@ def run(data_queue, commands):
             print(f"状态: {state}  距离(mm): {distance}  目标: {rpm} RPM")
             last_state = state
 
-        time.sleep(0.1)                                     # 控制循环间隔0.1秒
-
 
 def main():
     """连接机器人，持续根据前方距离调整双轮转速。"""
@@ -71,7 +68,7 @@ def main():
 if __name__ == "__main__":
     main()`,
   folds: [
-    { label: "def choose_rpm(ultrasonic_data):", from: 14, to: 28, defaultOpen: false },
-    { label: "def run(data_queue, commands):", from: 32, to: 53, defaultOpen: false },
+    { label: "def choose_rpm(ultrasonic_data):", from: 13, to: 27, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 31, to: 50, defaultOpen: false },
   ],
 }
