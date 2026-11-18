@@ -18,7 +18,7 @@ def log_message(level, source, message):
 class Camera:
     """管理一次摄像头连接，并在后台持续更新最新图片。"""
 
-    CAMERA_URL = "rtsp://192.168.43.226:554/11"             # 从 4.8 开始由Camera保存默认地址
+    CAMERA_URL = "rtsp://192.168.43.226:554/11"             # 从 4.9 开始由Camera保存默认地址
 
     def __init__(self):
         self.camera_url = self.CAMERA_URL                   # 主文件的connect(camera)使用这个地址连接
@@ -34,7 +34,7 @@ class Camera:
 
     def __enter__(self):
         """进入 with 时启动后台线程，为当前连接持续取图。"""
-        # 连接已由主文件的 connect(camera) 建立，这里只启动 4.7 已经展示的取图线程
+        # 连接已由主文件的 connect(camera) 建立，这里只启动 4.8 已经展示的取图线程
         self.is_running = True                              # 后台线程启动后可以进入取图循环
         self.thread = threading.Thread(target=self.update_image, daemon=True)
         self.thread.start()                                 # 开始执行 update_image()，主函数继续向下运行
@@ -58,7 +58,7 @@ class Camera:
                 "image": image,                             # 保存刚取得的最新图片
                 # 编号加 1 表示出现新图片，需要去重的任务仍可通过 latest_data() 取得编号
                 "frame_number": self.frame_data["frame_number"] + 1,
-                "received_at": time.monotonic(),            # 沿用 4.7，记录图片进入本机的时刻
+                "received_at": time.monotonic(),            # 沿用 4.8，记录图片进入本机的时刻
             }
 
         self.is_running = False                             # 通知主函数：当前连接已经不能继续取图
@@ -69,13 +69,13 @@ class Camera:
         if frame_data["received_at"] is None:               # 没有有效图片时，图片年龄也不存在
             frame_data["age"] = None
         else:
-            # 吸收 4.7 主程序的年龄计算：当前时间减去收到时刻，得到本机存放秒数
+            # 吸收 4.8 主程序的年龄计算：当前时间减去收到时刻，得到本机存放秒数
             frame_data["age"] = time.monotonic() - frame_data["received_at"]
         return frame_data                                   # 返回状态、图片、编号、接收时间和年龄，供 latest() 或主程序使用
 
     def latest(self, max_age=0.5):
         """返回最新且没有过期的图片，默认有效期为 0.5 秒。"""
-        # 吸收 4.7 主程序中“没有图片”和“图片过期”的判断，调用方只接收图片或 None
+        # 吸收 4.8 主程序中“没有图片”和“图片过期”的判断，调用方只接收图片或 None
         frame_data = self.latest_data()                     # 先取得同一张图片及其年龄，再判断是否可以使用
         if frame_data["image"] is None:                     # 还没取得首张图片，或断流时已经清空旧图片
             return None

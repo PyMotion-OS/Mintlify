@@ -8,7 +8,7 @@ import numpy as np
 
 
 # --- 本页可调整的参数 ---
-ROI_LEFT, ROI_RIGHT = 0.15, 0.85            # 与 4.3 使用相同 ROI
+ROI_LEFT, ROI_RIGHT = 0.15, 0.85            # 与 4.4 使用相同 ROI
 ROI_TOP, ROI_BOTTOM = 0.15, 0.85            # 上下各忽略原图高度的 15%
 BLUE_LOW = (95, 80, 60)                    # 蓝色 HSV 范围下限
 BLUE_HIGH = (135, 255, 255)                # 蓝色 HSV 范围上限

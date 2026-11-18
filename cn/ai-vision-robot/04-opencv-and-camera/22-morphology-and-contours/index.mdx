@@ -1,5 +1,5 @@
 ---
-title: "4.5 形态学与轮廓"
+title: "4.6 形态学与轮廓"
 description: "用开闭运算清理掩膜噪点，再筛出面积够大的有效轮廓"
 ---
 
@@ -9,13 +9,13 @@ import { targetMask } from "/cn/ai-vision-robot/snippets/code/04-05-morphology-a
 
 ## 前置条件
 
-- 同目录放一张 `camera_frame.jpg`（用 4.1 拍的即可）
+- 同目录放一张 `camera_frame.jpg`（用 4.2 拍的即可）
 
 ## 关键函数
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `make_target_mask(image, target_type)` | 吸收 4.3/4.4，按类型返回灰度或 HSV 掩膜 |
+| `make_target_mask(image, target_type)` | 吸收 4.4/4.5，按类型返回灰度或 HSV 掩膜 |
 | `cv2.morphologyEx(..., MORPH_OPEN)` | 开运算：先腐蚀去噪点 |
 | `cv2.morphologyEx(..., MORPH_CLOSE)` | 闭运算：填小缺口 |
 | `cv2.contourArea(contour)` | 轮廓面积，小于 `MIN_AREA` 的忽略 |
@@ -40,8 +40,8 @@ import { targetMask } from "/cn/ai-vision-robot/snippets/code/04-05-morphology-a
 
         <CodeFold
           docs={[
-            { label: "make_gray_mask", doc: "吸收 4.3：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜" },
-            { label: "make_color_mask", doc: "吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
+            { label: "make_gray_mask", doc: "吸收 4.4：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜" },
+            { label: "make_color_mask", doc: "吸收 4.5：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
             { label: "make_target_mask", doc: "按目标类型返回灰度或 HSV 方式得到的黑白掩膜" },
           ]}
   {...targetMask}

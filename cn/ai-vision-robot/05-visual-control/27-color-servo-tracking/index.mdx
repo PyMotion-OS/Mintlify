@@ -18,7 +18,7 @@ import { colorServoTracking } from "/cn/ai-vision-robot/snippets/code/05-01-colo
 | --- | --- |
 | `error_to_angle(error, angle, K)` | 偏差乘 K 变角度调整，进入死区保持不动 |
 | `run(camera, commands, up, left)` | 循环：取图 → 算偏差 → 调角度 → 发命令 |
-| `find_target(image)` | 4.9 的目标观测，返回 error_x/error_y |
+| `find_target(image)` | 4.10 的目标观测，返回 error_x/error_y |
 | `move_servos` / `reset_servos` | 2.2 产出的舵机函数 |
 
 ## 完整示例

@@ -6,7 +6,7 @@ export const qrCentering = {
 import cv2
 import pymotion as pm
 
-from camera import Camera, log_message     # 引用 4.9 的摄像头类和统一日志函数
+from camera import Camera, log_message     # 引用 4.10 的摄像头类和统一日志函数
 from differential_drive import vw_to_rpm   # 引用 2.4 的差速函数
 from qr_observation import draw_qr_marks, find_qr  # 吸收 5.2 的二维码观测和绘画函数
 from servo_control import CENTER_ERROR, error_to_angle, move_servos, reset_servos  # 引用舵机控制函数

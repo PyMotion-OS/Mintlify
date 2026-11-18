@@ -22,18 +22,18 @@ COLOR_RANGES = {
 }
 
 
-# 吸收 4.3：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜
+# 吸收 4.4：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜
 def make_gray_mask(image, left, top, right, bottom):
-    """吸收 4.3：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜。"""
+    """吸收 4.4：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜。"""
     roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI
     gray_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY) # 把 BGR 颜色值合成一个亮度值
     _, gray_mask = cv2.threshold(gray_image, GRAY_LIMIT, 255, cv2.THRESH_BINARY_INV)
     return gray_mask
 
 
-# 吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜
+# 吸收 4.5：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜
 def make_color_mask(image, left, top, right, bottom, target_color):
-    """吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜。"""
+    """吸收 4.5：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜。"""
     roi_image = image[top:bottom, left:right]                # 按 [上:下, 左:右] 裁剪 ROI
     hsv_image = cv2.cvtColor(roi_image, cv2.COLOR_BGR2HSV)   # 把 BGR 转成颜色、浓淡和明暗分开的 HSV
     color_low, color_high = COLOR_RANGES[target_color]      # 根据名称取出这种颜色的 HSV 上下限
@@ -72,9 +72,9 @@ def find_target_contours(image, target_type="blue"):
     return closed_mask, valid_contours, (left, top, right, bottom)
 
 
-# 吸收 4.6：计算目标中心相对画面指定位置的横向和纵向偏差
+# 吸收 4.7：计算目标中心相对画面指定位置的横向和纵向偏差
 def center_to_error(center, image_shape):
-    """吸收 4.6：计算目标中心相对画面指定位置的横向和纵向偏差。"""
+    """吸收 4.7：计算目标中心相对画面指定位置的横向和纵向偏差。"""
     height, width = image_shape[:2]                         # image.shape 前两项依次是高度和宽度
     reference_x = round(width * CENTER_X)                   # 宽度乘比例，得到横向参考位置
     reference_y = round(height * CENTER_Y)                  # 高度乘比例，得到纵向参考位置
@@ -86,7 +86,7 @@ def center_to_error(center, image_shape):
 # 选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差
 def find_target(image, target_type="blue"):
     """选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差。"""
-    # 第一步：引用 4.5，得到清理后的黑白掩膜、有效轮廓和 ROI
+    # 第一步：引用 4.6，得到清理后的黑白掩膜、有效轮廓和 ROI
     target_mask, valid_contours, roi = find_target_contours(image, target_type)
     left, top, right, bottom = roi
 

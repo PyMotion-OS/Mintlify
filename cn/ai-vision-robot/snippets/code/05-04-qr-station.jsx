@@ -6,7 +6,7 @@ export const qrStation = {
 import cv2
 import pymotion as pm
 
-from camera import Camera, log_message     # 引用 4.9 的摄像头类和统一日志函数
+from camera import Camera, log_message     # 引用 4.10 的摄像头类和统一日志函数
 from differential_drive import vw_to_rpm   # 引用 2.4 的差速函数
 from line_control import line_tracker_to_vw  # 引用 3.3 的五路分类和转向函数
 from qr_observation import check_qr_state, draw_qr_marks, find_qr  # 引用 5.3 的连续识别和绘画
@@ -26,7 +26,7 @@ def run(camera, data_queue, commands):
     while True:
         # 第一步：等待五路新数据，再取得最新图片
         sensor_data = data_queue.read(timeout=0.2)          # 约0.1秒收到一条新数据，断流时最多等待0.2秒
-        image = camera.latest()                             # 调用 4.9 的类方法，无有效图片时返回None
+        image = camera.latest()                             # 调用 4.10 的类方法，无有效图片时返回None
         qr_data = None
         if image is not None:
             qr_data = find_qr(image)                        # 调用 5.2 的二维码识别函数

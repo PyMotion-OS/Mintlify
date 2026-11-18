@@ -6,7 +6,7 @@ export const colorTargetObservation = {
 import cv2
 import numpy as np
 
-from target_contours import find_target_contours  # 吸收 4.5，返回清理后掩膜、有效轮廓和 ROI
+from target_contours import find_target_contours  # 吸收 4.6，返回清理后掩膜、有效轮廓和 ROI
 
 
 # --- 本页可调整的参数 ---
@@ -40,7 +40,7 @@ def center_to_error(center, image_shape):
 # 选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差
 def find_target(image, target_type="blue"):
     """选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差。"""
-    # 第一步：引用 4.5，得到清理后的黑白掩膜、有效轮廓和 ROI
+    # 第一步：引用 4.6，得到清理后的黑白掩膜、有效轮廓和 ROI
     target_mask, valid_contours, roi = find_target_contours(image, target_type)
     left, top, right, bottom = roi
 

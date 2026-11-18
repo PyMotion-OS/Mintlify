@@ -1,5 +1,5 @@
 ---
-title: "4.7 实时颜色目标"
+title: "4.8 实时颜色目标"
 description: "后台线程持续取图，主程序只识别没过期的新帧"
 ---
 
@@ -9,7 +9,7 @@ import { targetObservation } from "/cn/ai-vision-robot/snippets/code/04-07-live-
 
 ## 前置条件
 
-- 已知摄像头 RTSP 地址（参考 4.1 前置条件），手机/摄像头与电脑同一 Wi-Fi
+- 已知摄像头 RTSP 地址（参考 4.2 前置条件），手机/摄像头与电脑同一 Wi-Fi
 
 ## 关键函数
 
@@ -19,7 +19,7 @@ import { targetObservation } from "/cn/ai-vision-robot/snippets/code/04-07-live-
 | `frame_data` 字典 | `image`/`frame_number`/`received_at` 一起更新 |
 | `time.monotonic()` | 单调时钟，算图片年龄不受校时影响 |
 | `MAX_AGE` 判断 | 图片超过 0.5 秒不识别；`frame_number` 去重 |
-| `find_target` / `draw_target_marks` | 吸收 4.6 的观测与标记 |
+| `find_target` / `draw_target_marks` | 吸收 4.7 的观测与标记 |
 
 ## 完整示例
 
@@ -45,10 +45,10 @@ import { targetObservation } from "/cn/ai-vision-robot/snippets/code/04-07-live-
 
         <CodeFold
           docs={[
-            { label: "make_gray_mask", doc: "吸收 4.3：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜" },
-            { label: "make_color_mask", doc: "吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
+            { label: "make_gray_mask", doc: "吸收 4.4：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜" },
+            { label: "make_color_mask", doc: "吸收 4.5：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
             { label: "find_target_contours", doc: "按目标类型生成掩膜，完成开闭运算，再返回清理后掩膜、有效轮廓和 ROI" },
-            { label: "center_to_error", doc: "吸收 4.6：计算目标中心相对画面指定位置的横向和纵向偏差" },
+            { label: "center_to_error", doc: "吸收 4.7：计算目标中心相对画面指定位置的横向和纵向偏差" },
             { label: "find_target", doc: "选择灰度或 HSV 目标，返回状态、中心、面积和二维偏差" },
             { label: "draw_target_marks", doc: "复制原图，再用基础图形标出处理区域、参考中心和目标位置" },
           ]}

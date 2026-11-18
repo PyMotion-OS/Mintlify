@@ -6,7 +6,7 @@ export const morphologyAndContours = {
 import cv2
 import numpy as np
 
-from target_mask import make_target_mask    # 吸收 4.3/4.2，按选择返回灰度或 HSV 黑白掩膜
+from target_mask import make_target_mask    # 吸收 4.4/4.3，按选择返回灰度或 HSV 黑白掩膜
 
 
 # --- 本页可调整的参数 ---

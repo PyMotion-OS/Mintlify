@@ -6,9 +6,9 @@ export const colorServoTracking = {
 import cv2
 import pymotion as pm
 
-from camera import Camera, log_message       # 引用 4.9 的摄像头类和统一日志函数
+from camera import Camera, log_message       # 引用 4.10 的摄像头类和统一日志函数
 from servo_control import move_servos, reset_servos # 引用舵机复位和安全执行函数
-from target_observation import draw_target_marks, find_target # 引用 4.9 的目标观测和结果标记
+from target_observation import draw_target_marks, find_target # 引用 4.10 的目标观测和结果标记
 
 
 # --- 本页可调整的参数 ---

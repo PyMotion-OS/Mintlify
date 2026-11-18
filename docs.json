@@ -121,6 +121,7 @@
                     "group": "4 OpenCV 与摄像头",
                     "pages": [
                       "cn/ai-vision-robot/04-opencv-and-camera/index",
+                      "cn/ai-vision-robot/04-opencv-and-camera/connect-camera/index",
                       "cn/ai-vision-robot/04-opencv-and-camera/18-camera-basics/index",
                       "cn/ai-vision-robot/04-opencv-and-camera/19-image-pixels-and-drawing/index",
                       "cn/ai-vision-robot/04-opencv-and-camera/20-roi-and-gray-mask/index",

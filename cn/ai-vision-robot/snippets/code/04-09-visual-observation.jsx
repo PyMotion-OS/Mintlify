@@ -11,7 +11,7 @@ def main():
     last_state = None                                       # 保存上一次状态，状态不变时不重复打印日志
 
     try:
-        # 类已吸收 4.8 的连接和重连循环，进入 with 后由后台线程执行
+        # 类已吸收 4.9 的连接和重连循环，进入 with 后由后台线程执行
         with Camera() as camera:
             while True:
                 if cv2.waitKey(20) == 27:                   # 每轮处理窗口消息，连接中断时仍能响应 Esc

@@ -1,5 +1,5 @@
 ---
-title: "4.6 颜色目标观测"
+title: "4.7 颜色目标观测"
 description: "找出最大颜色目标的中心、面积和二维偏差，并标出来"
 ---
 
@@ -9,13 +9,13 @@ import { targetContours } from "/cn/ai-vision-robot/snippets/code/04-06-color-ta
 
 ## 前置条件
 
-- 同目录放一张 `camera_frame.jpg`（用 4.1 拍的即可）
+- 同目录放一张 `camera_frame.jpg`（用 4.2 拍的即可）
 
 ## 关键函数
 
 | 函数 / 语法 | 说明 |
 | --- | --- |
-| `find_target_contours(image, target_type)` | 吸收 4.5，返回清理掩膜、有效轮廓、ROI |
+| `find_target_contours(image, target_type)` | 吸收 4.6，返回清理掩膜、有效轮廓、ROI |
 | `cv2.moments(contour)` | 图像矩，`m00` 面积、`m10`/`m01` 坐标累计 |
 | `center_to_error(center, shape)` | 中心相对画面中心的归一化偏差（约 -1~+1） |
 | `find_target(image)` | 返回 state/center/area/error_x/error_y 数据包 |
@@ -43,8 +43,8 @@ import { targetContours } from "/cn/ai-vision-robot/snippets/code/04-06-color-ta
 
         <CodeFold
           docs={[
-            { label: "make_gray_mask", doc: "吸收 4.3：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜" },
-            { label: "make_color_mask", doc: "吸收 4.4：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
+            { label: "make_gray_mask", doc: "吸收 4.4：裁剪 ROI，转成灰度图，再返回按亮暗筛选的黑白掩膜" },
+            { label: "make_color_mask", doc: "吸收 4.5：裁剪 ROI，转成 HSV 图片，再返回按颜色筛选的黑白掩膜" },
             { label: "find_target_contours", doc: "按目标类型生成掩膜，完成开闭运算，再返回清理后掩膜、有效轮廓和 ROI" },
           ]}
   {...targetContours}
