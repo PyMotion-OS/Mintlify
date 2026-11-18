@@ -20,8 +20,7 @@ import { differentialDrive } from "/cn/ai-vision-robot/snippets/code/03-04-line-
 | --- | --- |
 | `from line_control import PATTERN_NAMES, line_tracker_to_vw` | 直接用 3.3 的分类与偏差，不重写 |
 | `drive(commands, v, w)` | 2.4 产出的差速封装：算左右轮转速并发送双轮目标 |
-| `data_queue.read(timeout=1.0)` | 断流时返回 `None`，V/W 归零 |
-| `time.sleep(0.1)` | 控制循环间隔，不让 while 空转 |
+| `data_queue.read(timeout=1.0)` | 断流时返回 `None`，V/W 归零；循环节奏由它控制，不用 sleep |
 
 ## 完整示例
 
@@ -90,4 +89,3 @@ python line_following.py
 | `V` | int | 80 毫米/秒 | 基础前进速度，太快会冲出弯道 |
 | `K` | int | 25 | 转弯增益，先 15 试，画龙再加 |
 | `valid_for` | float | 0.35 秒（`drive` 默认） | 每轮循环都会重发，断流后 0.35 秒自动停 |
-| `time.sleep` | float | 0.1 秒 | 控制循环间隔 |

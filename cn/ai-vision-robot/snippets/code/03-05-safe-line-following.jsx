@@ -68,8 +68,6 @@ def run(data_queue, commands):
             )
             last_motion = current_motion
 
-        time.sleep(0.1)                                     # 控制循环间隔0.1秒
-
         if pattern_type == "lost":                          # 前面已经发送双轮 0，结束 run() 后三个 with 会依次退出
             print("丢失循迹线，程序结束")
             return
@@ -93,6 +91,6 @@ if __name__ == "__main__":
     main()`,
   folds: [
     { label: "def fresh_data(event, max_age=0.5):", from: 17, to: 23, defaultOpen: false },
-    { label: "def run(data_queue, commands):", from: 27, to: 72, defaultOpen: false },
+    { label: "def run(data_queue, commands):", from: 27, to: 71, defaultOpen: false },
   ],
 }
