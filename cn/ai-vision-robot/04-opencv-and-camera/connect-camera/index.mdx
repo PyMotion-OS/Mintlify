@@ -12,19 +12,19 @@ description: "上电、装 App、蓝牙配对，拿到一个能出画面的摄�
 ## 操作步骤
 
 1. 按下 robot 的上电按钮，等指示灯亮起。
-2. 点击下载[摄像头软件](https://pan.baidu.com/s/1UBkmZM4WJaBiSIhRww6ttg?pwd=lite)，下载后安装到手机，桌面上出现 CamHipro 图标。
+2. 点击下载[摄像头软件](https://pan.baidu.com/s/1UBkmZM4WJaBiSIhRww6ttg?pwd=lite)，下载后安装到手机。
 
-   <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/01.jpg" width="360" alt="手机桌面上的 CamHipro 图标" />
+   <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/01.jpg" width="360" alt="手机桌面上的 CamHipro 软件图标" />
 
-3. 开启手机蓝牙，点开 CamHipro，进入软件首页。
+3. 开启手机蓝牙，再点开软件，进入首页。
 
    <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/002.jpg" width="360" alt="CamHipro 软件首页与点击添加设备按钮" />
 
-4. 点击首页的「点击添加设备」，软件搜索附近的蓝牙摄像机，搜到后点击设备上的「添加」。
+4. 点击首页的加号按钮，软件搜索附近的蓝牙摄像机，搜到后点击设备上的「添加」。
 
    <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/03.jpg" width="360" alt="搜索到蓝牙摄像机并点击添加" />
 
-5. 进入无线配置，无线名称填入 `pymotion`，无线密码填入 Wi-Fi 密码，点击「配置无线并添加」。
+5. 进入无线配置，无线名称与密码按照实际当前 Wi-Fi 信息填入，完成后点击「配置无线并添加」。
 
    <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/04.jpg" width="360" alt="无线配置页面" />
 
@@ -32,7 +32,7 @@ description: "上电、装 App、蓝牙配对，拿到一个能出画面的摄�
 
    <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/05.jpg" width="360" alt="网络诊断的位置提示" />
 
-7. 确认 Wi-Fi 信号强度为「强」后点击「下一步」；信号弱时调整手机与摄像机的距离再重新检测。
+7. 确认当前 Wi-Fi 信号强度良好后点击「下一步」；信号弱时调整手机与摄像机的距离再重新检测。
 
    <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/06.jpg" width="360" alt="网络诊断显示 Wi-Fi 信号强度为强" />
 
@@ -40,11 +40,11 @@ description: "上电、装 App、蓝牙配对，拿到一个能出画面的摄�
 
    <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/07.jpg" width="360" alt="设备名称设置页面" />
 
-9. 设备添加成功，设备列表中显示状态为「在线」。
+9. 设备添加成功后，设备列表中显示状态为「在线」。
 
    <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/08.jpg" width="360" alt="设备列表显示摄像机在线" />
 
-10. 点击设备进入设置页，可查看分享、云存储、无线设置、修改密码等配置项。
+10. 点击设备右下齿轮图标进入设置页，可查看分享、云存储、无线设置、修改密码等配置项。
 
     <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/09.jpg" width="360" alt="设备设置页上半部分" />
 
@@ -52,10 +52,10 @@ description: "上电、装 App、蓝牙配对，拿到一个能出画面的摄�
 
     <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/10.jpg" width="360" alt="设备设置页下半部分" />
 
-12. 点击「设备信息」，记下 IP 地址，用于拼出取图所需的 RTSP 地址。
+12. 点击「设备信息」，可以查看 IP 地址。
 
     <img src="/cn/ai-vision-robot/assets/camera-APP-screenshot/11.jpg" width="360" alt="设备信息页中的 IP 地址" />
 
 ## 预期结果
 
-连接成功后软件里能看到实时画面，用设备信息页的 IP 地址拼出 RTSP 地址（形如 `rtsp://IP:554/11`），下一页取图要用。
+连接成功后软件里能看到实时画面，用设备信息页的 IP 地址拼出 RTSP 地址，下一页取图要用。
