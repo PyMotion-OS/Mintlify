@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pymotion as pm
 
-TRANSPORT = "wifi"   # 连接方式
+TRANSPORT = "wifi"   # 连接方式二选一：保留 wifi 就删掉下一行，保留 usb 就删掉本行
+TRANSPORT = "usb"
 TIMEOUT = 15.0       # 连接最长等待时间（秒）
 
 

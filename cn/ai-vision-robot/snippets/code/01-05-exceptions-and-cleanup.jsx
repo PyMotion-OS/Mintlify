@@ -23,7 +23,7 @@ def read_status(robot):
 
 def main():
     """连上以后每秒读一次；中途 Ctrl-C 或断网，都由 finally 收尾。"""
-    robot = pm.lite.connect(transport="wifi", timeout=15.0)  # 注意：没有 with
+    robot = pm.lite.connect(transport="wifi", timeout=15.0)  # 用 USB 时把 "wifi" 改成 "usb"；注意：没有 with
 
     try:
         for i in range(20):                                 # 连续读 20 轮

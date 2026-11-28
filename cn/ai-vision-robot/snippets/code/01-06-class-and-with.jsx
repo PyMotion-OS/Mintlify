@@ -28,7 +28,7 @@ class SafeMotors:
 def main():
     """同一个动作写两遍：一遍自己写 stop，一遍交给 SafeMotors。"""
 
-    with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
+    with pm.lite.connect(transport="wifi", timeout=15.0) as robot:  # 用 USB 时把 "wifi" 改成 "usb"
         with robot.control():                               # 先拿控制权
             # 写法一：不用类——停、发、停，三步都得自己写，忘一步就出事
             robot.motors.stop()                             # 跑前停一次

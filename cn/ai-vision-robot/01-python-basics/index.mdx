@@ -21,7 +21,7 @@ import { CopySkill } from "/cn/ai-vision-robot/components/copy-skill.jsx"
 
 | 例程 | 内容 | 学完能做什么 |
 | --- | --- | --- |
-| <a href="./01-connect-wifi/index" target="_blank">1.1 WIFI模式连接</a> | `connect()`、设备信息 | 连接 Robot，确认环境和设备都正常 |
+| <a href="./01-connect-wifi/index" target="_blank">1.1 连接 Robot</a> | `connect()`、设备信息 | 连接 Robot，确认环境和设备都正常 |
 | <a href="./02-variables-and-conditions/index" target="_blank">1.2 超声波测距</a> | 读超声波 + `if/elif/else` 判断 | 把前方距离分成"过近/正常"，无效读数单独处理 |
 | <a href="./03-loops-and-lists/index" target="_blank">1.3 循迹与循环</a> | `for` 循环持续采样五路循迹 | 攒一段循迹数据看趋势 |
 | <a href="./04-functions-and-parameters/index" target="_blank">1.4 电压与函数</a> | 读电池电压 + 封装判断函数 | 把判断逻辑写成一个可复用的函数 |
@@ -31,8 +31,9 @@ import { CopySkill } from "/cn/ai-vision-robot/components/copy-skill.jsx"
 
 ## 学习建议
 
-1. 每个例程先跑通再改参数，改完再运行一次，观察输出变化
-2. 建议按顺序完成，不要跳过——1.3 的列表、1.4 的函数、1.6 的控制权会在后续模块大量复用
+1. 从 1.1 起就选定连接方式：代码默认是 WiFi（电脑上运行），用 USB 时按每页注释把 `transport` 改成 `"usb"`，并在树莓派的 SDK 虚拟环境中运行；后续例程沿用同一种方式
+2. 每个例程先跑通再改参数，改完再运行一次，观察输出变化
+3. 建议按顺序完成，不要跳过——1.3 的列表、1.4 的函数、1.6 的控制权会在后续模块大量复用
 
 ## 让 AI 帮你操作 Robot
 

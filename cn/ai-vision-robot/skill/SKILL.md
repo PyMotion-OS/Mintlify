@@ -30,29 +30,32 @@ Python 侧通过 `pymotion` SDK 的 `lite` 接口与 Robot 通信。Robot 手册
 - `.../cn/py-motion-lite/2/02-discovery-and-connection`
 - `.../cn/py-motion-lite/2/03-run-simple-examples`
 
-**Token 是必填的**：USB 和 Wi-Fi 都需要 Token 认证，缺失或不匹配抛 `AuthenticationError`。优先用环境变量 `PYMOTION_AUTH_TOKEN`，或 `connect(auth_token=...)` 传入。默认 Token 是 `123456`，建议首次配置时改掉。
+**Token 的处理**：USB 模式必须设置环境变量 `PYMOTION_AUTH_TOKEN`，缺失会抛 `AuthenticationError`；出厂默认 `123456`。优先用环境变量，或 `connect(auth_token=...)` 传入。Wi-Fi 模式实测不设也能连。
 
 ## 连接方式（Robot 手册的关键区别）
 
-**Robot 手册全程用 `transport="wifi"`**，这和 Lite 手册默认的 `"usb"` 不同。AI 帮用户写 Robot 例程时，默认用 Wi-Fi：
+Robot 手册支持两种连接方式，AI 帮用户写例程时按用户的实际环境选：
+
+- **WiFi**：电脑与 Robot 接入同一网络，在电脑上直接运行代码，例程里 `transport="wifi"`
+- **USB**：用 USB 线连接控制器与树莓派，SSH 登录树莓派后在 SDK 虚拟环境中运行代码，把 `transport` 改成 `"usb"`
 
 ```python
 import pymotion as pm
 
-# Robot 手册：连接用 wifi；with 块结束自动断开
+# WiFi：电脑上运行；USB：把 "wifi" 改成 "usb"，在树莓派上运行
 with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
     print(f"设备  ID: {robot.connection.device_id}")
     print(f"传输方式: {robot.connection.transport}")
 ```
 
-- `transport`：Robot 手册用 `"wifi"`；树莓派上车后（模块 8）用 `"usb"`
+- `transport`：`"wifi"` / `"usb"`，按实际连接方式选
 - `timeout`：连接最长等待时间（秒），局域网 10～20 秒足够
 - `robot.connection.device_id`：12 位设备 ID，每台唯一
 - `robot.connection.transport`：本次实际使用的连接方式
 
 **写代码时的约定**（Robot 手册规范，AI 照着做）：
 
-- 1.1 首次讲解时用常量 `TRANSPORT = "wifi"`、`TIMEOUT = 15.0`；1.2 起直接内联 `connect(transport="wifi", timeout=15.0)`，不写常量
+- 1.1 首次讲解时用两个 `TRANSPORT` 常量（`"wifi"` 与 `"usb"` 各一行），由用户删掉不用的那行；1.2 起直接内联 `connect(transport="wifi", timeout=15.0)`，并在行尾注释「用 USB 时把 `"wifi"` 改成 `"usb"`」
 - 不写 `data_queue.read(timeout=...)` 之外的多余默认参数（如 `max_age`）
 
 ## 例程清单（模块一）
@@ -61,7 +64,7 @@ with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
 
 | 例程 | 主题 | 学到的 Python | 学到的 Robot 能力 |
 | --- | --- | --- | --- |
-| 1.1 | WIFI 模式连接 | `import`、`with`、`print`、`try/except` | `connect()`、读设备 ID 和传输方式 |
+| 1.1 | 连接 Robot | `import`、`with`、`print`、`try/except` | `connect()`、读设备 ID 和传输方式 |
 | 1.2 | 超声波测距 | 变量、`if/elif/else` 判断 | `robot.ultrasonic()` 读前方距离 |
 | 1.3 | 循迹与循环 | `for` 循环、`list`、`time.sleep` | 五路循迹传感器持续采样 |
 | 1.4 | 电压与函数 | `def` 自定义函数 | `robot.battery()` 读电池电压 |

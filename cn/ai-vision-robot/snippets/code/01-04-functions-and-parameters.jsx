@@ -27,7 +27,7 @@ def check_V(V):
 def main():
     """连上后读三次电压，每读一次立刻判一次。"""
     try:
-        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:  # 用 USB 时把 "wifi" 改成 "usb"
             for i in range(3):                          # 连读三次
                 power_data = robot.power()              # 读一次电源数据
                 check_V(power_data.voltage)             # 判断交给函数，主流程只管读

@@ -9,7 +9,7 @@ STOP = 200                                 # 判断阈值：200 毫米以内算"
 def main():
     """连接后读一次距离，判断这次读数属于哪一档。"""
     try:
-        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:  # 用 USB 时把 "wifi" 改成 "usb"
             ultrasonic_data = robot.ultrasonic()            # 读一次超声波数据
 
             print("超声波传感器的数据结构：")                            # 完整字段，一个不省

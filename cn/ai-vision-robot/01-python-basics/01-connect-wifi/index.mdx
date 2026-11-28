@@ -1,6 +1,6 @@
 ---
-title: "1.1 WIFI模式连接"
-description: "跑完一条命令，看到 Python 版本、SDK 版本，以及机器人的设备编号和传输方式"
+title: "1.1 连接 Robot"
+description: "跑完一条命令，看到 Python 与 SDK 版本，以及 Robot 的设备编号和传输方式（WiFi / USB）"
 ---
 
 import { CodeFold } from "/cn/ai-vision-robot/components/code-fold.jsx"
@@ -8,7 +8,8 @@ import { connectWifi } from "/cn/ai-vision-robot/snippets/code/01-01-connect-wif
 
 ## 前置条件
 
-- Robot 与电脑完成网络环境配置，参考 PyMotion Lite 使用手册的 [2.1 安装开发环境](https://pymotion.mintlify.site/does./cn/py-motion-lite/2/01-development-environment)
+- 已完成开发环境配置，参考 PyMotion Lite 使用手册的 [2.1 安装开发环境](https://pymotion.mintlify.site/does./cn/py-motion-lite/2/01-development-environment)
+- 连接方式二选一：WiFi 方式让 Robot 与电脑接入同一网络，在电脑上直接运行代码；USB 方式用 USB 线连接控制器与树莓派，通过 SSH 登录树莓派后运行代码
 
 ## 关键函数
 
@@ -42,12 +43,14 @@ import { connectWifi } from "/cn/ai-vision-robot/snippets/code/01-01-connect-wif
     传输方式: wifi
     ```
 
+    保留 `TRANSPORT = "usb"` 那行时，最后一行的输出为 `传输方式: usb`。
+
   </Tab>
 </Tabs>
 
 ### 运行方式
 
-把上面代码存成 `hello_robot.py`，在终端里运行：
+把上面代码存成 `hello_robot.py`，然后按照实际连接方式删掉不用的那行 `TRANSPORT`（只留 `wifi` 或只留 `usb`）：
 
 ```bash
 python hello_robot.py
@@ -57,9 +60,9 @@ python hello_robot.py
 
 | 名称 | 类型 | 默认值或范围 | 作用 |
 | --- | --- | --- | --- |
-| `transport` | str | `"wifi"` / `"usb"` | 连接方式，本手册全程 `wifi` |
-| `timeout` | float | `15.0`（秒） | 连接最长等待时间，局域网内 10～20 秒足够 |
+| `TRANSPORT` | str | `"wifi"` / `"usb"` | 连接方式 |
+| `TIMEOUT` | float | `15.0`（秒） | 连接最长等待时间，局域网内 10～20 秒足够 |
 | `robot.connection.device_id` | str | 由设备决定 | 设备唯一编号，多台机器人同网时靠它区分 |
 | `robot.connection.transport` | str | `"wifi"` / `"usb"` | 实际生效的连接方式，以它为准不以前面常量为准 |
 
-想改连接等待时间，直接改 `TIMEOUT` 常量；`transport` 保持 `"wifi"` 不动。
+想改连接等待时间，直接改 `TIMEOUT` 常量。USB 方式需先设置环境变量 `PYMOTION_AUTH_TOKEN`，否则连接会报认证错误。

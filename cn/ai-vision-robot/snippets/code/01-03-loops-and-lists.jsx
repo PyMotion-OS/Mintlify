@@ -9,7 +9,7 @@ import pymotion as pm
 def main():
     """连上后先看一次五路读数的结构，再读 10 轮存进列表，最后逐轮打印。"""
     try:
-        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:  # 用 USB 时把 "wifi" 改成 "usb"
             tracker_line_data = robot.line_tracker()          # 第一次读，只为看结构
 
             print("五路传感器的数据结构：")

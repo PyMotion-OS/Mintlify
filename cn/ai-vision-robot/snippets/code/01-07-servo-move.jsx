@@ -13,7 +13,7 @@ PORT_LEFT_RIGHT = 5                        # 左右舵机接 PWM 端口 5（S5�
 def main():
     """三个角度依次转过去，每次用 sleep 等它转完，最后打印脚本耗时。"""
     try:
-        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:
+        with pm.lite.connect(transport="wifi", timeout=15.0) as robot:  # 用 USB 时把 "wifi" 改成 "usb"
             with robot.control():                               # 舵机也是执行器，先拿控制权
 
                 start = time.monotonic()                        # 只增不减的计时，适合算时间间隔
